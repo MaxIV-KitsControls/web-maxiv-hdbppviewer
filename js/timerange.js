@@ -94,38 +94,69 @@ class TimeRange2 extends React.Component {
     componentDidMount() {
         const element = findDOMNode(this.refs.range);
         console.log("flepp", element);
-        this.picker = $(element).daterangepicker(
+        $(element).daterangepicker(
             {
-                timePicker: true,
-                timePicker24Hour: true,
-                timePickerIncrement: 30,
+                // timePicker: true,
+                // timePicker24Hour: true,
+                // timePickerIncrement: 60,
                 locale: {
-                    format: 'MM/DD/YYYY h:mm A'
+                    format: 'DD-MM-YYYY',
+                    firstDay: 1
                 },
+                ranges: {
+                    "Today": [moment().subtract(1, 'days'), moment()],
+                    "Yesterday": [moment().subtract(2, 'days'),
+                                  moment().subtract(1, 'days')],
+                    "Last 7 days":  [moment().subtract(6, 'days'), moment()],
+                    'Last 30 Days': [moment().subtract(29, 'days'), moment()]
+                },
+                linkedCalendars: false,
                 drops: "down",
                 opens: "left"
             },
             this.onChange.bind(this)
         );
+        this.picker = $(element).data('daterangepicker');
     }
 
+    componentWillReceiveProps(props) {
+        console.log("datetime tange", props.timeRange);
+        if (props.timeRange != this.props.timeRange) {
+            this.noChange = true;
+            this.setTimeRange(props.timeRange)
+            this.noChange = false;
+        }
+    }
+    
     onChange(start, end) {
         console.log("range", start, end)
-        this.props.dispatch(setTimeRange(start._d, end._d))
+        if (!this.noChange)
+            this.props.dispatch(setTimeRange(start._d, end._d))
     }
 
     setTimeRange(range) {
-        const [startTime, endTime] = range;
-        this.picker.setStartDate(startTime);
-        this.picker.setEndDate(endTime);
+        const {start, end} = range;
+        this.picker.setStartDate(start);
+        this.picker.setEndDate(end);
+        findDOMNode(this.refs.range).innerHTML = this.formatTimeRange();
     }
     
     shouldComponentUpdate() {
         return false;
     }
+
+    formatTimeRange () {
+        const {start, end} = this.props.timeRange;
+        console.log("startTime", start, end)
+        const startDate = start.toLocaleDateString(),
+              endDate = end.toLocaleDateString();
+        if (startDate == endDate)
+            return startDate
+        return `${startDate} - ${endDate}`
+    }
     
     render () {
-        return <div ref="range">Date range</div>
+        return <div ref="range">...</div>
     }
     
 }
@@ -133,8 +164,7 @@ class TimeRange2 extends React.Component {
 
 const mapStateToProps = (state) => {
     return {
-        startTime: state.timeRange.start,
-        endTime: state.timeRange.end,
+        timeRange: state.timeRange,
         details: state.details
     }
 }
