@@ -87,8 +87,8 @@ function dispatchFromHash() {
     else
         currentHash = document.location.hash
     const hashData = loadStateFromHash()
-    // store.dispatch(setTimeRange(new Date(hashData.startTime),
-    //                             new Date(hashData.endTime)))
+    store.dispatch(setTimeRange(new Date(hashData.startTime),
+                                new Date(hashData.endTime)))
     const axes = {};
     hashData.attributes.forEach(
         attr => {
