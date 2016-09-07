@@ -104,11 +104,11 @@ export class ImagePlot {
 
         // this.zoom.y(this.yScales[0]);
 
-        this.cursorLineX = this.inner.append("svg:line")
-            .classed({cursor: true, x: true})
+        // this.cursorLineX = this.inner.append("svg:line")
+        //     .classed({cursor: true, x: true})
 
-        this.cursorLineY = this.inner.append("svg:line")
-            .classed({cursor: true, y: true})                
+        // this.cursorLineY = this.inner.append("svg:line")
+        //     .classed({cursor: true, y: true})                
         
         
         this.descElement = d3.select(this.containerElement)
@@ -185,24 +185,24 @@ export class ImagePlot {
                 .style("bottom", this.innerHeight - (max? this.yScales[0](max) : y) + 40)
                 .html(`<b style="color:${color};">${attr}</b><br>Max: ${max}<br>Min: ${min}`)
 
-            this.cursorLineX
-                .style("display", "block")            
-                .attr("x1", i+.5)
-                .attr("y1", this.yScales[0](0))
-                .attr("x2", i+.5)
-                .attr("y2", this.yScales[0](min));
+            // this.cursorLineX
+            //     .style("display", "block")            
+            //     .attr("x1", i+.5)
+            //     .attr("y1", this.yScales[0](0))
+            //     .attr("x2", i+.5)
+            //     .attr("y2", this.yScales[0](min));
 
-            const ymin = this.yScales[0](min),
-                  ymax = this.yScales[0](max);
-            const width = Math.abs(ymax - ymin);
+            // const ymin = this.yScales[0](min),
+            //       ymax = this.yScales[0](max);
+            // const width = Math.abs(ymax - ymin);
             
-            this.cursorLineY
-                .style("display", "block")
-                .attr("x1", 0)
-                .attr("y1", ymin - width/2)
-                .attr("x2", i)
-                .attr("y2", ymin - width/2)
-                .style("stroke-width", width)
+            // this.cursorLineY
+            //     .style("display", "block")
+            //     .attr("x1", 0)
+            //     .attr("y1", ymin - width/2)
+            //     .attr("x2", i)
+            //     .attr("y2", ymin - width/2)
+            //     .style("stroke-width", width)
         })
     }
 
