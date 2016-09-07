@@ -133,8 +133,8 @@ export class ImagePlot {
         const axis = d3.svg.axis()
               .scale(scale)
               .ticks(5)
-              .orient(number % 2 == 0? "left" : "right")
-              .tickSize(number === 0? -(this.innerWidth- Y_AXIS_WIDTH) : -5)
+              .orient(number % 2 === 0? "left" : "right")
+              .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
               .tickFormat(d3.format(".1e"))
 
         this.yAxes[name] = axis;
@@ -209,10 +209,10 @@ export class ImagePlot {
     hideDescription() {
         this.descElement
             .style("display", "none")
-        this.cursorLineY
-            .style("display", "none")            
-        this.cursorLineX
-            .style("display", "none")            
+        // this.cursorLineY
+        //     .style("display", "none")            
+        // this.cursorLineX
+        //     .style("display", "none")            
     }
     
     removeYAxis(name) {
@@ -227,7 +227,7 @@ export class ImagePlot {
 
     setTimeRange(range) {
         this.x.domain(range)
-        // this.updateTimeRange();
+        this.zoom.x(this.x)  // reset the zoom behavior
         this.zoomed()
     }
 
@@ -278,6 +278,8 @@ export class ImagePlot {
             clearTimeout(this._swapTimeout);
         }
         this._swapTimeout = setTimeout(() => {
+            // TODO: before swapping, make sure that we actually updated the
+            // images! If not, we should show nothing.
             this.swapImage(),
             this._swapTimeout = null;
         }, 100)
@@ -309,6 +311,7 @@ export class ImagePlot {
     }
     
     zoomed() {
+        this.hideDescription();
         this.updateTimeRange();
         this.runChangeCallback();
     }
