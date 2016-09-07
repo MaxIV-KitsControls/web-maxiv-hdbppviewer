@@ -50012,9 +50012,12 @@
 
 	            // this.zoom.y(this.yScales[0]);
 
-	            this.cursorLineX = this.inner.append("svg:line").classed({ cursor: true, x: true });
+	            // this.cursorLineX = this.inner.append("svg:line")
+	            //     .classed({cursor: true, x: true})
 
-	            this.cursorLineY = this.inner.append("svg:line").classed({ cursor: true, y: true });
+	            // this.cursorLineY = this.inner.append("svg:line")
+	            //     .classed({cursor: true, y: true})                
+
 
 	            this.descElement = _d3.default.select(this.containerElement).append("div").classed("description", true).style("display", "none").text("hello");
 	        }
@@ -50031,7 +50034,7 @@
 
 	            this.yScales[name] = scale;
 
-	            var axis = _d3.default.svg.axis().scale(scale).ticks(5).orient(number % 2 == 0 ? "left" : "right").tickSize(number === 0 ? -(this.innerWidth - Y_AXIS_WIDTH) : -5).tickFormat(_d3.default.format(".1e"));
+	            var axis = _d3.default.svg.axis().scale(scale).ticks(5).orient(number % 2 === 0 ? "left" : "right").tickSize(number % 2 === 0 ? -(this.innerWidth - Y_AXIS_WIDTH) : -5).tickFormat(_d3.default.format(".1e"));
 
 	            this.yAxes[name] = axis;
 
@@ -50079,21 +50082,34 @@
 	                    color = _this2.config[attr].color;
 	                _this2.descElement.style("display", "block").style("left", _this2.margin.left + i + 10).style("bottom", _this2.innerHeight - (max ? _this2.yScales[0](max) : y) + 40).html("<b style=\"color:" + color + ";\">" + attr + "</b><br>Max: " + max + "<br>Min: " + min);
 
-	                _this2.cursorLineX.style("display", "block").attr("x1", i + .5).attr("y1", _this2.yScales[0](0)).attr("x2", i + .5).attr("y2", _this2.yScales[0](min));
+	                // this.cursorLineX
+	                //     .style("display", "block")            
+	                //     .attr("x1", i+.5)
+	                //     .attr("y1", this.yScales[0](0))
+	                //     .attr("x2", i+.5)
+	                //     .attr("y2", this.yScales[0](min));
 
-	                var ymin = _this2.yScales[0](min),
-	                    ymax = _this2.yScales[0](max);
-	                var width = Math.abs(ymax - ymin);
+	                // const ymin = this.yScales[0](min),
+	                //       ymax = this.yScales[0](max);
+	                // const width = Math.abs(ymax - ymin);
 
-	                _this2.cursorLineY.style("display", "block").attr("x1", 0).attr("y1", ymin - width / 2).attr("x2", i).attr("y2", ymin - width / 2).style("stroke-width", width);
+	                // this.cursorLineY
+	                //     .style("display", "block")
+	                //     .attr("x1", 0)
+	                //     .attr("y1", ymin - width/2)
+	                //     .attr("x2", i)
+	                //     .attr("y2", ymin - width/2)
+	                //     .style("stroke-width", width)
 	            });
 	        }
 	    }, {
 	        key: "hideDescription",
 	        value: function hideDescription() {
 	            this.descElement.style("display", "none");
-	            this.cursorLineY.style("display", "none");
-	            this.cursorLineX.style("display", "none");
+	            // this.cursorLineY
+	            //     .style("display", "none")            
+	            // this.cursorLineX
+	            //     .style("display", "none")            
 	        }
 	    }, {
 	        key: "removeYAxis",
@@ -50110,7 +50126,7 @@
 	        key: "setTimeRange",
 	        value: function setTimeRange(range) {
 	            this.x.domain(range);
-	            // this.updateTimeRange();
+	            this.zoom.x(this.x); // reset the zoom behavior
 	            this.zoomed();
 	        }
 	    }, {
@@ -50189,6 +50205,8 @@
 	                clearTimeout(this._swapTimeout);
 	            }
 	            this._swapTimeout = setTimeout(function () {
+	                // TODO: before swapping, make sure that we actually updated the
+	                // images! If not, we should show nothing.
 	                _this3.swapImage(), _this3._swapTimeout = null;
 	            }, 100);
 	        }
@@ -50250,6 +50268,7 @@
 	    }, {
 	        key: "zoomed",
 	        value: function zoomed() {
+	            this.hideDescription();
 	            this.updateTimeRange();
 	            this.runChangeCallback();
 	        }
@@ -50342,8 +50361,6 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -50494,33 +50511,51 @@
 	        value: function componentDidMount() {
 	            var element = (0, _reactDom.findDOMNode)(this.refs.range);
 	            console.log("flepp", element);
-	            this.picker = $(element).daterangepicker({
-	                timePicker: true,
-	                timePicker24Hour: true,
-	                timePickerIncrement: 30,
+	            $(element).daterangepicker({
+	                // timePicker: true,
+	                // timePicker24Hour: true,
+	                // timePickerIncrement: 60,
 	                locale: {
-	                    format: 'MM/DD/YYYY h:mm A'
+	                    format: 'DD-MM-YYYY',
+	                    firstDay: 1
 	                },
+	                ranges: {
+	                    "Today": [(0, _moment2.default)().subtract(1, 'days'), (0, _moment2.default)()],
+	                    "Yesterday": [(0, _moment2.default)().subtract(2, 'days'), (0, _moment2.default)().subtract(1, 'days')],
+	                    "Last 7 days": [(0, _moment2.default)().subtract(6, 'days'), (0, _moment2.default)()],
+	                    'Last 30 Days': [(0, _moment2.default)().subtract(29, 'days'), (0, _moment2.default)()]
+	                },
+	                linkedCalendars: false,
 	                drops: "down",
 	                opens: "left"
 	            }, this.onChange.bind(this));
+	            this.picker = $(element).data('daterangepicker');
+	        }
+	    }, {
+	        key: "componentWillReceiveProps",
+	        value: function componentWillReceiveProps(props) {
+	            console.log("datetime tange", props.timeRange);
+	            if (props.timeRange != this.props.timeRange) {
+	                this.noChange = true;
+	                this.setTimeRange(props.timeRange);
+	                this.noChange = false;
+	            }
 	        }
 	    }, {
 	        key: "onChange",
 	        value: function onChange(start, end) {
 	            console.log("range", start, end);
-	            this.props.dispatch((0, _actions.setTimeRange)(start._d, end._d));
+	            if (!this.noChange) this.props.dispatch((0, _actions.setTimeRange)(start._d, end._d));
 	        }
 	    }, {
 	        key: "setTimeRange",
 	        value: function setTimeRange(range) {
-	            var _range = _slicedToArray(range, 2);
+	            var start = range.start;
+	            var end = range.end;
 
-	            var startTime = _range[0];
-	            var endTime = _range[1];
-
-	            this.picker.setStartDate(startTime);
-	            this.picker.setEndDate(endTime);
+	            this.picker.setStartDate(start);
+	            this.picker.setEndDate(end);
+	            (0, _reactDom.findDOMNode)(this.refs.range).innerHTML = this.formatTimeRange();
 	        }
 	    }, {
 	        key: "shouldComponentUpdate",
@@ -50528,12 +50563,25 @@
 	            return false;
 	        }
 	    }, {
+	        key: "formatTimeRange",
+	        value: function formatTimeRange() {
+	            var _props$timeRange = this.props.timeRange;
+	            var start = _props$timeRange.start;
+	            var end = _props$timeRange.end;
+
+	            console.log("startTime", start, end);
+	            var startDate = start.toLocaleDateString(),
+	                endDate = end.toLocaleDateString();
+	            if (startDate == endDate) return startDate;
+	            return startDate + " - " + endDate;
+	        }
+	    }, {
 	        key: "render",
 	        value: function render() {
 	            return _react2.default.createElement(
 	                "div",
 	                { ref: "range" },
-	                "Date range"
+	                "..."
 	            );
 	        }
 	    }]);
@@ -50543,8 +50591,7 @@
 
 	var mapStateToProps = function mapStateToProps(state) {
 	    return {
-	        startTime: state.timeRange.start,
-	        endTime: state.timeRange.end,
+	        timeRange: state.timeRange,
 	        details: state.details
 	    };
 	};
@@ -64773,7 +64820,7 @@
 	                        _reactBootstrap.Input,
 	                        { type: "select", value: this.state.selectedSuggestions,
 	                            ref: "suggestions", multiple: true,
-	                            style: { width: "100%", height: "50%" },
+	                            style: { width: "100%", height: "60%" },
 	                            onChange: this.onSelectSuggestions.bind(this) },
 	                        suggestOptions
 	                    ),
