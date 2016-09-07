@@ -94,14 +94,14 @@ function dispatchFromHash() {
         attr => {
             let [name, axis, color] = attr.split(":");
             if (axis in axes)
-                axes[axis].push(name);
+                axes[axis].push([name, color]);
             else
-                axes[axis] = [name];
+                axes[axis] = [[name, color]];
         }
     )
     let axisNames = Object.keys(axes)
     axisNames.sort()
-    console.log("axes", axisNames);
+    console.log("axes", axes);
     axisNames.forEach(axis => {
         let attrs = axes[axis];
         store.dispatch(addAttributes(attrs, parseInt(axis)))

@@ -16,17 +16,20 @@ export const SET_ATTRIBUTE_COLOR = "SET_ATTRIBUTE_COLOR";
 
 export function addAttributes(attributes, axis) {
     return function (dispatch, getState) {
+        let attrs = [];
         attributes.forEach(attr => {
-            const desc = attr.split(":");
-            if (desc.length > 1) {
-                [name, color] = attr;
+            if (attr.constructor === Array) {
+                const [name, color] = attr;
+                attrs.push(name);
                 dispatch({type: SET_ATTRIBUTE_COLOR, attribute: name, color});
+                
             } else {
-                dispatch({type: SET_ATTRIBUTE_COLOR, attribute: desc[0]});
+                attrs.push(attr);
+                dispatch({type: SET_ATTRIBUTE_COLOR, attribute: attr});
             }
         })
-        dispatch({type: SET_ATTRIBUTES_AXIS, attributes, axis})
-        dispatch({type: ADD_ATTRIBUTES, attributes});
+        dispatch({type: SET_ATTRIBUTES_AXIS, attributes: attrs, axis})
+        dispatch({type: ADD_ATTRIBUTES, attributes: attrs});
         dispatch(fetchArchiveData());
     }
 }

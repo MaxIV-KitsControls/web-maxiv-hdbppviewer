@@ -29,8 +29,8 @@ export function setHashFromState(state) {
 
     let attributes = state.attributes.map(attr => {
         let config = state.attributeConfig[attr];
-        console.log(attr, config);
-        return `${attr}:${config.axis}`;
+        console.log("setHashfromstate", attr, config);
+        return `${attr}:${config.axis}:${config.color}`;
     })
     let hash = JSON.stringify({
         startTime: state.timeRange.start,
