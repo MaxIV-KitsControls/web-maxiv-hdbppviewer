@@ -158,7 +158,8 @@ async def get_image(hdbpp, request):
             while True:
                 rows = result.current_rows[0]
                 df = pandas.DataFrame(dict(t=timestampify(rows["data_time"]),
-                                           v=rows["value_r"], e=rows["error_desc"]))
+                                           v=rows["value_r"],
+                                           e=rows["error_desc"]))
                 dfs.append(df)
                 if result.has_more_pages:
                     result.fetch_next_page()
@@ -193,7 +194,7 @@ async def get_image(hdbpp, request):
         nodata = set()
         for name, data in attributes.items():
             vmin, vmax = data["y_range"]
-            if np.isnan(vmin) or np.isnan(vmax) or vmin == vmax:
+            if np.isnan(vmin) or np.isnan(vmax):
                 # TODO: figure out what to do in the case when there's only one
                 # point, or all points have the same value. At least we can't
                 # use the naive method below to calculate the range.
@@ -209,10 +210,6 @@ async def get_image(hdbpp, request):
             else:
                 axis_max = max(axis_max, vmax)
 
-        if axis_min == axis_max:
-            logging.debug("Too few points in interval for axis %r!", y_axis)
-            continue
-
         if axis_min is None or axis_max is None:
             logging.debug("Could not calculate limits for axis %r!", y_axis)
             continue
@@ -221,9 +218,23 @@ async def get_image(hdbpp, request):
             logging.debug("No data for axis %r!", y_axis)
             continue
 
-        axis_d = axis_max - axis_min
-        padding = 0.05 * axis_d
-        y_range = (axis_min - padding, axis_max + padding)
+        # calculate a reasonable range for the y axis
+        if axis_min == axis_max:
+            # Looks like the value is constant so we can't derive
+            # a range the normal way. Let's invent one instead.
+            v = axis_min
+            if v > 0:
+                vmin = v / 2
+                vmax = 1.5*v
+            else:
+                vmin = 1.5*v
+                vmax = v / 2
+            y_range = (vmin, vmax)
+        else:
+            # just pad the extreme values a bit
+            axis_d = axis_max - axis_min
+            padding = 0.05 * axis_d
+            y_range = (axis_min - padding, axis_max + padding)
         logging.debug("Axis %r has range %r", y_axis, y_range)
 
         # project the data into an image (using datashader)
@@ -232,9 +243,7 @@ async def get_image(hdbpp, request):
             if name in nodata:
                 continue
             logging.debug("Making %r image for %s", size, name)
-            print(data)
             image, desc = make_image(data, time_range, y_range, size)
-            print(image)
             axis_images.append(image)
             descs[name] = desc
 
