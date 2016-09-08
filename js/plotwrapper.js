@@ -28,6 +28,9 @@ class PlotWrapper extends React.Component {
 
     componentWillReceiveProps (props) {
         // update the plot as needed
+        if (props.attributes != this.props.attributes) {
+            this.plot.runChangeCallback()
+        }
         if (props.data != this.props.data) {
             let t0 = (new Date).getTime();            
             this.plot.setData(props.data);
