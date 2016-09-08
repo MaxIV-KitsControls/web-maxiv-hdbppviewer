@@ -110,6 +110,7 @@ class TimeRange2 extends React.Component {
                     "Last 7 days":  [moment().subtract(6, 'days'), moment()],
                     'Last 30 Days': [moment().subtract(29, 'days'), moment()]
                 },
+                maxDate: moment(),
                 linkedCalendars: false,
                 drops: "down",
                 opens: "left"
