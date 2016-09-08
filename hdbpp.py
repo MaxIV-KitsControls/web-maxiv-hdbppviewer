@@ -1,3 +1,4 @@
+from functools import lru_cache
 import logging
 import time
 from datetime import date, timedelta, datetime
@@ -35,8 +36,6 @@ class HDBPlusPlusConnection(object):
         self.session.client_protocol_handler = NumpyProtocolHandler
 
         self.prepare_queries()
-
-        self.cache = {}
 
     @property
     def attributes(self):
@@ -116,10 +115,8 @@ class HDBPlusPlusConnection(object):
         just query the whole day since that will make it easier to
         cache (and the query should be slightly faster?). One day
         shouldn't be too much data anyhow, e.g. <100000 points
-        at 1s interval
+        at 1s interval. This should be evaluated, though.
         """
-
-        config = self.configs[attr]
 
         # default to the last 24 hours
         if not start_time:
@@ -127,30 +124,16 @@ class HDBPlusPlusConnection(object):
         if not end_time:
             end_time = (time.time()) * 1000
 
-        print("get_attribute_data", attr,
-              time.strftime("%a, %d %b %Y %H:%M:%S +0000",
-                            time.gmtime(start_time/1000)),
-              time.strftime("%a, %d %b %Y %H:%M:%S +0000",
-                            time.gmtime(end_time/1000)))
-
         start_date = date.fromtimestamp(start_time/1000)
         end_date = date.fromtimestamp(end_time/1000)
-        periods = [str(start_date + timedelta(days=d))
-                   for d in range((end_date - start_date).days + 1)]
-        print(periods)
-        query = self.prepared["data"][config["data_type"]]
-        results = []
-        for period in periods:
-            if (attr, period) in self.cache:
-                results.append(self.cache[(attr, period)])
-            else:
-                attr_bound = query.bind([config["id"], period])
-                # start_time, end_time])
+        periods = (str(start_date + timedelta(days=d))
+                   for d in range((end_date - start_date).days + 1))
+        return [self.get_attribute_period(attr, period)
+                for period in periods]
 
-                if asynchronous:
-                    results.append(self.session.execute_async(attr_bound))
-                else:
-                    result = self.session.execute(attr_bound)
-                    self.cache[(attr, period)] = result
-                    results.append(result)
-        return results
+    @lru_cache(maxsize=1024)
+    def get_attribute_period(self, attr, period):
+        config = self.configs[attr]
+        query = self.prepared["data"][config["data_type"]]
+        attr_bound = query.bind([config["id"], period])
+        return self.session.execute(attr_bound)
