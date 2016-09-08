@@ -67,8 +67,9 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
         fetch(url)
             .then(response => {
                 if (latestFetchTime > fetchTime) {
-                    response.body.cancel();
-                    return;                                          
+                    // Trying to cancel because there's been a new request
+                    response.body && response.body.cancel();
+                    return;
                 }
                 return response.json();
             })
