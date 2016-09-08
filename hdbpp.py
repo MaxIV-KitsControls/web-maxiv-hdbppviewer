@@ -7,6 +7,8 @@ from cassandra.cluster import Cluster
 from cassandra.protocol import NumpyProtocolHandler, LazyProtocolHandler
 from cassandra.query import tuple_factory
 from cassandra.connection import InvalidRequestException
+import numpy as np
+import pandas as pd
 
 
 TANGO_TYPES = [
@@ -20,6 +22,9 @@ def get_hdbpp_data_types():
         for typ in TANGO_TYPES
         for per in ("ro", "rw")
     ]
+
+
+timestampify = np.vectorize(lambda x: x.timestamp()*1000, otypes=[np.float64])
 
 
 class HDBPlusPlusConnection(object):
@@ -136,4 +141,16 @@ class HDBPlusPlusConnection(object):
         config = self.configs[attr]
         query = self.prepared["data"][config["data_type"]]
         attr_bound = query.bind([config["id"], period])
-        return self.session.execute(attr_bound)
+        res = self.session.execute(attr_bound)
+        dfs = []
+        while True:
+            rows = res.current_rows[0]
+            df = pd.DataFrame(dict(t=timestampify(rows["data_time"]),
+                                   v=rows["value_r"],
+                                   e=rows["error_desc"]))
+            dfs.append(df)
+            if res.has_more_pages:
+                res.fetch_next_page()
+            else:
+                break
+        return pd.concat(dfs, ignore_index=True)

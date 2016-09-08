@@ -85,13 +85,14 @@ def make_image(data, time_range, y_range, size):
                        vmax=datashader.max("v")
                    ))
     color = data["info"].get("color", "red")
-    image = datashader.transfer_functions.interpolate(agg["count"], cmap=[color])
+    image = datashader.transfer_functions.shade(agg["count"], cmap=[color])
 
     # TODO: make this "sparse" if there are gaps where there are no
     # points.
     vmin = np.nanmin(agg["vmin"].values, axis=0)
     vmax = np.nanmax(agg["vmax"].values, axis=0)
     desc = {
+        "total_points": data["points"],
         "min": np.where(np.isnan(vmin), None, vmin).tolist(),
         "max": np.where(np.isnan(vmax), None, vmax).tolist()
     }
@@ -145,7 +146,6 @@ async def get_image(hdbpp, request):
 
     # First get data from the DB and sort by y-axis
     for attribute in attributes:
-        dfs = []
         # load data points for the attribute from the archive database
         name = attribute["name"]
         call = partial(
@@ -154,18 +154,7 @@ async def get_image(hdbpp, request):
             start_time=time_range[0],
             end_time=time_range[1])
         results = await loop.run_in_executor(None, call)
-        for result in results:
-            while True:
-                rows = result.current_rows[0]
-                df = pandas.DataFrame(dict(t=timestampify(rows["data_time"]),
-                                           v=rows["value_r"],
-                                           e=rows["error_desc"]))
-                dfs.append(df)
-                if result.has_more_pages:
-                    result.fetch_next_page()
-                else:
-                    break
-        data = pandas.concat(dfs, ignore_index=True)
+        data = pandas.concat(results, ignore_index=True)
 
         logging.debug("Length of %s: %d", name, len(data))
 
@@ -177,7 +166,7 @@ async def get_image(hdbpp, request):
         value_min = relevant["v"].min()
 
         per_axis[y_axis][name] = dict(
-            data=data, info=attribute,
+            data=data, info=attribute, points=len(relevant),
             y_range=(value_min, value_max))
 
     # Now generate one image for each y-axis. Since all the attributes on an
@@ -186,7 +175,7 @@ async def get_image(hdbpp, request):
     descs = {}
     for y_axis, attributes in per_axis.items():
 
-        logging.debug("Computing image for axis %r %r",
+        logging.debug("Computing data for axis %r %r",
                       y_axis, sorted(attributes.keys()))
 
         # find the extrema for the axis
@@ -195,10 +184,7 @@ async def get_image(hdbpp, request):
         for name, data in attributes.items():
             vmin, vmax = data["y_range"]
             if np.isnan(vmin) or np.isnan(vmax):
-                # TODO: figure out what to do in the case when there's only one
-                # point, or all points have the same value. At least we can't
-                # use the naive method below to calculate the range.
-                # For now we just hope it never actually happens...
+                # TODO: when will this actually happen?
                 nodata.add(name)
                 continue
             if axis_min is None:
