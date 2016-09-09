@@ -29,6 +29,8 @@ timestampify = np.vectorize(lambda x: x.timestamp()*1000, otypes=[np.float64])
 
 class HDBPlusPlusConnection(object):
 
+    "A very simple direct interface to the HDB++ cassandra backend"
+
     def __init__(self, nodes=None, keyspace="hdb", fetch_size=50000):
         self.nodes = nodes if nodes else ["localhost"]
         self.cluster = Cluster(self.nodes)
@@ -136,8 +138,17 @@ class HDBPlusPlusConnection(object):
         return [self.get_attribute_period(attr, period)
                 for period in periods]
 
-    @lru_cache(maxsize=1024)
     def get_attribute_period(self, attr, period):
+        if period == str(date.today()):
+            return self._get_attribute_period.__wrapped__(self, attr, period)
+        try:
+            return self._get_attribute_period(attr, period)
+        except KeyError:
+            # Don't know why this sometimes happens?
+            return self._get_attribute_period.__wrapped__(self, attr, period)
+
+    @lru_cache(maxsize=1024)
+    def _get_attribute_period(self, attr, period):
         config = self.configs[attr]
         query = self.prepared["data"][config["data_type"]]
         attr_bound = query.bind([config["id"], period])
