@@ -1,14 +1,20 @@
 import React from "react";
+import {findDOMNode} from "react-dom";
 import {connect} from "react-redux";
 import { bindActionCreators } from 'redux'
 // import AutoSuggest from 'react-autosuggest';
 import fetch from "isomorphic-fetch";
-import { Input, Button, DropdownButton, MenuItem, Col, Panel } from 'react-bootstrap';
+import { Input, Button, DropdownButton, MenuItem, Col, Panel,
+         Overlay } from 'react-bootstrap';
 
 import * as actionCreators from "./actions";
 import {debounce} from "./utils"
 
 
+class SearchResults extends React.Component {
+}
+
+    
 class Attributes extends React.Component {
 
     constructor() {
@@ -45,7 +51,6 @@ class Attributes extends React.Component {
     }
     
     onAddAttributes (event, axis) {
-        console.log("onAttAttributes")
         this.props.addAttributes(this.state.selectedSuggestions, axis);
         this.setState({selectedSuggestions: []})
     }
@@ -55,9 +60,56 @@ class Attributes extends React.Component {
         this.setState({selectedAttributes: []})
     }
 
+    makeSuggestions() {
+        let suggestOptions = this.state.suggestions.map(sugg => {
+            return <option key={sugg} value={sugg}
+                           disabled={this.props.attributes.indexOf(sugg) != -1}>
+                       {sugg}
+                   </option>;
+        })
+
+        return (
+                <div style={{
+                        ...this.props.style,
+                        position: 'absolute',
+                        backgroundColor: '#EEE',
+                        boxShadow: '0 5px 10px rgba(0, 0, 0, 0.2)',
+                        border: '1px solid #CCC',
+                        borderRadius: 3,
+                        padding: 5}}>
+                <Input type="select" value={this.props.selectedSuggestions}
+                    ref="suggestions" multiple={true}
+                    style={{width: "100%", height: "60%"}}
+                    onChange={this.onSelectSuggestions.bind(this)}>
+                  {suggestOptions}
+                </Input>
+                <DropdownButton title="Add"
+                    disabled={this.state.selectedSuggestions.length == 0}>
+                  <MenuItem eventKey={0}
+                      onSelect={this.onAddAttributes.bind(this)}>Y1</MenuItem>
+                  <MenuItem eventKey={1}
+                      onSelect={this.onAddAttributes.bind(this)}>Y2</MenuItem>
+                </DropdownButton>
+                <Button onClick={this.removeSuggestions.bind(this)}>Close</Button>
+           </div>
+        );
+    }
+
+    removeSuggestions () {
+        this.setState({suggestions: []})
+    }
+
+    componentDidUpdate () {
+        if (this.state.suggestions.length > 0) {
+            const node = findDOMNode(this.refs.suggestions)
+            console.log("hej", node);
+            node.childNodes[0].focus()
+        }
+    }
+    
     // return appropriate content for a select element that
     // shows the current attributes, grouped by Y axis
-    getCurrentAttributeOptions () {
+    getCurrentAttributeOptions () {        
         const axes = Array.from(new Set(
             Object.values(this.props.config).map(v => v.axis))).sort();
         return axes.map(axis => (
@@ -78,50 +130,60 @@ class Attributes extends React.Component {
         ));
         
     }
+
+    renderAttributeInfo() {
+        if (this.state.selectedAttributes.length > 0) {
+            const attr = this.state.selectedAttributes[0];
+            const config = this.props.config[attr]
+            const desc = this.props.desc[attr]
+            return (<table className="attribute-info">
+                    <tr>
+                    <td>Name:</td> <td>{attr}</td>
+                    </tr>
+                    <tr>
+                    <td>Axis:</td> <td>{config.axis}</td>
+                    </tr>
+                    <tr>
+                    <td>Color:</td> <td>{config.color}</td>
+                    </tr>
+                    <tr>
+                    <td>Points:</td> <td>{desc.total_points}</td>
+                    </tr>
+                    </table>);
+        }
+    }
     
     render () {
-
-        let suggestOptions = this.state.suggestions.map(sugg => {
-            return <option key={sugg} value={sugg}>{sugg}</option>;
-        })
 
         let attributeOptions = this.getCurrentAttributeOptions();
         
         return (
             <div>
-                <Panel
-                  style={{height: "40%"}}>
-                <Input type="search"
+                <Input type="search" ref="search"
                     value={this.state.pattern}
                     onChange={this.onPatternChange.bind(this)}
                     placeholder="e.g */vac/*/pressure"/>
-                <Input type="select" value={this.state.selectedSuggestions}
-                    ref="suggestions" multiple={true}
-                    style={{width: "100%", height: "50%"}}
-                    onChange={this.onSelectSuggestions.bind(this)}>
-                  {suggestOptions}
-                </Input>
-                <DropdownButton title="Add"
-                    disabled={this.state.selectedSuggestions.length == 0}>
-                  <MenuItem eventKey={0}
-                      onSelect={this.onAddAttributes.bind(this)}>Y1</MenuItem>
-                  <MenuItem eventKey={1}
-                      onSelect={this.onAddAttributes.bind(this)}>Y2</MenuItem>
-                </DropdownButton>
-              </Panel>
-              <Panel
-                  style={{height: "40%"}}>
+                <Overlay show={this.state.suggestions.length > 0}
+                         placement="bottom" container={this} rootClose={true}
+                         target={() => findDOMNode(this.refs.search)}>
+                {this.makeSuggestions()}
+                </Overlay>
+
+
                 <Input type="select" ref="attributes" id="current-attributes"
                     multiple={true} value={this.state.selectedAttributes}
-                    style={{width: "100%", height: "70%"}}
+                    style={{width: "100%", height: "200"}}
                     onChange={this.onSelectAttributes.bind(this)}>
                      {attributeOptions}
                   </Input>
+
+                {this.renderAttributeInfo()}
+            
                 <Button onClick={this.onRemoveAttributes.bind(this)}
                     disabled={this.state.selectedAttributes.length == 0}>
                   Remove
                 </Button>
-              </Panel>
+                
             </div>                
         );
     }
@@ -132,7 +194,8 @@ class Attributes extends React.Component {
 function mapStateToProps (state) {
     return {
         attributes: state.attributes,
-        config: state.attributeConfig
+        config: state.attributeConfig,
+        desc: state.descriptions
     }
 }
 

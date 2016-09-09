@@ -102,3 +102,17 @@ line.cursor.y {
     pointer-events: none;
     shape-rendering: crispEdges;
 }
+
+select option:disabled {
+    color: #000;
+    font-weight: bold;
+}
+
+table.attribute-info {
+    color: white;
+    width: 100%;
+}
+
+table.attribute-info td {
+    padding: 2px;
+}
