@@ -144,7 +144,13 @@ async def get_image(hdbpp, request):
     per_axis = defaultdict(dict)
     loop = asyncio.get_event_loop()
 
+    t0 = time.time()
+
+    # Note: the following should be done in a more pipeline:y way, since many
+    # parts can be done in parallel.
+
     # First get data from the DB and sort by y-axis
+    futures = {}
     for attribute in attributes:
         # load data points for the attribute from the archive database
         name = attribute["name"]
@@ -153,8 +159,18 @@ async def get_image(hdbpp, request):
             attr=name.lower(),
             start_time=time_range[0],
             end_time=time_range[1])
-        results = await loop.run_in_executor(None, call)
-        data = pandas.concat(results, ignore_index=True)
+        # TODO: use the async functionality of cassandra-driver
+        futures[name] = loop.run_in_executor(None, call)
+
+    # wait for all the attributes to be fetched
+    await asyncio.gather(*futures.values())
+    t1 = time.time()
+    logging.info("Fetching took %f s", t1 - t0)
+
+    for attribute in attributes:
+        name = attribute["name"]
+        future = futures[name]
+        data = pandas.concat(future.result(), ignore_index=True)
 
         logging.debug("Length of %s: %d", name, len(data))
 
@@ -250,6 +266,9 @@ async def get_image(hdbpp, request):
         }
         # TODO: also grab configuration, e.g. label, unit, ...
         # Note that this can also change over time!
+
+    t2 = time.time()
+    logging.info("Processing took %f s", t2 - t1)
 
     data = json.dumps({"images": images, "descs": descs})
     return web.Response(body=data.encode("utf-8"),
