@@ -79,6 +79,19 @@ render((<Provider store={store}>
       );
 
 
+store.subscribe(() => {
+    const state = store.getState();
+    const attributes = state.attributes;
+    const startDate = state.timeRange.start.toLocaleDateString(),
+          endDate = state.timeRange.end.toLocaleDateString();
+
+    if (startDate == endDate) {
+        document.title = `Archive viewer: ${attributes.map(attr => attr.split(":")[0]).join(",")} ${startDate}`;
+    } else {
+        document.title = `Archive viewer: ${attributes.map(attr => attr.split(":")[0]).join(",")} ${startDate} - ${endDate}`;        
+    }
+})
+
 /* setup browser URL handling */
 
 function dispatchFromHash() {
