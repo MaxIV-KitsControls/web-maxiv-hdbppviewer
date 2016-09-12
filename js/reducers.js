@@ -61,7 +61,7 @@ export function attributeConfig(state={}, action) {
         if (action.color) {
             color = action.color;
         } else {
-            const usedColors = new Set(Object.values(state).map(v => v.color));
+            const usedColors = new Set(Object.keys(state).map(k => state[k].color));
             const remainingColors = LINE_COLORS.filter(c => !usedColors.has(c));
             color = remainingColors[0]
             // TODO: handle case where there are more than 6 lines!

@@ -111,7 +111,7 @@ class Attributes extends React.Component {
     // shows the current attributes, grouped by Y axis
     getCurrentAttributeOptions () {        
         const axes = Array.from(new Set(
-            Object.values(this.props.config).map(v => v.axis))).sort();
+            Object.keys(this.props.config).map(k => this.props.config[k].axis))).sort();
         return axes.map(axis => (
                 <optgroup label={`Y axis ${axis}`}>
                 {this.props.attributes
