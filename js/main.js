@@ -57,7 +57,7 @@ class App extends React.Component {
                 </Row>
                 
                 <Row>
-                <Col sm={3} md={3} nopadding={true}>
+                <Col sm={3} md={3}>
                 <AttributeSearch/>
                 </Col>
                 <Col sm={9} md={9} xs={9}>
