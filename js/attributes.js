@@ -52,7 +52,6 @@ class PlottedAttributes extends React.Component {
     makeAttributePopover (attr) {
         const config = this.props.config[attr] || {}
         const desc = this.props.desc[attr] || {};
-        console.log("desc", attr, config, desc)
         return (<Popover id={`attribute-${attr}`} title={attr}>
                 <div>Axis: {config.axis}</div>
                 <div>Color: {config.color}</div>
