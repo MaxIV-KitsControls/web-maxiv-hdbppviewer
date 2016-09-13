@@ -70,7 +70,7 @@ class Attributes extends React.Component {
                 {this.props.attributes
                  .filter(a => this.props.config[a].axis == axis)
                  .map(attr => (
-                       <option key={attr} value={attr} label={attr}>
+                       <option key={attr} value={attr} label={attr} title={attr}>
                          <span>     
                            <span style={{
                              fontWeight: "bold",
@@ -114,7 +114,7 @@ class Attributes extends React.Component {
 
         const attributeOptions = this.getCurrentAttributeOptions();
         const suggestOptions = this.state.suggestions.map(sugg => {
-            return <option key={sugg} value={sugg}
+            return <option key={sugg} value={sugg} title={sugg}
                            disabled={this.props.attributes.indexOf(sugg) != -1}>
                        {sugg}
                    </option>;
