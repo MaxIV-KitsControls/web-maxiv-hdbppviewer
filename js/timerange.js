@@ -63,8 +63,11 @@ class TimeRange extends React.Component {
     }
 
     handleApply() {
-        this.props.dispatch(setTimeRange(this.state.startDate.toDate(),
-                                         this.state.endDate.toDate()));
+        this.props.dispatch(setTimeRange(
+            this.state.startDate.toDate(),
+            // TODO: kind of a work around, to avoid the range from growing
+            // by one day... not sure what makes more sense here.
+            this.state.endDate.add(1, "day").add(-1, "second").toDate()));
         this.setState({show: false})
     }
 
@@ -74,11 +77,12 @@ class TimeRange extends React.Component {
     
     render () {
 
-        const startDate = this.props.timeRange.start.toDateString(),
-              endDate = this.props.timeRange.end.toDateString();
-        const dateString = (startDate == endDate?
-                            startDate :
-                            startDate + " - " + endDate);
+        const startDate = moment(this.props.timeRange.start.toDateString()),
+              endDate = moment(this.props.timeRange.end.toDateString())
+        const dateString = (startDate.toString() == endDate.toString()?
+                            startDate.format("YYYY-MM-DD") :
+                            startDate.format("YYYY-MM-DD") + " - " +
+                            endDate.format("YYYY-MM-DD"));
         /* TODO: the calendar popup is done in a pretty primitive way,
            but I could not get the bootstrap Overlay stuff to work with
            proper positioning. Might be worth looking into at some point. */
@@ -89,8 +93,8 @@ class TimeRange extends React.Component {
                              display: this.state.show? "block" : "none",
                              zIndex: "100",
                              right: "10px"}}>
-                  <DateRange startDate={moment(this.props.timeRange.start)}
-                             endDate={moment(this.props.timeRange.end)}
+                  <DateRange startDate={startDate}
+                             endDate={endDate}
                              onChange={this.handleSelect.bind(this)}
                              ranges={defaultRanges}
                              theme= {{Calendar : {width : '300px',
