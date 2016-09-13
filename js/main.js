@@ -50,10 +50,9 @@ class App extends React.Component {
                 </NavDropdown>
                 <NavItem eventKey={2} href="#">Help</NavItem>
                 </Nav>
-                <Nav pullRight>
-                <NavItem eventKey={3}><TimeRange/></NavItem>
-                </Nav>
-  </Navbar>            
+
+                <Navbar.Form pullRight eventKey={3}><TimeRange/></Navbar.Form>
+                </Navbar>            
                 </Row>
                 
                 <Row>
