@@ -89,24 +89,29 @@ class PlottedAttributes extends React.Component {
 
         return (
             <FormGroup>
-              <Panel>
-                <Well>
-                  <strong onClick={this.onYAxisClick.bind(this, 0)}>Left Y axis</strong>
-                  <ul style={{listStyle: "none", paddingLeft: "10px"}}>
-                    {leftYAxis}
-                  </ul>
-                
-                  <strong onClick={this.onYAxisClick.bind(this, 1)}>Right Y axis</strong>
-                  <ul style={{listStyle: "none", paddingLeft: "10px"}}>
-                    {rightYAxis}
-                  </ul>
-                </Well>
+
+              <Panel footer={
                 <Button bsStyle="danger" onClick={this.onRemove.bind(this)}
                         disabled={this.state.selected.length == 0}
                         title="Remove the currently selected attribute(s) from the plot">
                   Remove
                 </Button>
-              </Panel>
+                }>
+                  <strong onClick={this.onYAxisClick.bind(this, 0)}>
+                  Left Y axis
+                  </strong>
+                  <ul style={{listStyle: "none", paddingLeft: "10px"}}>
+                    {leftYAxis}
+                  </ul>
+                  <strong onClick={this.onYAxisClick.bind(this, 1)}>
+                    Right Y axis
+                  </strong>
+                  <ul style={{listStyle: "none", paddingLeft: "10px"}}>
+                    {rightYAxis}
+                  </ul>
+                </Panel>
+                
+
             </FormGroup>
         );
     }
@@ -225,26 +230,29 @@ class Attributes extends React.Component {
         );
         const plottedAttributes = <PlottedAttributes {...this.props}
                                       removeAttributes={this.onRemoveAttributes.bind(this)}/>
-        
+
+        const buttons = (
+                <DropdownButton bsStyle="success" title="Add"
+                     disabled={this.state.selectedSuggestions.length == 0}>
+                  <MenuItem eventKey={0}
+                            onSelect={this.onAddAttributes.bind(this)}>
+                    Left Y
+                  </MenuItem>
+                  <MenuItem eventKey={1}
+                            onSelect={this.onAddAttributes.bind(this)}>
+                    Right Y</MenuItem>
+                  </DropdownButton>);
+      
         return (
                 <div>
                   <form>               
-                    <Panel header={attributeFilter}>
-                      <FormGroup>
+                    <Panel header={attributeFilter} footer={buttons}>
                         <FormControl componentClass="select" ref="attributes"  
                                      multiple value={this.state.selectedSuggestions}
                                      style={{width: "100%", height: "150"}}
                                      onChange={this.onSelectSuggestions.bind(this)}>
                           {suggestOptions}
                         </FormControl>
-                      </FormGroup>                
-                      <DropdownButton bsStyle="success" title="Add"
-                                      disabled={this.state.selectedSuggestions.length == 0}>
-                        <MenuItem eventKey={0}
-                                  onSelect={this.onAddAttributes.bind(this)}>Left Y</MenuItem>
-                        <MenuItem eventKey={1}
-                                  onSelect={this.onAddAttributes.bind(this)}>Right Y</MenuItem>
-                      </DropdownButton>
                     </Panel>
                     {plottedAttributes}
                   </form>            
