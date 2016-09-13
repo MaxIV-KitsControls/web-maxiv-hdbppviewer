@@ -4,14 +4,114 @@ import {connect} from "react-redux";
 import { bindActionCreators } from 'redux'
 // import AutoSuggest from 'react-autosuggest';
 import fetch from "isomorphic-fetch";
-import { Input, Button, DropdownButton, MenuItem, Col, Panel,
-         Overlay, FormGroup, FormControl, Modal, Accordion, Table } from 'react-bootstrap';
+import { Input, Button, DropdownButton, MenuItem, Col, Panel, Popover,
+         OverlayTrigger, FormGroup, FormControl, Modal, Accordion, Table, Well } from 'react-bootstrap';
 
 import * as actionCreators from "./actions";
 import {debounce} from "./utils"
 
 
 class SearchResults extends React.Component {
+}
+
+
+class PlottedAttributes extends React.Component {
+
+    constructor() {
+        super();
+        this.state = {
+            selected: []
+        }
+    }
+
+    getAttributesOnYAxis(axis) {
+        return this.props.attributes
+            //.map(k => this.props.config[k])
+            .filter(a => this.props.config[a].axis == axis);
+    }
+
+    onAttributeClick(attribute) {
+        let selected;
+        if (this.state.selected.indexOf(attribute) == -1) {
+            selected = [...this.state.selected, attribute]
+        } else  {
+            selected = [...this.state.selected]
+            selected.splice(selected.indexOf(attribute), 1)
+        }
+        this.setState({selected});
+    }
+
+    onYAxisClick(axis) {
+        const attributes = this.getAttributesOnYAxis(axis);
+    }
+    
+    onRemove() {
+        this.props.removeAttributes(this.state.selected)
+    }
+
+    makeAttributePopover (attr) {
+        const config = this.props.config[attr] || {}
+        const desc = this.props.desc[attr] || {};
+        console.log("desc", attr, config, desc)
+        return (<Popover id={`attribute-${attr}`} title={attr}>
+                <div>Axis: {config.axis}</div>
+                <div>Color: {config.color}</div>
+                <div>Points: {desc.total_points}</div>
+                </Popover>)
+    }
+    
+    render () {
+        const leftYAxis = this.getAttributesOnYAxis(0)
+              .map(a => (
+                      <li key={a} onClick={this.onAttributeClick.bind(this, a)}
+                          style={{background: this.state.selected.indexOf(a) != -1? "lightgrey" : null }}>
+                        <OverlayTrigger trigger={["hover", "focus"]} placement="right"
+                                        overlay={this.makeAttributePopover(a)}>
+                          <div>
+                            <span style={{color: this.props.config[a].color}}>■</span>
+                            &nbsp;                         
+                            <span>{a}</span>
+                          </div>
+                        </OverlayTrigger>
+                      </li>)),
+              rightYAxis = this.getAttributesOnYAxis(1)
+              .map(a => (
+                      <li key={a} onClick={this.onAttributeClick.bind(this, a)}
+                                  style={{background: this.state.selected.indexOf(a) != -1? "lightgrey" : null }}>
+                        <OverlayTrigger trigger={["hover", "focus"]} placement="right"
+                                        overlay={this.makeAttributePopover(a)}>
+                          <div>
+                            <span style={{color: this.props.config[a].color}}>■</span>
+                            &nbsp;
+                            <span>{a}</span>
+                          </div>
+                        </OverlayTrigger>
+                      </li>));
+
+        return (
+            <FormGroup>
+              <Panel>
+                <Well>
+                  <strong onClick={this.onYAxisClick.bind(this, 0)}>Left Y axis</strong>
+                  <ul style={{listStyle: "none", paddingLeft: "10px"}}>
+                    {leftYAxis}
+                  </ul>
+                
+                  <strong onClick={this.onYAxisClick.bind(this, 1)}>Right Y axis</strong>
+                  <ul style={{listStyle: "none", paddingLeft: "10px"}}>
+                    {rightYAxis}
+                  </ul>
+                </Well>
+                <Button bsStyle="danger" onClick={this.onRemove.bind(this)}
+                        disabled={this.state.selected.length == 0}
+                        title="Remove the currently selected attribute(s) from the plot">
+                  Remove
+                </Button>
+              </Panel>
+            </FormGroup>
+        );
+    }
+    
 }
 
     
@@ -55,9 +155,8 @@ class Attributes extends React.Component {
         this.props.addAttributes(this.state.selectedSuggestions, axis);
     }
 
-    onRemoveAttributes () {
-        this.props.removeAttributes(this.state.selectedAttributes);
-        this.setState({selectedAttributes: []})
+    onRemoveAttributes (attributes) {
+        this.props.removeAttributes(attributes);
     }
 
     // return appropriate content for a select element that
@@ -125,6 +224,8 @@ class Attributes extends React.Component {
                     onChange={this.onPatternChange.bind(this)}
                     placeholder="e.g */vac/*/pressure"/>
         );
+        const plottedAttributes = <PlottedAttributes {...this.props}
+                                      removeAttributes={this.onRemoveAttributes.bind(this)}/>
         
         return (
                 <div>
@@ -146,30 +247,11 @@ class Attributes extends React.Component {
                                   onSelect={this.onAddAttributes.bind(this)}>Right Y</MenuItem>
                       </DropdownButton>
                     </Panel>
-                
-                    <FormGroup>
-                      <FormControl componentClass="select" ref="attributes" id="current-attributes"
-                                   multiple={true} value={this.state.selectedAttributes}
-                                   style={{width: "100%", height: "200"}}
-                                   onChange={this.onSelectAttributes.bind(this)}>
-                        {attributeOptions}
-                      </FormControl>
-                    </FormGroup>
-                    <FormGroup>                
-
-            
-                      <Button bsStyle="danger" onClick={this.onRemoveAttributes.bind(this)}
-                              disabled={this.state.selectedAttributes.length == 0}
-                              title="Remove the currently selected attribute(s) from the plot">
-                        Remove
-                      </Button>
-                    </FormGroup>
-                    {this.renderAttributeInfo()}
+                    {plottedAttributes}
                   </form>            
                 </div>
         );
     }
-    
 }
     
 
