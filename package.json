@@ -12,7 +12,8 @@
         "isomorphic-fetch": "2.2.1",
         "ramda": "0.21.0",
         "react-bootstrap": "0.30.3",
-        "moment": "2.14.1"
+        "moment": "2.14.1",
+        "react-date-range": "0.2.4"
     },
     "devDependencies": {
         "babel-core": "6.7.6",
