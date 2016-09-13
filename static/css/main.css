@@ -108,11 +108,6 @@ select option:disabled {
     font-weight: bold;
 }
 
-table.attribute-info {
-    color: white;
-    width: 100%;
-}
-
-table.attribute-info td {
-    padding: 2px;
+ul.y-axis-attributes li:hover {
+    background: #eee;
 }
