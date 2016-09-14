@@ -33,6 +33,7 @@ Ideas:
 """
 
 import base64
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import fnmatch
 import json
@@ -132,29 +133,8 @@ def encode_image(image):
     return base64.b64encode(data)
 
 
-async def get_image(hdbpp, request):
-
-    "Get images for a bunch of attributes; one image per y-axis"
-
-    # params = await request.json()
-    attributes = [get_attr_config(attr)
-                  for attr in request.GET["attributes"].split(",")]
-    time_range = [float(x) for x in request.GET["time_range"].split(",")]
-    size = [int(x) for x in request.GET["size"].split(",")]
-
-    logging.debug("Attributes: %r", attributes)
-    logging.debug("Time range: %r", time_range)
-    logging.debug("Image size: %r", size)
-
-    images = {}
-    per_axis = defaultdict(dict)
-    loop = asyncio.get_event_loop()
-
-    t0 = time.time()
-
-    # Note: the following should be done in a more pipeline:y way, since many
-    # parts can be done in parallel.
-
+async def get_data(hdbpp, attributes, time_range):
+    "Fetch data for all the given attributes over the time range"
     # First get data from the DB and sort by y-axis
     futures = {}
     for attribute in attributes:
@@ -170,53 +150,91 @@ async def get_image(hdbpp, request):
 
     # wait for all the attributes to be fetched
     await asyncio.gather(*futures.values())
-    t1 = time.time()
-    logging.info("Fetching took %f s", t1 - t0)
+    return {attribute["name"]: futures[attribute["name"]].result()
+            for attribute in attributes}
 
-    for attribute in attributes:
-        name = attribute["name"]
-        periods = futures[name].result()
+
+def get_extrema(attributes, results, time_range):
+    "Get the max/min values for each attribute"
+    per_axis = defaultdict(dict)
+    for info in attributes:
+        name = info["name"]
+        periods = results[name]
         data = pandas.concat(periods, ignore_index=True)
-
         logging.debug("Length of %s: %d", name, len(data))
 
         # find local extrema
-        y_axis = attribute["y_axis"]
+        y_axis = info["y_axis"]
         relevant = data[(data["t"] >= time_range[0]) &
                         (data["t"] <= time_range[1])]
         value_max = relevant["v"].max()
         value_min = relevant["v"].min()
 
         per_axis[y_axis][name] = dict(
-            data=data, info=attribute, points=len(relevant),
+            data=data, info=info, points=len(relevant),
             y_range=(value_min, value_max))
+    return per_axis
+
+
+def get_axis_limits(y_axis, data):
+    "Calculate the y limits for an axis"
+    axis_min = axis_max = None
+    nodata = set()
+    for name, data in data.items():
+        vmin, vmax = data["y_range"]
+        if np.isnan(vmin) or np.isnan(vmax):
+            # TODO: when will this actually happen?
+            nodata.add(name)
+            continue
+        if axis_min is None:
+            axis_min = vmin
+        else:
+            axis_min = min(axis_min, vmin)
+        if axis_max is None:
+            axis_max = vmax
+        else:
+            axis_max = max(axis_max, vmax)
+    return axis_min, axis_max, nodata
+
+
+async def get_image(hdbpp, request):
+
+    "Get images for a bunch of attributes; one image per y-axis"
+
+    # params = await request.json()
+    attributes = [get_attr_config(attr)
+                  for attr in request.GET["attributes"].split(",")]
+    time_range = [float(x) for x in request.GET["time_range"].split(",")]
+    size = [int(x) for x in request.GET["size"].split(",")]
+
+    logging.debug("Attributes: %r", attributes)
+    logging.debug("Time range: %r", time_range)
+    logging.debug("Image size: %r", size)
+
+    # Note: the following should be done in a more pipeline:y way, since many
+    # parts can be done in parallel.
+
+    t0 = time.time()
+
+    # get archived data from cassandra
+    data = await get_data(hdbpp, attributes, time_range)
+
+    t1 = time.time()
+    logging.info("Fetching took %f s", t1 - t0)
+
+    per_axis = get_extrema(attributes, data, time_range)
 
     # Now generate one image for each y-axis. Since all the attributes on an
     # axis will have the same scale, there's no point in sending one image
     # for each attribute.
+    images = {}
     descs = {}
     for y_axis, attributes in per_axis.items():
 
         logging.debug("Computing data for axis %r %r",
                       y_axis, sorted(attributes.keys()))
 
-        # find the extrema for the axis
-        axis_min = axis_max = None
-        nodata = set()
-        for name, data in attributes.items():
-            vmin, vmax = data["y_range"]
-            if np.isnan(vmin) or np.isnan(vmax):
-                # TODO: when will this actually happen?
-                nodata.add(name)
-                continue
-            if axis_min is None:
-                axis_min = vmin
-            else:
-                axis_min = min(axis_min, vmin)
-            if axis_max is None:
-                axis_max = vmax
-            else:
-                axis_max = max(axis_max, vmax)
+        axis_min, axis_max, nodata = get_axis_limits(y_axis, attributes)
 
         if axis_min is None or axis_max is None:
             logging.debug("Could not calculate limits for axis %r!", y_axis)
@@ -287,6 +305,7 @@ if __name__ == "__main__":
 
     app = aiohttp.web.Application(debug=True)
     loop = asyncio.get_event_loop()
+    loop.set_default_executor(ThreadPoolExecutor(10))
 
     hdbpp = HDBPlusPlusConnection(nodes=CASSANDRA_NODES,
                                   keyspace=CASSANDRA_KEYSPACE)
