@@ -42,7 +42,6 @@ export function addAttributes(attributes, axis) {
         })
         dispatch({type: SET_ATTRIBUTES_AXIS, attributes: attrs, axis})
         dispatch({type: ADD_ATTRIBUTES, attributes: attrs});
-        dispatch(fetchArchiveData());
     }
 }
 
