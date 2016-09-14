@@ -10,6 +10,7 @@ from cassandra.connection import InvalidRequestException
 import numpy as np
 import pandas as pd
 
+from util import memoized_ttl
 
 TANGO_TYPES = [
     'DevVarLongArray', 'DevVarStringArray', 'DevEnum', 'DevVarLongStringArray', 'DevVarFloatArray', 'DevVarStateArray', 'ConstDevString', 'DevVoid', 'DevLong64', 'DevVarULongArray', 'DevDouble', 'DevInt', 'DevULong64', 'DevState', 'DevUShort', 'DevVarUShortArray', 'DevShort', 'DevVarLong64Array', 'DevBoolean', 'DevVarDoubleStringArray', 'DevVarULong64Array', 'DevString', 'DevUChar', 'DevEncoded', 'DevVarCharArray', 'DevVarShortArray', 'DevVarBooleanArray', 'DevPipeBlob', 'DevFloat', 'DevVarDoubleArray', 'DevLong', 'DevULong']
@@ -46,7 +47,7 @@ class HDBPlusPlusConnection(object):
 
     @property
     def attributes(self):
-        return list(self.get_attributes())
+        return self.get_attributes()
 
     @property
     def configs(self):
@@ -68,6 +69,11 @@ class HDBPlusPlusConnection(object):
                 "where att_conf_id = ? and "
                 "recv_time > ? and recv_time < ?"
             ),
+            "latest_parameter": self.session.prepare(
+                "select * from att_parameter "
+                "where att_conf_id = ? "
+                "order by recv_time desc limit 1"
+            ),
             "data": {}
         }
         for data_type in get_hdbpp_data_types():
@@ -83,27 +89,37 @@ class HDBPlusPlusConnection(object):
                 logging.warn("Exception creating query for %s", data_type)
                 pass
 
+    @memoized_ttl(60)
     def get_attributes(self):
         # get a list of attributes, per domain/family/member
+        # Note that cassandra does not do stuff like wildcards so we
+        # have to fetch the whole attribute list (it won't be huge
+        # anyway, perhaps 100000 or so) and do matching ourselves.
         names = self.session.execute(self.prepared["attributes"])
         attributes = zip(names[0]["domain"],
                          names[0]["family"],
                          names[0]["member"],
                          names[0]["name"])
-        return attributes
+        return list(attributes)
 
+    @memoized_ttl(60)
     def get_att_configs(self):
-            result = self.session.execute(self.prepared["config"])
-            configs = {
-                att_name: {
-                    "id": att_conf_id,
-                    "data_type": data_type
-                }
-                for row in result
-                for att_name, att_conf_id, data_type
-                in zip(row["att_name"], row["att_conf_id"], row["data_type"])
+        result = self.session.execute(self.prepared["config"])
+        configs = {
+            att_name: {
+                "id": att_conf_id,
+                "data_type": data_type
             }
-            return configs
+            for row in result
+            for att_name, att_conf_id, data_type
+            in zip(row["att_name"], row["att_conf_id"], row["data_type"])
+        }
+        return configs
+
+    # def get_parameter(self, attr, start_time=None, end_time=None):
+    #     att_conf_id = self.configs[attr]
+    #     if not start_time or not end_time:
+    #         params = self.session.execute(self.prepared["latest_parameter"], att_conf_id)
 
     def get_attribute_data(self, attr,
                            start_time=None,
@@ -123,6 +139,13 @@ class HDBPlusPlusConnection(object):
         cache (and the query should be slightly faster?). One day
         shouldn't be too much data anyhow, e.g. <100000 points
         at 1s interval. This should be evaluated, though.
+
+        Note: the cache ignores today's date, as we cannot assume that
+        it's static. This logic needs checking, there might be
+        timezone issues etc. Also it might be worth thinking about a
+        more fine-grained caching scheme for this case, as it will be
+        quite a common use case to periodically reload today's data
+        for updating the plot.
         """
 
         # default to the last 24 hours
@@ -139,7 +162,9 @@ class HDBPlusPlusConnection(object):
                 for period in periods]
 
     def get_attribute_period(self, attr, period):
+        "Return the data for a given attribute and period (day)"
         if period == str(date.today()):
+            print("Today's data requested; not using cache")
             return self._get_attribute_period.__wrapped__(self, attr, period)
         try:
             return self._get_attribute_period(attr, period)
@@ -149,6 +174,9 @@ class HDBPlusPlusConnection(object):
 
     @lru_cache(maxsize=1024)
     def _get_attribute_period(self, attr, period):
+        """Cached version. Since past archived data never changes, it's
+        straightforward to cache it.
+        """
         config = self.configs[attr]
         query = self.prepared["data"][config["data_type"]]
         attr_bound = query.bind([config["id"], period])
@@ -156,9 +184,9 @@ class HDBPlusPlusConnection(object):
         dfs = []
         while True:
             rows = res.current_rows[0]
-            df = pd.DataFrame(dict(t=timestampify(rows["data_time"]),
-                                   v=rows["value_r"],
-                                   e=rows["error_desc"]))
+            df = pd.DataFrame(dict(v=rows["value_r"],
+                                   e=rows["error_desc"],
+                                   t=timestampify(rows["data_time"])))
             dfs.append(df)
             if res.has_more_pages:
                 res.fetch_next_page()
