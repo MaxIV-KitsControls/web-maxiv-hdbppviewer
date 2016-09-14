@@ -7,7 +7,7 @@ import fetch from "isomorphic-fetch";
 import { Input, Button, DropdownButton, MenuItem, Col, Panel, Popover,
          OverlayTrigger, FormGroup, FormControl, Modal, Accordion, Table, Well } from 'react-bootstrap';
 
-import {getSuggestions} from "./actions";
+import { getSuggestions, addAttributes } from "./actions";
 
 
 class SearchResults extends React.Component {
@@ -261,7 +261,8 @@ function mapStateToProps (state) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        getSuggestions: pattern => dispatch(getSuggestions(pattern))
+        getSuggestions: pattern => dispatch(getSuggestions(pattern)),
+        addAttributes: (attributes, axis) => dispatch(addAttributes(attributes, axis))
     }
 }
 
