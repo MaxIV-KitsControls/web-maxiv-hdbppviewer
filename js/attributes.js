@@ -219,7 +219,7 @@ class Attributes extends React.Component {
                                       removeAttributes={this.onRemoveAttributes.bind(this)}/>
 
         const buttons = (
-                <DropdownButton bsStyle="success" title="Add"
+                <DropdownButton id="add-attribute" bsStyle="success" title="Add"
                      disabled={this.state.selectedSuggestions.length == 0}>
                   <MenuItem eventKey={0}
                             onSelect={this.onAddAttributes.bind(this)}>
@@ -236,7 +236,7 @@ class Attributes extends React.Component {
                     <Panel header={attributeFilter} footer={buttons}>
                         <FormControl componentClass="select" ref="attributes"  
                                      multiple value={this.state.selectedSuggestions}
-                                     style={{width: "100%", height: "150"}}
+                                     style={{width: "100%", height: "150px"}}
                                      onChange={this.onSelectSuggestions.bind(this)}>
                           {suggestOptions}
                         </FormControl>

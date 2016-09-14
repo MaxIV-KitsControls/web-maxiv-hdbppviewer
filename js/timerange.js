@@ -77,12 +77,15 @@ class TimeRange extends React.Component {
     
     render () {
 
-        const startDate = moment(this.props.timeRange.start.toDateString()),
-              endDate = moment(this.props.timeRange.end.toDateString())
-        const dateString = (startDate.toString() == endDate.toString()?
-                            startDate.format("YYYY-MM-DD") :
-                            startDate.format("YYYY-MM-DD") + " - " +
-                            endDate.format("YYYY-MM-DD"));
+        const startDate = moment(this.props.timeRange.start),
+              endDate = moment(this.props.timeRange.end),
+              startDateString = startDate.format("YYYY-MM-DD"),
+              endDateString = endDate.format("YYYY-MM-DD");
+        
+        const dateString = (startDateString == endDateString ?
+                            startDateString :
+                            startDateString + " - " + endDateString);
+                            
         /* TODO: the calendar popup is done in a pretty primitive way,
            but I could not get the bootstrap Overlay stuff to work with
            proper positioning. Might be worth looking into at some point. */
@@ -106,7 +109,7 @@ class TimeRange extends React.Component {
                             title="Close the calendar withput changes"
                             onClick={this.handleShow.bind(this)}>Cancel</Button>
                   </ButtonToolbar>
-            </div>);
+                </div>);
 
         return (<div ref="trigger">
                   <Button  onClick={this.handleShow.bind(this)}

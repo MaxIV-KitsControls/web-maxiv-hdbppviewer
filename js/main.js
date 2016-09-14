@@ -51,7 +51,7 @@ class App extends React.Component {
                 <NavItem eventKey={2} href="#">Help</NavItem>
                 </Nav>
 
-                <Navbar.Form pullRight eventKey={3}><TimeRange/></Navbar.Form>
+                <Navbar.Form pullRight><TimeRange/></Navbar.Form>
                 </Navbar>            
                 </Row>
                 
