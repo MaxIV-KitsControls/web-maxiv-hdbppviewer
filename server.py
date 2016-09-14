@@ -20,13 +20,15 @@ Missing functionality:
 Improvements needed:
 - data readout and packaging is hacky
 - Re-loads the view each time anything changes, maybe possible
-  to be smarter here?
+  to be smarter here? We're caching db results at least.
 - UI is very basic
 - Plotting is a mess
 - mouseover stuff messy
+- Probably using pandas etc inefficiently
 
 Ideas:
 - Use websocket to send data as we get it instead of afterwards?
+- use dask for lazy parallelization
 
 """
 
@@ -52,6 +54,8 @@ import cassandra
 import pandas
 import datashader
 import xarray
+import dask.dataframe as dd
+from dask.delayed import delayed
 
 from hdbpp import HDBPlusPlusConnection
 
@@ -105,9 +109,11 @@ def get_attributes(hdbpp, request):
     max_n = request.GET.get("max", 100)
     regex = fnmatch.translate(search)
     logging.info("search: %s", search)
-    # loop = asyncio.get_event_loop()  # TODO: this looks stupid
+    loop = asyncio.get_event_loop()
 
-    attributes = sorted("%s/%s/%s/%s" % attr for attr in hdbpp.attributes)
+    result = yield from loop.run_in_executor(None, hdbpp.get_attributes)
+    attributes = sorted("%s/%s/%s/%s" % attr
+                        for attr in result)
 
     matches = [attr for attr in attributes
                if re.match(regex, attr, re.IGNORECASE)]
@@ -169,8 +175,8 @@ async def get_image(hdbpp, request):
 
     for attribute in attributes:
         name = attribute["name"]
-        future = futures[name]
-        data = pandas.concat(future.result(), ignore_index=True)
+        periods = futures[name].result()
+        data = pandas.concat(periods, ignore_index=True)
 
         logging.debug("Length of %s: %d", name, len(data))
 
