@@ -3,6 +3,7 @@ import fetch from "isomorphic-fetch";
 import {debounce} from "./utils";
 
 
+export const RECEIVE_SUGGESTIONS = "RECEIVE_SUGGESTIONS";
 export const FETCH_ARCHIVE_DATA = "FETCH_ARCHIVE_DATA";
 export const RECEIVE_ARCHIVE_DATA = "RECEIVE_ARCHIVE_DATA";
 export const RECEIVE_ARCHIVE_DESCS = "RECEIVE_ARCHIVE_DESCS";
@@ -14,7 +15,18 @@ export const SET_ATTRIBUTES_AXIS = "SET_ATTRIBUTES_AXIS";
 export const SET_ATTRIBUTE_COLOR = "SET_ATTRIBUTE_COLOR";
 
 
+export function getSuggestions(pattern) {
+    // ask the server for attributes matching the given pattern
+    return debounce(function (dispatch) {
+        fetch(`/attributes?search=${pattern}`)
+            .then(response => response.json())
+            .then(data => dispatch({type: RECEIVE_SUGGESTIONS, suggestions: data.attributes}));
+    }, 500);  // no point in asking too often
+}
+
+
 export function addAttributes(attributes, axis) {
+    // add a list of attributes to the given axis in the plot
     return function (dispatch, getState) {
         let attrs = [];
         attributes.forEach(attr => {
@@ -36,24 +48,22 @@ export function addAttributes(attributes, axis) {
 
 
 export function removeAttributes(attributes) {
+    // remove a list of attributes from the plot
     return {type: REMOVE_ATTRIBUTES, attributes}
 }
 
 
 export function setTimeRange(startTime, endTime) {
+    // change the current time range shown in the plot
     return function (dispatch) {
         dispatch({type: SET_TIME_RANGE, startTime, endTime});
-        // dispatch(fetchArchiveData(startTime, endTime, imageWidth, imageHeight));
     }
 }
 
 var latestFetchTime = 0
 export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
     return function (dispatch, getState) {
-        console.log("fetchArchiveData", startTime, endTime, imageWidth, imageHeight)
-        //slowFetch(dispatch, getState);
         let state = getState();
-        // const attrs = state.attributes;
         const {start, end} = state.timeRange;
         const attrs = state.attributes.map(attr => {
             const color = encodeURIComponent(state.attributeConfig[attr].color),
@@ -61,7 +71,6 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
             return `${attr}:${axis}:${color}`;
         });
         let url = `/image?attributes=${attrs.join(",")}&time_range=${start.getTime()},${end.getTime()}&size=${imageWidth},${imageHeight}`
-        console.log(url);
         let fetchTime = (new Date()).getTime();
         latestFetchTime = fetchTime;
         fetch(url)
@@ -74,7 +83,6 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                 return response.json();
             })
             .then(data => {
-                console.log("received data", data);
                 if (latestFetchTime > fetchTime)
                     return;                                          
                 dispatch({type: RECEIVE_ARCHIVE_DESCS, descs: data.descs});

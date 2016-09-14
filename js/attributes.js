@@ -7,8 +7,7 @@ import fetch from "isomorphic-fetch";
 import { Input, Button, DropdownButton, MenuItem, Col, Panel, Popover,
          OverlayTrigger, FormGroup, FormControl, Modal, Accordion, Table, Well } from 'react-bootstrap';
 
-import * as actionCreators from "./actions";
-import {debounce} from "./utils"
+import {getSuggestions} from "./actions";
 
 
 class SearchResults extends React.Component {
@@ -121,23 +120,15 @@ class Attributes extends React.Component {
         super();
         this.state = {
             pattern: '',
-            suggestions: [],
             selectedSuggestions: [],
             selectedAttributes: [],
             showSuggestions: false
         };
     }
 
-    // TODO: move this to an action!
-    getSuggestions = debounce((pattern) => {
-        fetch(`/attributes?search=${pattern}`)
-            .then(response => response.json())
-            .then(data => this.setState({suggestions: data.attributes}));
-    }, 500)
-    
     onPatternChange (event) {
         let pattern = event.target.value;
-        this.getSuggestions(pattern);
+        this.props.getSuggestions(pattern);
         this.setState({pattern});
     }
 
@@ -212,7 +203,7 @@ class Attributes extends React.Component {
     render () {
 
         const attributeOptions = this.getCurrentAttributeOptions();
-        const suggestOptions = this.state.suggestions.map(sugg => {
+        const suggestOptions = this.props.suggestions.map(sugg => {
             return <option key={sugg} value={sugg} title={sugg}
                            disabled={this.props.attributes.indexOf(sugg) != -1}>
                        {sugg}
@@ -262,20 +253,23 @@ function mapStateToProps (state) {
     return {
         attributes: state.attributes,
         config: state.attributeConfig,
-        desc: state.descriptions
+        desc: state.descriptions,
+        suggestions: state.attributeSuggestions
     }
 }
 
 
 function mapDispatchToProps(dispatch) {
-    return bindActionCreators(actionCreators, dispatch);
+    return {
+        getSuggestions: pattern => dispatch(getSuggestions(pattern))
+    }
 }
 
 
 export default connect(mapStateToProps, mapDispatchToProps)(Attributes);
 
 
-
+// helper
 function getSelectedOptions(select) {
     return [].filter.call(select.options, function (o) {
         return o.selected;

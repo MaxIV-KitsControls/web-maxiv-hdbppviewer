@@ -1,11 +1,22 @@
 import R from "ramda";
 
-import {RECEIVE_ARCHIVE_DATA, RECEIVE_DETAILS,
-        RECEIVE_ARCHIVE_DESCS,
-        ADD_ATTRIBUTES, REMOVE_ATTRIBUTES, SET_ATTRIBUTES_AXIS,
-        SET_ATTRIBUTE_COLOR,
-        SET_TIME_RANGE} from "./actions"
+import {
+    RECEIVE_SUGGESTIONS,
+    RECEIVE_ARCHIVE_DATA, RECEIVE_DETAILS,
+    RECEIVE_ARCHIVE_DESCS,
+    ADD_ATTRIBUTES, REMOVE_ATTRIBUTES, SET_ATTRIBUTES_AXIS,
+    SET_ATTRIBUTE_COLOR,
+    SET_TIME_RANGE
+} from "./actions"
 
+
+export function attributeSuggestions(state=[], action) {
+    switch (action.type) {
+    case RECEIVE_SUGGESTIONS:
+        return action.suggestions;
+    }
+    return state;
+}
 
 export function archiveData(state={}, action) {
     switch (action.type) {
