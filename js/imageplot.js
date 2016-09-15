@@ -18,6 +18,22 @@ var customTimeFormat = d3.time.format.multi([
 ]);
 
 
+function closestIndex (num, arr) {
+    let curr = arr[0],
+        diff = Math.abs (num - curr),
+        index = -1;
+    for (var val = 0; val < arr.length; val++) {
+        let newdiff = Math.abs (num - arr[val]);
+        if (newdiff < diff) {
+            diff = newdiff;
+            curr = arr[val];
+            index = val;
+        }
+    }
+    return index;
+}
+
+
 export class ImagePlot {
 
     constructor(containerElement, onChange) {
@@ -37,7 +53,8 @@ export class ImagePlot {
         this.yScales = {}
         this.yAxes = {}
         this.yAxisElements = {}
-        this.images = {};        
+        this.images = {};
+        this.indicators = {};
         
         const svg = d3.select(this.containerElement)
               .append("svg")
@@ -50,7 +67,6 @@ export class ImagePlot {
             .domain([new Date(Date.now() - 24*3600e3),
                      new Date(Date.now())]);
 
-        
         this.zoom = d3.behavior.zoom()
             .x(this.x)
             .size([this.innerWidth, this.innerHeight])
@@ -95,6 +111,11 @@ export class ImagePlot {
         this.inner = this.clipBox.append("g")
             // .attr("transform", `translate(${Y_AXIS_WIDTH},${this.margin.top})`)
 
+        this.cursorLineX = this.inner.append("svg:line")
+            .classed({cursor: true, x: true})
+            .attr("y1", 0)
+            .attr("y2", this.innerHeight)
+        
         this.addYAxis()
         this.addYAxis()                
                 
@@ -104,8 +125,6 @@ export class ImagePlot {
 
         // this.zoom.y(this.yScales[0]);
 
-        // this.cursorLineX = this.inner.append("svg:line")
-        //     .classed({cursor: true, x: true})
 
         // this.cursorLineY = this.inner.append("svg:line")
         //     .classed({cursor: true, y: true})                
@@ -146,64 +165,130 @@ export class ImagePlot {
 
         this.yAxisElements[name] = element;
 
+        // one image per axis, for displaying data
         this.images[name] = [
             this.inner
                 .append("svg:image")
                 .attr("width", this.innerWidth - Y_AXIS_WIDTH)
-                .attr("height", this.innerHeight)
-                .style("fill", "yellow")
-                .on("mousemove", () => this.showDescription())
-                .on("mouseenter", () => this.showDescription())
-                .on("mouseleave", () => this.hideDescription()),
+                .attr("height", this.innerHeight),
             this.inner
                 .append("svg:image")
-                // .attr("opacity", 0.5)
-                // .attr("display", "none")
                 .attr("width", this.innerWidth - Y_AXIS_WIDTH)
                 .attr("height", this.innerHeight)
-                .on("mousemove", () => this.showDescription())
-                .on("mouseenter", () => this.showDescription())
-                .on("mouseleave", () => this.hideDescription())            
         ];
+
+        this.inner
+            .on("mousemove", this.showDescription.bind(this))
+            .on("mouseenter", this.showDescription.bind(this))
+            .on("mouseleave", this.hideDescription.bind(this))
 
         return name;
         
     }
     
     showDescription() {
-        // TODO: this is just a dirty hack to demo the functionality,
-        // it needs to be redone in a proper way.
-        const [x, y] = d3.mouse(this.inner.node());
-        [Object.keys(this.descriptions)[0]].forEach((attr) => {
-            const i = Math.round(x),
-                  desc = this.descriptions[attr],
-                  max = desc.max[i], min = desc.min[i],
-                  color = this.config[attr].color;
+
+        // Display some overlay elements that give more detail about the points
+        // close to the mouse.
+        
+        const [x, y] = d3.mouse(this.inner.node()),
+              i = Math.round(x);
+
+        const attributes = Object.keys(this.descriptions);
+        let distances = [], indices = {};
+
+        // first, go through all the attributes in the plot and find
+        // where the closest point is.
+        attributes.forEach(attr => {
+            const desc = this.descriptions[attr],
+                  config = this.config[attr],
+                  index = closestIndex(i, desc.indices);
+            indices[attr] = index;
+
+            // Filled circle indicates a point
+            let indicator = this.indicators[attr];
+            if (!indicator) {
+                indicator = this.inner.append("circle")
+                    .attr("r", 5)
+                    .style("fill", config.color)
+                    .style("pointer-events", "none")
+                this.indicators[attr] = indicator;
+            }
+            
+            const x = desc.indices[index],
+                  yScale = this.yScales[this.config[attr].axis],
+                  ymax = yScale(desc.max[index]),
+                  ymin = yScale(desc.min[index]);
+            
+            // Calculate how "close" the pointer is to the line
+            // TODO: improve this!
+            distances.push(Math.abs((y - ymin) - (ymax - y)));
+            
+            if (desc.count[index] == 1) {
+                // If there's exactly one point in the column, we show
+                // a nice indicator that tells where it is.
+                indicator
+                    .style("display", null)
+                    .attr("cx", x)
+                    .attr("cy", ymax-5)
+            } else {
+                // Don't show indicator if it's an "aggregated" point
+                // i.e. if there's more than one point in the column
+                indicator.style("display", "none");
+            }
+
+        });
+
+        // find the line closest to the cursor
+        const closest = attributes[distances.indexOf(Math.min(...distances))],
+              index = indices[closest],
+              desc = this.descriptions[closest],
+              count = desc.count[index],
+              max = desc.max[index].toPrecision(5),
+              min = desc.min[index].toPrecision(5),
+              // mean = desc.mean[index].toPrecision(5),
+              axis = this.config[closest].axis,
+              color = this.config[closest].color;
+
+        // vertical line indicating where the cursor is
+        this.cursorLineX
+            .style("display", "block")            
+            .attr("x1", i+.5)
+            .attr("x2", i+.5)
+
+        // Display a text box that reveals some numbers about the closest point
+        let text;
+        if (count == 1) {
+            text = `<b style="color:${color};">${closest}</b><br>Value: ${max}`
+        } else {
+            text = (`<b style="color:${color};">${closest}</b>` +
+                    `<br>Points: ${count}` +
+                    `<br>Max: ${max}` +
+                    `<br>Min: ${min}`)
+                    // `<br>Mean: ${mean}`)
+        }
+        
+        // display a box with numeric info close to the point
+        if (axis === 0) {
+            // attribute on left axis
             this.descElement
                 .style("display", "block")
-                .style("left", this.margin.left + i + 10)
-                .style("bottom", this.innerHeight - (max? this.yScales[0](max) : y) + 40)
-                .html(`<b style="color:${color};">${attr}</b><br>Max: ${max}<br>Min: ${min}`)
-
-            // this.cursorLineX
-            //     .style("display", "block")            
-            //     .attr("x1", i+.5)
-            //     .attr("y1", this.yScales[0](0))
-            //     .attr("x2", i+.5)
-            //     .attr("y2", this.yScales[0](min));
-
-            // const ymin = this.yScales[0](min),
-            //       ymax = this.yScales[0](max);
-            // const width = Math.abs(ymax - ymin);
-            
-            // this.cursorLineY
-            //     .style("display", "block")
-            //     .attr("x1", 0)
-            //     .attr("y1", ymin - width/2)
-            //     .attr("x2", i)
-            //     .attr("y2", ymin - width/2)
-            //     .style("stroke-width", width)
-        })
+                .style("left", null)
+                .style("right", Math.max(0, this.innerWidth - desc.indices[index] + this.margin.right + 15 + 5))
+                .style("bottom", Math.round(this.innerHeight - (max? this.yScales[axis](max) : y) +
+                                            this.margin.bottom) + 5)
+                .html(text)
+        } else {
+            // attribute on right axis
+            this.descElement
+                .style("display", "block")
+                .style("right", null)
+                .style("left", Math.min(this.innerWidth - this.margin.left - this.margin.right,
+                                        this.margin.left + desc.indices[index] + 15 + 5))
+                .style("bottom", Math.round(this.innerHeight - (max? this.yScales[axis](max) : y) +
+                                            this.margin.bottom + 5))
+                .html(text);
+        }
     }
 
     hideDescription() {
@@ -211,8 +296,8 @@ export class ImagePlot {
             .style("display", "none")
         // this.cursorLineY
         //     .style("display", "none")            
-        // this.cursorLineX
-        //     .style("display", "none")            
+        this.cursorLineX
+            .style("display", "none")            
     }
     
     removeYAxis(name) {
@@ -259,6 +344,7 @@ export class ImagePlot {
                 .transition()
                 .attr("transform", `translate(${this.x(x_range[0])},0)` +
                       `scale(1,1)`)
+            
             this.yScales[axis].domain(data[axis].y_range);            
             this.yAxisElements[axis]
                 .transition()

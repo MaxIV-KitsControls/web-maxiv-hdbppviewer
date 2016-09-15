@@ -81,26 +81,33 @@ def make_image(data, time_range, y_range, size):
     cvs = datashader.Canvas(x_range=time_range, y_range=y_range,
                             plot_width=size[0], plot_height=size[1])
     # aggregate some useful measures
-    agg = cvs.line(source=data["data"],
-                   x="t", y="v",
-                   agg=datashader.summary(
-                       count=datashader.count("v"),
-                       vmean=datashader.mean("v"),
-                       vmin=datashader.min("v"),
-                       vmax=datashader.max("v")
-                   ))
+    agg_line = cvs.line(source=data["data"], x="t", y="v")
+    agg_points = cvs.points(source=data["data"],
+                         x="t", y="v",
+                         agg=datashader.summary(
+                             count=datashader.count("v"),
+                             vmean=datashader.mean("v"),
+                             vmin=datashader.min("v"),
+                             vmax=datashader.max("v")
+                         ))
     color = data["info"].get("color", "red")
-    image = datashader.transfer_functions.shade(agg["count"], cmap=[color])
+    image = datashader.transfer_functions.shade(agg_line, cmap=[color])
 
-    # TODO: make this "sparse" if there are gaps where there are no
-    # points.
-    vmin = np.nanmin(agg["vmin"].values, axis=0)
-    vmax = np.nanmax(agg["vmax"].values, axis=0)
-    desc = {
-        "total_points": data["points"],
-        "min": np.where(np.isnan(vmin), None, vmin).tolist(),
-        "max": np.where(np.isnan(vmax), None, vmax).tolist()
-    }
+    with timer("Making hover info took %f s"):
+        indices = np.where(np.nanmax(agg_points["count"].values, axis=0))[0]
+        vmin = np.take(np.nanmin(agg_points["vmin"].values, axis=0), indices)
+        vmax = np.take(np.nanmax(agg_points["vmax"].values, axis=0), indices)
+        # vmean = np.take(np.nanmax(agg_points["vmean"].values, axis=0), indices)
+        # TODO: aggregating the mean is not quite this simple...
+        count = np.take(np.sum(agg_points["count"].values, axis=0), indices)
+        desc = {
+            "total_points": data["points"],
+            "indices": indices.tolist(),
+            "min": np.where(np.isnan(vmin), None, vmin).tolist(),
+            "max": np.where(np.isnan(vmax), None, vmax).tolist(),
+            # "mean": np.where(np.isnan(vmean), None, vmean).tolist(),
+            "count": np.where(np.isnan(count), None, count).tolist()
+        }
     return image, desc
 
 
