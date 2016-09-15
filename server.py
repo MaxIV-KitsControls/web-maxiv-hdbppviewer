@@ -11,7 +11,6 @@ Basic functionality:
 - min/max etc on mouseover
 
 Missing functionality:
-- removing lines
 - Log Y axes
 - dialog for setting time range
 - configure color, Y-axis etc for each line
@@ -34,6 +33,7 @@ Ideas:
 
 import base64
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from functools import partial
 import fnmatch
 import json
@@ -104,15 +104,14 @@ def make_image(data, time_range, y_range, size):
     return image, desc
 
 
-@asyncio.coroutine
-def get_attributes(hdbpp, request):
+async def get_attributes(hdbpp, request):
     search = request.GET["search"]
     max_n = request.GET.get("max", 100)
     regex = fnmatch.translate(search)
     logging.info("search: %s", search)
     loop = asyncio.get_event_loop()
 
-    result = yield from loop.run_in_executor(None, hdbpp.get_attributes)
+    result = await loop.run_in_executor(None, hdbpp.get_attributes)
     attributes = sorted("%s/%s/%s/%s" % attr
                         for attr in result)
 
@@ -197,36 +196,10 @@ def get_axis_limits(y_axis, data):
     return axis_min, axis_max, nodata
 
 
-async def get_image(hdbpp, request):
+def make_axis_images(per_axis, time_range, size):
 
-    "Get images for a bunch of attributes; one image per y-axis"
+    "Create one image for each axis containing attributes"
 
-    # params = await request.json()
-    attributes = [get_attr_config(attr)
-                  for attr in request.GET["attributes"].split(",")]
-    time_range = [float(x) for x in request.GET["time_range"].split(",")]
-    size = [int(x) for x in request.GET["size"].split(",")]
-
-    logging.debug("Attributes: %r", attributes)
-    logging.debug("Time range: %r", time_range)
-    logging.debug("Image size: %r", size)
-
-    # Note: the following should be done in a more pipeline:y way, since many
-    # parts can be done in parallel.
-
-    t0 = time.time()
-
-    # get archived data from cassandra
-    data = await get_data(hdbpp, attributes, time_range)
-
-    t1 = time.time()
-    logging.info("Fetching took %f s", t1 - t0)
-
-    per_axis = get_extrema(attributes, data, time_range)
-
-    # Now generate one image for each y-axis. Since all the attributes on an
-    # axis will have the same scale, there's no point in sending one image
-    # for each attribute.
     images = {}
     descs = {}
     for y_axis, attributes in per_axis.items():
@@ -291,8 +264,48 @@ async def get_image(hdbpp, request):
         # TODO: also grab configuration, e.g. label, unit, ...
         # Note that this can also change over time!
 
-    t2 = time.time()
-    logging.info("Processing took %f s", t2 - t1)
+    return images, descs
+
+
+@contextmanager
+def timer(msg):
+    start = time.time()
+    yield
+    logging.debug(msg, time.time() - start)
+
+
+async def get_image(hdbpp, request):
+
+    "Get images for a bunch of attributes; one image per y-axis"
+
+    # params = await request.json()
+    attributes = [get_attr_config(attr)
+                  for attr in request.GET["attributes"].split(",")]
+    time_range = [float(x) for x in request.GET["time_range"].split(",")]
+    size = [int(x) for x in request.GET["size"].split(",")]
+
+    logging.debug("Attributes: %r", attributes)
+    logging.debug("Time range: %r", time_range)
+    logging.debug("Image size: %r", size)
+
+    # Note: the following should be done in a more pipeline:y way, since many
+    # parts can be done in parallel.
+
+    # get archived data from cassandra
+    with timer("Fetching from database took %f s"):
+        data = await get_data(hdbpp, attributes, time_range)
+
+    # calculate the max/min for each y-axis
+    with timer("Calculating extrema took %f s"):
+        per_axis = get_extrema(attributes, data, time_range)
+
+    # Now generate one image for each y-axis. Since all the attributes on an
+    # axis will have the same scale, there's no point in sending one image
+    # for each attribute.
+    loop = asyncio.get_event_loop()
+    with timer("Processing took %f s"):
+        images, descs = await loop.run_in_executor(
+            None, partial(make_axis_images, per_axis, time_range, size))
 
     data = json.dumps({"images": images, "descs": descs})
     return web.Response(body=data.encode("utf-8"),
