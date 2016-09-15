@@ -12,17 +12,35 @@ import pandas as pd
 
 from util import memoized_ttl
 
-TANGO_TYPES = [
-    'DevVarLongArray', 'DevVarStringArray', 'DevEnum', 'DevVarLongStringArray', 'DevVarFloatArray', 'DevVarStateArray', 'ConstDevString', 'DevVoid', 'DevLong64', 'DevVarULongArray', 'DevDouble', 'DevInt', 'DevULong64', 'DevState', 'DevUShort', 'DevVarUShortArray', 'DevShort', 'DevVarLong64Array', 'DevBoolean', 'DevVarDoubleStringArray', 'DevVarULong64Array', 'DevString', 'DevUChar', 'DevEncoded', 'DevVarCharArray', 'DevVarShortArray', 'DevVarBooleanArray', 'DevPipeBlob', 'DevFloat', 'DevVarDoubleArray', 'DevLong', 'DevULong']
 
-
-def get_hdbpp_data_types():
-    return [
-        "%s_%s_%s" % (fmt, typ.lower(), per)
-        for fmt in ("scalar", "array")
-        for typ in TANGO_TYPES
-        for per in ("ro", "rw")
-    ]
+HDBPP_DATA_TYPES = [
+    "scalar_devboolean_ro",
+    "scalar_devboolean_rw",
+    "scalar_devdouble_ro",
+    "scalar_devdouble_rw",
+    "scalar_devencoded_ro",
+    "scalar_devencoded_rw",
+    "scalar_devfloat_ro",
+    "scalar_devfloat_rw",
+    "scalar_devlong64_ro",
+    "scalar_devlong64_rw",
+    "scalar_devlong_ro",
+    "scalar_devlong_rw",
+    "scalar_devshort_ro",
+    "scalar_devshort_rw",
+    "scalar_devstate_ro",
+    "scalar_devstate_rw",
+    "scalar_devstring_ro",
+    "scalar_devstring_rw",
+    "scalar_devuchar_ro",
+    "scalar_devuchar_rw",
+    "scalar_devulong64_ro",
+    "scalar_devulong64_rw",
+    "scalar_devulong_ro",
+    "scalar_devulong_rw",
+    "scalar_devushort_ro",
+    "scalar_devushort_rw"
+]
 
 
 timestampify = np.vectorize(lambda x: x.timestamp()*1000, otypes=[np.float64])
@@ -76,7 +94,7 @@ class HDBPlusPlusConnection(object):
             ),
             "data": {}
         }
-        for data_type in get_hdbpp_data_types():
+        for data_type in HDBPP_DATA_TYPES:
             try:
                 self.prepared["data"][data_type] = self.session.prepare(
                     ("SELECT data_time,value_r,error_desc "
