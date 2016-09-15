@@ -29,56 +29,57 @@ let store = createStoreWithMiddleware(reducer);
 class App extends React.Component {
 
     render () {
-        return (
-                <div>
-                <Grid fluid={true}>
-                <Row>
-  <Navbar>
-    <Navbar.Header>
-      <Navbar.Brand>
-        <a href="#">HDB++ Archiving Viewer</a>
-      </Navbar.Brand>
-    </Navbar.Header>
-    <Nav>
-      <NavDropdown eventKey={1} title="Database" id="basic-nav-dropdown">
-        <MenuItem eventKey={3.1}>g-v-csdb-0</MenuItem>
-        <MenuItem eventKey={3.2}>b-femtomax-csdb-0</MenuItem>
-        <MenuItem eventKey={3.3}>b-veritas-csdb-0</MenuItem>
-        <MenuItem eventKey={3.4}>...</MenuItem>
-        <MenuItem divider/>
-        <MenuItem eventKey={3.3}>All</MenuItem>
-                </NavDropdown>
-                <NavItem eventKey={2} href="#">Help</NavItem>
-                </Nav>
+        return (<div>
+                  <Grid fluid={true}>
+                    <Row>
+                      <Navbar>
+                        <Navbar.Header>
+                          <Navbar.Brand>
+                            <a href="#">HDB++ Archive Viewer</a>
+                          </Navbar.Brand>
+                        </Navbar.Header>
+                        <Nav>
+                          <NavDropdown eventKey={1} title="Database" id="basic-nav-dropdown">
+                          <MenuItem eventKey={3.1}>g-v-csdb-0</MenuItem>
+                          <MenuItem eventKey={3.2}>b-femtomax-csdb-0</MenuItem>
+                          <MenuItem eventKey={3.3}>b-veritas-csdb-0</MenuItem>
+                          <MenuItem eventKey={3.4}>...</MenuItem>
+                          <MenuItem divider/>
+                          <MenuItem eventKey={3.3}>All</MenuItem>
+                          </NavDropdown>
+                          <NavItem eventKey={2} href="#">Help</NavItem>
+                        </Nav>
 
-                <Navbar.Form pullRight><TimeRange/></Navbar.Form>
-                </Navbar>            
-                </Row>
+                        <Navbar.Form pullRight>
+                          <TimeRange/>
+                        </Navbar.Form>
+                      </Navbar>            
+                    </Row>
                 
-                <Row>
-                <Col sm={3} md={3}>
-                <AttributeSearch/>
-                </Col>
-                <Col sm={9} md={9} xs={9}>
-                   <PlotWrapper/>
-                </Col>
-                </Row>
-                </Grid>
+                    <Row>
+                      <Col sm={3} md={3}>
+                        <AttributeSearch/>
+                      </Col>
+                      <Col sm={9} md={9} xs={9}>
+                        <PlotWrapper/>
+                      </Col>
+                    </Row>
+                  </Grid>
                 </div>
          );
     }
-    
 }
 
 
 render((<Provider store={store}>
-        <App/>
+          <App/>
         </Provider>),
-       document.getElementById("main")
-      );
+       document.getElementById("main"));
 
 
-store.subscribe(() => {
+/* Update page title */
+
+store.subscribe(debounce(() => {
     const state = store.getState();
     const attributes = state.attributes;
     const startDate = state.timeRange.start.toLocaleDateString(),
@@ -89,7 +90,8 @@ store.subscribe(() => {
     } else {
         document.title = `Archive viewer: ${attributes.map(attr => attr.split(":")[0]).join(",")} ${startDate} - ${endDate}`;        
     }
-})
+}), 100);
+
 
 /* setup browser URL handling */
 
