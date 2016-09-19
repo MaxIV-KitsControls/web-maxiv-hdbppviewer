@@ -247,6 +247,7 @@ export class ImagePlot {
               max = desc.max[index].toPrecision(5),
               min = desc.min[index].toPrecision(5),
               // mean = desc.mean[index].toPrecision(5),
+              timestamp = new Date(desc.timestamp[index]),
               axis = this.config[closest].axis,
               color = this.config[closest].color;
 
@@ -259,12 +260,17 @@ export class ImagePlot {
         // Display a text box that reveals some numbers about the closest point
         let text;
         if (count == 1) {
-            text = `<b style="color:${color};">${closest}</b><br>Value: ${max}`
+            text = (`<b style="color:${color};">${closest}</b>` +
+                    `<br>Value: ${max}` +
+                    `<br>Date: ${timestamp.toLocaleDateString()}` +
+                    `<br>Time: ${timestamp.toLocaleTimeString()}`);
         } else {
             text = (`<b style="color:${color};">${closest}</b>` +
                     `<br>Points: ${count}` +
                     `<br>Max: ${max}` +
-                    `<br>Min: ${min}`)
+                    `<br>Min: ${min}` +
+                    `<br>Date: ${timestamp.toLocaleDateString()}` +
+                    `<br>Time: ${timestamp.toLocaleTimeString()}`);
                     // `<br>Mean: ${mean}`)
         }
         
