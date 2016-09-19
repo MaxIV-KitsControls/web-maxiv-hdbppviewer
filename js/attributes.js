@@ -111,7 +111,8 @@ class PlottedAttributes extends React.Component {
                   <strong onClick={this.onYAxisClick.bind(this, 0)}>
                     Left Y axis
                   </strong>
-                <Checkbox onChange={this.onAxisScaleChange.bind(this, 0)}
+                <Checkbox checked={this.props.axes[0] && this.props.axes[0].scale == "log"}
+                          onChange={this.onAxisScaleChange.bind(this, 0)}
                           inline style={{"float": "right"}}>
                   Log
                 </Checkbox>
@@ -126,8 +127,9 @@ class PlottedAttributes extends React.Component {
                     Right Y axis
                   </strong>
                 
-                  <Checkbox onChange={this.onAxisScaleChange.bind(this, 1)}
-                          inline style={{"float": "right"}}>
+                  <Checkbox checked={this.props.axes[1] && this.props.axes[1].scale == "log"}
+                            onChange={this.onAxisScaleChange.bind(this, 1)}
+                            inline style={{"float": "right"}}>
                     Log
                   </Checkbox>
                 </div>

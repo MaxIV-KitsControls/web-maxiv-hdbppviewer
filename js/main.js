@@ -8,7 +8,7 @@ import createLogger from 'redux-logger';
 import { Nav, Navbar, NavItem, NavDropdown, MenuItem, Grid, Col, Row } from 'react-bootstrap';
 
 import * as reducers from "./reducers";
-import {addAttributes, setTimeRange} from "./actions";
+import {addAttributes, setTimeRange, setAxisScale } from "./actions";
 import PlotWrapper from "./plotwrapper";
 import TimeRange from "./timerange";
 import AttributeSearch from "./attributes";
@@ -122,6 +122,9 @@ function dispatchFromHash() {
     axisNames.forEach(axis => {
         let attrs = axes[axis];
         store.dispatch(addAttributes(attrs, parseInt(axis)))
+        const axisConfig = hashData.axes[axis];
+        store.dispatch(setAxisScale(parseInt(axis),
+                                    axisConfig.scale || "linear"))
     });
 }
 
