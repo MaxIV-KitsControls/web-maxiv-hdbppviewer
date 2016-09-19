@@ -70,12 +70,6 @@ PORT = 5005
 timestampify = np.vectorize(lambda x: x.timestamp()*1000, otypes=[np.float64])
 
 
-def get_attr_config(config_str):
-    "Parse a string like <attribute>:<#axis>:<color>"
-    attr, y_axis, color = re.match("([^:]+):(\d+):(.+)", config_str).groups()
-    return dict(name=attr, y_axis=int(y_axis), color=color)
-
-
 def make_image(data, time_range, y_range, size, width=0):
     "Flatten the given range of the data into a 2d image"
     cvs = datashader.Canvas(x_range=time_range, y_range=y_range,
@@ -294,11 +288,12 @@ async def get_images(hdbpp, request):
     # possible to do more dynamic stuff on the client like hiding/
     # showing attributes, changing color...
 
-    # params = await request.json()
-    attributes = [get_attr_config(attr)
-                  for attr in request.GET["attributes"].split(",")]
-    time_range = [float(x) for x in request.GET["time_range"].split(",")]
-    size = [int(x) for x in request.GET["size"].split(",")]
+    params = await request.json()
+
+    attributes = params.get("attributes")
+    time_range = params.get("time_range")
+    size = params.get("size")
+    axes = params.get("axes")
 
     logging.debug("Attributes: %r", attributes)
     logging.debug("Time range: %r", time_range)
@@ -341,7 +336,7 @@ if __name__ == "__main__":
     cache = {}
 
     app.router.add_route('GET', '/attributes', partial(get_attributes, hdbpp))
-    app.router.add_route('GET', '/image', partial(get_image, hdbpp))
+    app.router.add_route('POST', '/image', partial(get_images, hdbpp))
     app.router.add_static('/', 'static')
 
     handler = app.make_handler(debug=True)

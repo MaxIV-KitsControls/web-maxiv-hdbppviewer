@@ -61,24 +61,39 @@ export function setTimeRange(startTime, endTime) {
 
 var latestFetchTime = 0
 export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
+    // ask the server for data for the current view
+    
     return function (dispatch, getState) {
         let state = getState();
-        const {start, end} = state.timeRange;
-        const attrs = state.attributes.map(attr => {
-            const color = encodeURIComponent(state.attributeConfig[attr].color),
-                  axis = state.attributeConfig[attr].axis;
-            return `${attr}:${axis}:${color}`;
-        });
-        if (attrs.length == 0) {
+
+        if (state.attributes.length == 0) {
+            // no attributes configured; no point in requesting anything
             dispatch({type: RECEIVE_ARCHIVE_DESCS, descs: {}})
             dispatch({type: RECEIVE_ARCHIVE_DATA, data: {}})
             return;
         }
             
-        let url = `/image?attributes=${attrs.join(",")}&time_range=${start.getTime()},${end.getTime()}&size=${imageWidth},${imageHeight}`
         let fetchTime = (new Date()).getTime();
         latestFetchTime = fetchTime;
-        fetch(url)
+        
+        fetch("/image", {
+            method: "POST",
+            body: JSON.stringify({
+                attributes: state.attributes.map(attr => {
+                    return {
+                        name: attr,
+                        color: state.attributeConfig[attr].color,
+                        y_axis: state.attributeConfig[attr].axis
+                    }
+                }),
+                time_range: [state.timeRange.start.getTime(),
+                             state.timeRange.end.getTime()],
+                size: [imageWidth, imageHeight]
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
             .then(response => {
                 if (latestFetchTime > fetchTime) {
                     // Trying to cancel because there's been a new request
