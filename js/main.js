@@ -12,6 +12,7 @@ import {addAttributes, setTimeRange, setAxisScale } from "./actions";
 import PlotWrapper from "./plotwrapper";
 import TimeRange from "./timerange";
 import AttributeSearch from "./attributes";
+import CommunicationInfo from "./communication";
 import {debounce, loadStateFromHash, setHashFromState} from "./utils";
 
 /* redux store */
@@ -62,6 +63,7 @@ class App extends React.Component {
                       </Col>
                       <Col sm={9} md={9} xs={9}>
                         <PlotWrapper/>
+                        <CommunicationInfo/>
                       </Col>
                     </Row>
                   </Grid>

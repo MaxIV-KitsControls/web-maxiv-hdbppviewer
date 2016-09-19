@@ -67,8 +67,11 @@ export function setAxisScale(axis, scale) {
 var latestFetchTime = 0
 export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
     // ask the server for data for the current view
-    
+
     return function (dispatch, getState) {
+
+        dispatch({type: FETCH_ARCHIVE_DATA})
+        
         let state = getState();
 
         if (state.attributes.length == 0) {

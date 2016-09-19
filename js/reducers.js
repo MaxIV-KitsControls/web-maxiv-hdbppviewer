@@ -2,7 +2,7 @@ import R from "ramda";
 
 import {
     RECEIVE_SUGGESTIONS,
-    RECEIVE_ARCHIVE_DATA, RECEIVE_DETAILS,
+    FETCH_ARCHIVE_DATA, RECEIVE_ARCHIVE_DATA, RECEIVE_DETAILS,
     RECEIVE_ARCHIVE_DESCS,
     ADD_ATTRIBUTES, REMOVE_ATTRIBUTES, SET_ATTRIBUTES_AXIS,
     SET_ATTRIBUTE_COLOR,
@@ -106,6 +106,19 @@ export function axisConfiguration(state={}, action) {
     return state;
 }
 
+
+export function communicationInfo(state={}, action) {
+    switch (action.type) {
+    case FETCH_ARCHIVE_DATA:
+        return {waitingForData: true,
+                fetchTime: new Date()};
+    case RECEIVE_ARCHIVE_DATA:
+        return {...state,
+                waitingForData: false,
+                receiveTime: new Date()};
+    }
+    return state;
+}
 
 const defaultTimeRange = {start: new Date(Date.now() - 3600e3),
                           end: new Date(Date.now())};
