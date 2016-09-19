@@ -21,7 +21,7 @@ export function attributeSuggestions(state=[], action) {
 export function archiveData(state={}, action) {
     switch (action.type) {
     case RECEIVE_ARCHIVE_DATA:
-        return {...state, ...action.data};
+        return action.data;
     case REMOVE_ATTRIBUTES:
         return R.omit(action.attributes, state);
     default:

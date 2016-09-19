@@ -323,12 +323,25 @@ export class ImagePlot {
     setDescriptions(descriptions) {
         this.descriptions = descriptions;
     }
-    
+
     setData(data) {
+
         const axes = Object.keys(data);
-        for (let axis of axes) {
-            const {image, x_range, y_range} = data[axis],
-                  [currentYMin, currentYMax] = this.yScales[axis].domain(),
+        for (let axis of [0, 1]) {
+
+            if (!data[axis]) {
+                // If there's no data for the axis, it means that there
+                // are no attributes on that axis. We'll just hide the
+                // images from view.
+                this.getImage(axis)
+                    .attr("visibility", "hidden")
+                this.getNextImage(axis)
+                    .attr("visibility", "hidden")
+                continue;
+            }
+            
+            const {image, x_range, y_range} = data[axis];
+            const [currentYMin, currentYMax] = this.yScales[axis].domain(),
                   [yMin, yMax] = y_range,
                   yScale = (Math.abs(yMax - yMin) /
                             Math.abs(currentYMax - currentYMin));
@@ -341,6 +354,7 @@ export class ImagePlot {
                       `translate(${this.x(x_range[0])},${this.yScales[axis](yMax)-this.margin.top})` +
                       `scale(1,${yScale})`)
                 .attr("xlink:href", "data:image/png;base64," + image)
+                .attr("visibility", null)
                 .transition()
                 .attr("transform", `translate(${this.x(x_range[0])},0)` +
                       `scale(1,1)`)
