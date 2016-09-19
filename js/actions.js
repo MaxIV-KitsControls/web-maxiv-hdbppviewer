@@ -69,6 +69,12 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                   axis = state.attributeConfig[attr].axis;
             return `${attr}:${axis}:${color}`;
         });
+        if (attrs.length == 0) {
+            dispatch({type: RECEIVE_ARCHIVE_DESCS, descs: {}})
+            dispatch({type: RECEIVE_ARCHIVE_DATA, data: {}})
+            return;
+        }
+            
         let url = `/image?attributes=${attrs.join(",")}&time_range=${start.getTime()},${end.getTime()}&size=${imageWidth},${imageHeight}`
         let fetchTime = (new Date()).getTime();
         latestFetchTime = fetchTime;
