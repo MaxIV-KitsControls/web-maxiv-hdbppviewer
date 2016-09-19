@@ -35,7 +35,7 @@ class App extends React.Component {
                       <Navbar>
                         <Navbar.Header>
                           <Navbar.Brand>
-                            <a href="#">HDB++ Archive Viewer</a>
+                            <a href="/index.html">HDB++ Archive Viewer</a>
                           </Navbar.Brand>
                         </Navbar.Header>
                         <Nav>
@@ -96,21 +96,24 @@ store.subscribe(debounce(() => {
 /* setup browser URL handling */
 
 function dispatchFromHash() {
+    // a very hacky way to load state from JSON 
     if (document.location.hash == currentHash)
         return
     else
         currentHash = document.location.hash
     const hashData = loadStateFromHash()
-    store.dispatch(setTimeRange(new Date(hashData.startTime),
-                                new Date(hashData.endTime)))
+    store.dispatch(setTimeRange(new Date(hashData.timeRange.start),
+                                new Date(hashData.timeRange.end)))
     const axes = {};
     hashData.attributes.forEach(
         attr => {
-            let [name, axis, color] = attr.split(":");
-            if (axis in axes)
-                axes[axis].push([name, color]);
+            const config = hashData.config[attr],
+                  axis = config.axis || 0;
+            console.log(attr, config, axis)
+            if (config.axis in axes)
+                axes[axis].push([attr, config.color]);
             else
-                axes[axis] = [[name, color]];
+                axes[axis] = [[attr, config.color]];
         }
     )
     let axisNames = Object.keys(axes)
@@ -135,3 +138,5 @@ store.subscribe(debounce(function () {
     setHashFromState(store.getState());
     currentHash = document.location.hash;
 }, 100));
+
+

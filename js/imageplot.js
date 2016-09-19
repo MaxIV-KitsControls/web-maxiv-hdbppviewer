@@ -139,8 +139,8 @@ export class ImagePlot {
         // Y axes
         // TODO: should be pretty easy to support arbitrary numbers of
         // Y axes, mostly it's a matter of making room for them...
-        this.addYAxis()
-        this.addYAxis()                
+        this.addYAxis("linear")
+        this.addYAxis("linear")                
                 
         let [startTime, endTime] = this.x.domain()
         this.currentImage = 0
@@ -156,22 +156,21 @@ export class ImagePlot {
         
     }
 
-    addYAxis() {
+    addYAxis(scaleType) {
         const number = Object.keys(this.yAxes).length;
         const name = ""+number;
 
-        const scale = d3.scale.linear()
-            .range([this.innerHeight + this.margin.top, this.margin.top])
-            .domain([-1, 1])
+        const scale = d3.scale[scaleType]()
+              .range([this.innerHeight + this.margin.top, this.margin.top])
+              .domain([-1, 1])
 
         this.yScales[name] = scale;
 
         const axis = d3.svg.axis()
               .scale(scale)
-              .ticks(5)
+              .ticks(5, ".1e")
               .orient(number % 2 === 0? "left" : "right")
               .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
-              .tickFormat(d3.format(".1e"))
 
         this.yAxes[name] = axis;
             
@@ -204,6 +203,34 @@ export class ImagePlot {
 
         return name;
         
+    }
+    
+    removeYAxis(name) {
+        delete this.yScales[name];
+        delete this.yAxes[name];
+        this.container.remove(this.yAxisElements[name])
+        delete this.yAxisElements[name];
+        // this.container.remove(this.images[name][0])
+        // this.container.remove(this.images[name][1])
+        // delete this.images[name];
+    }
+
+    setYAxisScale(yAxis, scaleType) {
+        // const domain = this.yScales[yAxis].domain();
+        const scale = d3.scale[scaleType]()
+              .range([this.innerHeight + this.margin.top, this.margin.top])
+        // if (scaleType == "log") {
+        //     var [lower,higher] = domain;
+        //     scale.domain([Math.max(0, lower), higher]);
+        // } else {
+        //     scale.domain(domain);
+        // }
+
+        this.yScales[yAxis] = scale;
+        const axis = this.yAxes[yAxis];
+        axis.scale(scale);
+        // this.yAxisElements[yAxis].call(axis)
+        this.runChangeCallback();
     }
     
     showDescription() {
@@ -337,17 +364,6 @@ export class ImagePlot {
                 .attr("display", "none");
         })
     }
-    
-    removeYAxis(name) {
-        delete this.yScales[name];
-        delete this.yAxes[name];
-        this.container.remove(this.yAxisElements[name])
-        delete this.yAxisElements[name];
-        this.container.remove(this.images[name][0])
-        this.container.remove(this.images[name][1])
-        delete this.images[name];
-    }
-
     setTimeRange(range) {
         this.x.domain(range)
         this.zoom.x(this.x)  // reset the zoom behavior
@@ -396,7 +412,6 @@ export class ImagePlot {
                 .transition()
                 .attr("transform", `translate(${this.x(x_range[0])},0)` +
                       `scale(1,1)`)
-            
             this.yScales[axis].domain(data[axis].y_range);            
             this.yAxisElements[axis]
                 .transition()

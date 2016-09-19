@@ -5,9 +5,11 @@ import { bindActionCreators } from 'redux'
 // import AutoSuggest from 'react-autosuggest';
 import fetch from "isomorphic-fetch";
 import { Input, Button, DropdownButton, MenuItem, Col, Panel, Popover,
-         OverlayTrigger, FormGroup, FormControl, Modal, Accordion, Table, Well } from 'react-bootstrap';
+         OverlayTrigger, FormGroup, FormControl, Modal, Accordion, Table, Well,
+         Checkbox } from 'react-bootstrap';
 
-import { getSuggestions, addAttributes, removeAttributes } from "./actions";
+import { getSuggestions, addAttributes, removeAttributes,
+         setAxisScale } from "./actions";
 
 
 class SearchResults extends React.Component {
@@ -52,12 +54,26 @@ class PlottedAttributes extends React.Component {
         const config = this.props.config[attr] || {}
         const desc = this.props.desc[attr] || {};
         return (<Popover id={`attribute-${attr}`} title={attr}>
-                <div>Axis: {config.axis}</div>
-                <div>Color: {config.color}</div>
-                <div>Points: {desc.total_points}</div>
+                  <div>Axis: {config.axis}</div>
+                  <div>Color: {config.color}</div>
+                  <div>Points: {desc.total_points}</div>
                 </Popover>)
     }
 
+    onAxisScaleChange(axis, event) {
+        const isLog = event.target.checked;
+        console.log("axisScale change", axis, isLog)
+        this.props.setAxisScale(axis, isLog? "log" : "linear");
+    }
+    
+    
+    // makeAxisPopover (axis) {
+    //     const config = this.props.axes[axis];
+    //     return (<Popover id={`attribute-${attr}`} title={axis}>
+    //               <div>Scale: {config.scale || "linear"}</div>
+    //             </Popover>);
+    // }
+    
     makeAttribute(a) {
         return (<li key={a} onClick={this.onAttributeClick.bind(this, a)}
                 style={{
@@ -89,22 +105,38 @@ class PlottedAttributes extends React.Component {
                         title="Remove the currently selected attribute(s) from the plot">
                   Remove
                 </Button>
-                }>
+              }>
+                
+                <div>
                   <strong onClick={this.onYAxisClick.bind(this, 0)}>
                     Left Y axis
                   </strong>
+                <Checkbox onChange={this.onAxisScaleChange.bind(this, 0)}
+                          inline style={{"float": "right"}}>
+                  Log
+                </Checkbox>
+                </div>
                 <ul className="y-axis-attributes"
                     style={{listStyle: "none", paddingLeft: "10px"}}>
                     {leftYAxis}
-                  </ul>
+                </ul>
+                
+                <div>
                   <strong onClick={this.onYAxisClick.bind(this, 1)}>
                     Right Y axis
                   </strong>
-                  <ul className="y-axis-attributes"
+                
+                  <Checkbox onChange={this.onAxisScaleChange.bind(this, 1)}
+                          inline style={{"float": "right"}}>
+                    Log
+                  </Checkbox>
+                </div>
+                <ul className="y-axis-attributes"
                     style={{listStyle: "none", paddingLeft: "10px"}}>
-                    {rightYAxis}
-                  </ul>
-                </Panel>
+                  {rightYAxis}
+                </ul>
+                
+              </Panel>
                 
 
             </FormGroup>
@@ -254,7 +286,8 @@ function mapStateToProps (state) {
         attributes: state.attributes,
         config: state.attributeConfig,
         desc: state.descriptions,
-        suggestions: state.attributeSuggestions
+        suggestions: state.attributeSuggestions,
+        axes: state.axisConfiguration
     }
 }
 
@@ -263,7 +296,8 @@ function mapDispatchToProps(dispatch) {
     return {
         getSuggestions: pattern => dispatch(getSuggestions(pattern)),
         addAttributes: (attributes, axis) => dispatch(addAttributes(attributes, axis)),
-        removeAttributes: attributes => dispatch(removeAttributes(attributes))
+        removeAttributes: attributes => dispatch(removeAttributes(attributes)),
+        setAxisScale: (axis, scale) => dispatch(setAxisScale(axis, scale))
     }
 }
 

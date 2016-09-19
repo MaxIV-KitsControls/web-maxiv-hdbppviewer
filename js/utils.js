@@ -27,15 +27,16 @@ export function loadStateFromHash() {
 
 export function setHashFromState(state) {
 
-    let attributes = state.attributes.map(attr => {
-        let config = state.attributeConfig[attr];
-        console.log("setHashfromstate", attr, config);
-        return `${attr}:${config.axis}:${config.color}`;
-    })
+    // let attributes = state.attributes.map(attr => {
+    //     let config = state.attributeConfig[attr];
+    //     console.log("setHashfromstate", attr, config);
+    //     return `${attr}:${config.axis}:${config.color}`;
+    // })
     let hash = JSON.stringify({
-        startTime: state.timeRange.start,
-        endTime: state.timeRange.end,
-        attributes: attributes
+        timeRange: state.timeRange,
+        attributes: state.attributes,
+        config: state.attributeConfig,
+        axes: state.axisConfiguration
     })
     document.location.hash = hash;
 }

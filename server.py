@@ -70,10 +70,12 @@ PORT = 5005
 timestampify = np.vectorize(lambda x: x.timestamp()*1000, otypes=[np.float64])
 
 
-def make_image(data, time_range, y_range, size, width=0):
+def make_image(data, time_range, y_range, size, scale=None, width=0):
+    print("make_image", scale)
     "Flatten the given range of the data into a 2d image"
     cvs = datashader.Canvas(x_range=time_range, y_range=y_range,
-                            plot_width=size[0], plot_height=size[1])
+                            plot_width=size[0], plot_height=size[1],
+                            y_axis_type=scale or "linear")
     # aggregate some useful measures
     agg_line = cvs.line(source=data["data"], x="t", y="v")
     agg_points = cvs.points(source=data["data"],
@@ -158,7 +160,7 @@ async def get_data(hdbpp, attributes, time_range):
             for attribute in attributes}
 
 
-def get_extrema(attributes, results, time_range):
+def get_extrema(attributes, results, time_range, axes):
     "Get the max/min values for each attribute"
     per_axis = defaultdict(dict)
     for info in attributes:
@@ -169,10 +171,17 @@ def get_extrema(attributes, results, time_range):
 
         # find local extrema
         y_axis = info["y_axis"]
+        axis_config = axes.get(str(y_axis), {})
+        print("y_axis", y_axis, axes, axis_config)
         relevant = data[(data["t"] >= time_range[0]) &
                         (data["t"] <= time_range[1])]
         value_max = relevant["v"].max()
-        value_min = relevant["v"].min()
+        if axis_config.get("scale") == "log":
+            # ignore zero or negative values
+            value_min = np.take(relevant["v"],
+                                np.where(relevant["v"] > 0)[0]).min()
+        else:
+            value_min = relevant["v"].min()
 
         per_axis[y_axis][name] = dict(
             data=data, info=info, points=len(relevant),
@@ -201,7 +210,7 @@ def get_axis_limits(y_axis, data):
     return axis_min, axis_max, nodata
 
 
-def make_axis_images(per_axis, time_range, size):
+def make_axis_images(per_axis, time_range, size, axes):
 
     "Create one image for each axis containing attributes"
 
@@ -223,6 +232,8 @@ def make_axis_images(per_axis, time_range, size):
             continue
 
         # calculate a reasonable range for the y axis
+        print(axes)
+        scale = axes.get(str(y_axis), {}).get("scale")
         if axis_min == axis_max:
             # Looks like the value is constant so we can't derive
             # a range the normal way. Let's invent one instead.
@@ -234,6 +245,8 @@ def make_axis_images(per_axis, time_range, size):
                 vmin = 1.5*v
                 vmax = v / 2
             y_range = (vmin, vmax)
+        elif scale == "log":
+            y_range = axis_min, axis_max
         else:
             # just pad the extreme values a bit
             axis_d = axis_max - axis_min
@@ -246,8 +259,7 @@ def make_axis_images(per_axis, time_range, size):
         for name, data in attributes.items():
             if name in nodata:
                 continue
-            logging.debug("Making %r image for %s", size, name)
-            image, desc = make_image(data, time_range, y_range, size)
+            image, desc = make_image(data, time_range, y_range, size, scale)
             axis_images.append(image)
             descs[name] = desc
 
@@ -290,14 +302,15 @@ async def get_images(hdbpp, request):
 
     params = await request.json()
 
-    attributes = params.get("attributes")
-    time_range = params.get("time_range")
-    size = params.get("size")
+    attributes = params["attributes"]
+    time_range = params["time_range"]
+    size = params["size"]
     axes = params.get("axes")
 
     logging.debug("Attributes: %r", attributes)
     logging.debug("Time range: %r", time_range)
     logging.debug("Image size: %r", size)
+    logging.debug("Axis config: %r", axes)
 
     # Note: the following should be done in a more pipeline:y way, since many
     # parts can be done in parallel.
@@ -308,7 +321,7 @@ async def get_images(hdbpp, request):
 
     # calculate the max/min for each y-axis
     with timer("Calculating extrema took %f s"):
-        per_axis = get_extrema(attributes, data, time_range)
+        per_axis = get_extrema(attributes, data, time_range, axes)
 
     # Now generate one image for each y-axis. Since all the attributes on an
     # axis will have the same scale, there's no point in sending one image
@@ -316,7 +329,7 @@ async def get_images(hdbpp, request):
     loop = asyncio.get_event_loop()
     with timer("Processing took %f s"):
         images, descs = await loop.run_in_executor(
-            None, partial(make_axis_images, per_axis, time_range, size))
+            None, partial(make_axis_images, per_axis, time_range, size, axes))
 
     data = json.dumps({"images": images, "descs": descs})
     return web.Response(body=data.encode("utf-8"),

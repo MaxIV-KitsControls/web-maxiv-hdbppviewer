@@ -41,6 +41,12 @@ class PlotWrapper extends React.Component {
             this.plot.setTimeRange([newRange.start.getTime(),
                                     newRange.end.getTime()]);
         }
+        if (props.axes != this.props.axes) {
+            console.log("set axis scale", props.axes)
+            Object.keys(props.axes).forEach(axis => {
+                this.plot.setYAxisScale(axis, props.axes[axis].scale);
+            })
+        }
     }
 
     shouldComponentUpdate () {
@@ -68,7 +74,8 @@ const mapStateToProps = (state) => {
         config: state.config,
         descriptions: state.descriptions,
         timeRange: state.timeRange,
-        config: state.attributeConfig
+        config: state.attributeConfig,
+        axes: state.axisConfiguration
     }
 }
 

@@ -13,6 +13,7 @@ export const ADD_ATTRIBUTES = "ADD_ATTRIBUTE";
 export const REMOVE_ATTRIBUTES = "REMOVE_ATTRIBUTE";
 export const SET_ATTRIBUTES_AXIS = "SET_ATTRIBUTES_AXIS";
 export const SET_ATTRIBUTE_COLOR = "SET_ATTRIBUTE_COLOR";
+export const SET_AXIS_SCALE = "SET_AXIS_SCALE";
 
 
 export function getSuggestions(pattern) {
@@ -54,10 +55,14 @@ export function removeAttributes(attributes) {
 
 export function setTimeRange(startTime, endTime) {
     // change the current time range shown in the plot
-    return function (dispatch) {
-        dispatch({type: SET_TIME_RANGE, startTime, endTime});
-    }
+    return {type: SET_TIME_RANGE, startTime, endTime}
 }
+
+
+export function setAxisScale(axis, scale) {
+    return {type: SET_AXIS_SCALE, axis, scale};
+}
+
 
 var latestFetchTime = 0
 export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
@@ -88,7 +93,8 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                 }),
                 time_range: [state.timeRange.start.getTime(),
                              state.timeRange.end.getTime()],
-                size: [imageWidth, imageHeight]
+                size: [imageWidth, imageHeight],
+                axes: state.axisConfiguration
             }),
             headers: {
                 "Content-Type": "application/json"

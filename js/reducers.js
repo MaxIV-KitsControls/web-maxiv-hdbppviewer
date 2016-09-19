@@ -6,7 +6,8 @@ import {
     RECEIVE_ARCHIVE_DESCS,
     ADD_ATTRIBUTES, REMOVE_ATTRIBUTES, SET_ATTRIBUTES_AXIS,
     SET_ATTRIBUTE_COLOR,
-    SET_TIME_RANGE
+    SET_TIME_RANGE,
+    SET_AXIS_SCALE
 } from "./actions"
 
 
@@ -92,6 +93,17 @@ export function attributeConfig(state={}, action) {
     default:
         return state;
     }
+}
+
+
+export function axisConfiguration(state={}, action) {
+    switch (action.type) {
+    case SET_AXIS_SCALE:
+        let config = state[action.axis] || {};
+        let newConfig = R.assoc("scale", action.scale, config);
+        return R.assoc(action.axis, newConfig, state);
+    }
+    return state;
 }
 
 
