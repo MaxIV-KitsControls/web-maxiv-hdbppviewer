@@ -6,6 +6,26 @@ import { DateRange } from 'react-date-range';
 
 
 class CommunicationInfo extends React.Component {
+
+    constructor () {
+        super();
+        this.state = {
+            showMessage: true
+        }
+    }
+
+    componentWillReceiveProps (props) {
+        const msg = findDOMNode(this.refs.msg);
+        clearInterval(this._blinker)        
+        if (props.info.waitingForData) {
+            this._blinker = setInterval(() => {
+                this.setState({showMessage: !this.state.showMessage});
+            }, 500);
+        } else {
+            this.setState({showMessage: true})
+        } 
+    }
+    
     render () {
         let msg;
         if (this.props.info.waitingForData) {
@@ -16,7 +36,10 @@ class CommunicationInfo extends React.Component {
             msg = `Done in ${elapsed} s.`
         }
         return (
-                <div style={{color: "#999", float: "right"}}>
+                <div ref="msg" style={{
+                    color: "#999",
+                    position: "absolute", right: 0, bottom: 0,
+                    display: this.state.showMessage? "block" : "none"}}>
                   {msg}
                 </div>
         );

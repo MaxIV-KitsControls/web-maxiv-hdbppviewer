@@ -6,6 +6,10 @@ body, html {
     background-color: #555;
 }
 
+div#main {
+    height: 100%;
+}
+
 svg {
     /* font: 13px sans-serif; */
 }

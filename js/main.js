@@ -63,10 +63,10 @@ class App extends React.Component {
                       </Col>
                       <Col sm={9} md={9} xs={9}>
                         <PlotWrapper/>
-                        <CommunicationInfo/>
                       </Col>
                     </Row>
                   </Grid>
+                <CommunicationInfo/>
                 </div>
          );
     }
