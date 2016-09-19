@@ -99,12 +99,14 @@ def make_image(data, time_range, y_range, size):
         vmax = np.take(np.nanmax(agg_points["vmax"].values, axis=0), indices)
         # vmean = np.take(np.nanmax(agg_points["vmean"].values, axis=0), indices)
         # TODO: aggregating the mean is not quite this simple...
+        timestamps = np.take(agg_points["x_axis"].values, indices)
         count = np.take(np.sum(agg_points["count"].values, axis=0), indices)
         desc = {
             "total_points": data["points"],
             "indices": indices.tolist(),
             "min": np.where(np.isnan(vmin), None, vmin).tolist(),
             "max": np.where(np.isnan(vmax), None, vmax).tolist(),
+            "timestamp": [float(t) for t in timestamps],
             # "mean": np.where(np.isnan(vmean), None, vmean).tolist(),
             "count": np.where(np.isnan(count), None, count).tolist()
         }
