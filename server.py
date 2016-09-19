@@ -285,9 +285,14 @@ def timer(msg):
     logging.debug(msg, time.time() - start)
 
 
-async def get_image(hdbpp, request):
+async def get_images(hdbpp, request):
 
     "Get images for a bunch of attributes; one image per y-axis"
+
+    # TODO: probably makes more sense to send one image per attribute
+    # instead. The overhead is pretty low anyway and it makes it
+    # possible to do more dynamic stuff on the client like hiding/
+    # showing attributes, changing color...
 
     # params = await request.json()
     attributes = [get_attr_config(attr)
