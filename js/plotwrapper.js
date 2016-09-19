@@ -8,22 +8,14 @@ import {setTimeRange, fetchArchiveData} from "./actions";
 
 class PlotWrapper extends React.Component {
 
-    /* This is a "dummy" react component which acts as a container for
-       the Plot, which is based on D3. */
+    /* This is a "dummy" react component which acts as an adapter for
+       the Plot, which is based on D3. This may or may not be a good
+       way to do it, but at least it's relatively simple. */
     
-    constructor() {
-        super();
-        this.state = {};
-    }
-
     componentDidMount () {
         // create the SVG plot immediately, once
         let container = findDOMNode(this.refs.plot);
-        this.plot = new ImagePlot(container, this.onChange.bind(this),
-                                  new Date(Date.now() - 2*24*3600e3),
-                                  new Date(Date.now() - 24*3600e3),
-                                  "data_time", "value_r",
-                                  500);
+        this.plot = new ImagePlot(container, this.onChange.bind(this));
     }
 
     componentWillReceiveProps (props) {
@@ -62,6 +54,7 @@ class PlotWrapper extends React.Component {
     }
 
     onChange (start, end, width, height) {
+        // callback from the plot
         this.props.dispatch(setTimeRange(start, end));
         this.props.dispatch(fetchArchiveData(start, end, width, height));
     }
