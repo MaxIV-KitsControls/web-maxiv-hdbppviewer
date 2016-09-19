@@ -36,16 +36,35 @@ function closestIndex (num, arr) {
 
 export class ImagePlot {
 
+    /*
+      This is the main plot widget, showing the data for all added
+      attributes over the selected time range.
+
+      It works by requesting bitmap images (!) from the server, one
+      per y-axis. The idea is that sending all the points to the
+      browser to be plotted using JS does not scale indefinitely. The
+      the data can easily go into millions of points for some months
+      of data.
+      
+      Instead, loading the data as encoded PNG images uses reasonable
+      bandwidth, typically less than 100k per request, and does not depend
+      on the time window size or number of attributes. It does depend
+      on the screen resolution but PNG is a reasonable encoding for
+      this type of images.
+
+      We also receive some metadata from the server, providing mouse
+      hover information, and this is usually comparable or larger than
+      the images themselves. This is done in a pretty inefficient way
+      ATM. Perhaps the hover info could be loaded more asynchronously.
+     */
+
+    
     constructor(containerElement, onChange) {
         this.containerElement = containerElement;
         this.onChange = onChange
-        this.runChangeCallback = debounce(this._runChangeCallback,
-                                          100);        
-
+        this.runChangeCallback = debounce(this._runChangeCallback, 100);        
         this.setSize();
         this.setUp();
-
-        // this.runChangeCallback()
     }
 
     setUp() {
@@ -55,7 +74,8 @@ export class ImagePlot {
         this.yAxisElements = {}
         this.images = {};
         this.indicators = {};
-        
+
+        // Create the plot SVG element, using D3
         const svg = d3.select(this.containerElement)
               .append("svg")
               .attr("height", this.height)
@@ -78,7 +98,6 @@ export class ImagePlot {
         
         this.overlay = this.container.append("rect")
             .attr("class", "overlay")
-            // .attr("x", Y_AXIS_WIDTH)
             .attr("y", this.margin.top)
             .attr("width", this.innerWidth)
             .attr("height", this.innerHeight)
@@ -96,6 +115,7 @@ export class ImagePlot {
             .attr("transform", "translate(0," + (this.innerHeight + this.margin.top) + ")")
             .call(this.xAxis);
 
+        // clip the plot elements to the area within the axes
         this.clipRect = svg.append("defs")
             .append("svg:clipPath")
             .attr("id", "clip")
@@ -108,14 +128,17 @@ export class ImagePlot {
             .attr("transform", `translate(${Y_AXIS_WIDTH},${this.margin.top})`)
             .attr("clip-path", "url(#clip)")
         
-        this.inner = this.clipBox.append("g")
-            // .attr("transform", `translate(${Y_AXIS_WIDTH},${this.margin.top})`)
+        this.inner = this.clipBox.append("g");
 
+        // a vertical line showing the mouse position
         this.cursorLineX = this.inner.append("svg:line")
             .classed({cursor: true, x: true})
             .attr("y1", 0)
             .attr("y2", this.innerHeight)
-        
+
+        // Y axes
+        // TODO: should be pretty easy to support arbitrary numbers of
+        // Y axes, mostly it's a matter of making room for them...
         this.addYAxis()
         this.addYAxis()                
                 
@@ -123,13 +146,8 @@ export class ImagePlot {
         this.currentImage = 0
         this.imageTimeRanges = [this.x.domain(), this.x.domain()];
 
-        // this.zoom.y(this.yScales[0]);
-
-
-        // this.cursorLineY = this.inner.append("svg:line")
-        //     .classed({cursor: true, y: true})                
-        
-        
+        // element that shows information about the point closest
+        // to the mouse cursor
         this.descElement = d3.select(this.containerElement)
             .append("div")
             .classed("description", true)
@@ -140,7 +158,6 @@ export class ImagePlot {
 
     addYAxis() {
         const number = Object.keys(this.yAxes).length;
-        console.log("addYAxis", number);
         const name = ""+number;
 
         const scale = d3.scale.linear()
@@ -160,12 +177,15 @@ export class ImagePlot {
             
         const element = this.container.append("g")
               .attr("class", "y axis")
-              .attr("transform", "translate(" + (number % 2 === 0? 0 : this.innerWidth ) + ",0)")
+              .attr("transform", "translate(" + (number % 2 === 0? 0 :
+                                                 this.innerWidth ) + ",0)")
               .call(axis);
 
         this.yAxisElements[name] = element;
 
-        // one image per axis, for displaying data
+        // One image per axis, for displaying data
+        // But, in fact we create two, to use for "double bufferint"
+        // This is mostly a work-around to make image transitions smoother
         this.images[name] = [
             this.inner
                 .append("svg:image")
@@ -213,6 +233,8 @@ export class ImagePlot {
                     .style("fill", config.color)
                     .style("pointer-events", "none")
                 this.indicators[attr] = indicator;
+            } else {
+                indicator.attr("display", null);
             }
             
             const x = desc.indices[index],
@@ -308,10 +330,12 @@ export class ImagePlot {
     hideDescription() {
         this.descElement
             .style("display", "none")
-        // this.cursorLineY
-        //     .style("display", "none")            
         this.cursorLineX
-            .style("display", "none")            
+            .style("display", "none")
+        Object.keys(this.indicators).forEach(attr => {
+            this.indicators[attr]
+                .attr("display", "none");
+        })
     }
     
     removeYAxis(name) {
@@ -417,10 +441,13 @@ export class ImagePlot {
         this.xAxisElement.call(this.xAxis);
         const [currentStartTime, currentEndTime] = this.x.domain(),
               [startTime, endTime] = this.imageTimeRanges[this.currentImage],
-              scale = (endTime - startTime) / (currentEndTime.getTime() - currentStartTime.getTime());
+              scale = ((endTime - startTime) /
+                       (currentEndTime.getTime() - currentStartTime.getTime()));
         for (let yAxis of Object.keys(this.yAxes)) {
             this.getImage(yAxis)
-                .attr("transform", "translate(" + (this.x(startTime) - Y_AXIS_WIDTH) + ",0)scale("+ scale + ",1)");
+                .attr("transform", "translate(" + (this.x(startTime) -
+                                                   Y_AXIS_WIDTH) +
+                      ",0)scale("+ scale + ",1)");
         }        
     }
     
@@ -431,6 +458,8 @@ export class ImagePlot {
     }
 
     swapImage() {
+        // hide the current image for each axis and
+        // show the other.
         let currentImage = this.currentImage,
             nextImage = (this.currentImage + 1) % 2
         for (let yAxis of Object.keys(this.yAxes)) {
@@ -443,10 +472,12 @@ export class ImagePlot {
     }
 
     getImage(yAxis) {
+        // get the currently visible image for the axis
         return this.images[yAxis][this.currentImage];
     }
 
     getNextImage(yAxis) {
+        // get the currently hidden image for the axis
         return this.images[yAxis][(this.currentImage + 1) % 2]
     }
     
@@ -456,6 +487,5 @@ export class ImagePlot {
               [yMin, yMax] = this.yScales[0].range();
         this.onChange(xStart, xEnd, xMax - xMin, yMin - yMax)
     }
-    
-    
+        
 }
