@@ -229,7 +229,9 @@ export class ImagePlot {
                 // a nice indicator that tells where it is.
                 indicator
                     .style("display", null)
-                    .attr("cx", x)
+                // TODO: why are these offsets needed to center the
+                // circle correctly on the point? 
+                    .attr("cx", x+1)
                     .attr("cy", ymax-5)
             } else {
                 // Don't show indicator if it's an "aggregated" point
