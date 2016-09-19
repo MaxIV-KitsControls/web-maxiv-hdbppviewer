@@ -80,6 +80,8 @@ div.description {
     color: white;
     position: absolute;
     white-space: nowrap;
+    padding: 3px;
+    border-radius: 3px;
 }
 
 #current-attributes {
