@@ -274,8 +274,11 @@ export class ImagePlot {
             this.descElement
                 .style("display", "block")
                 .style("left", null)
-                .style("right", Math.max(0, this.innerWidth - desc.indices[index] + this.margin.right + 15 + 5))
-                .style("bottom", Math.round(this.innerHeight - (max? this.yScales[axis](max) : y) +
+                .style("right", Math.max(0, this.innerWidth -
+                                         desc.indices[index] +
+                                         this.margin.right + 15 + 5))
+                .style("bottom", Math.round(this.innerHeight -
+                                            (max? this.yScales[axis](max) : y) +
                                             this.margin.bottom) + 5)
                 .html(text)
         } else {
@@ -283,9 +286,12 @@ export class ImagePlot {
             this.descElement
                 .style("display", "block")
                 .style("right", null)
-                .style("left", Math.min(this.innerWidth - this.margin.left - this.margin.right,
-                                        this.margin.left + desc.indices[index] + 15 + 5))
-                .style("bottom", Math.round(this.innerHeight - (max? this.yScales[axis](max) : y) +
+                .style("left", Math.min(this.innerWidth -
+                                        this.margin.left - this.margin.right,
+                                        this.margin.left + desc.indices[index]
+                                        + 15 + 5))
+                .style("bottom", Math.round(this.innerHeight -
+                                            (max? this.yScales[axis](max) : y) +
                                             this.margin.bottom + 5))
                 .html(text);
         }
