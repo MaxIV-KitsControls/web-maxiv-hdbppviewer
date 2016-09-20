@@ -129,6 +129,7 @@ async def get_attributes(hdbpp, request):
                         content_type="application/json")
 
 
+
 def encode_image(image):
     "Take an image and encode it properly for inclusion in a JSON response"
     pil_image = image.to_pil()
@@ -323,17 +324,20 @@ async def get_images(hdbpp, request):
     with timer("Calculating extrema took %f s"):
         per_axis = get_extrema(attributes, data, time_range, axes)
 
-    # Now generate one image for each y-axis. Since all the attributes on an
-    # axis will have the same scale, there's no point in sending one image
-    # for each attribute.
+    # Now generate one image for each y-axis.
     loop = asyncio.get_event_loop()
     with timer("Processing took %f s"):
         images, descs = await loop.run_in_executor(
             None, partial(make_axis_images, per_axis, time_range, size, axes))
 
     data = json.dumps({"images": images, "descs": descs})
-    return web.Response(body=data.encode("utf-8"),
-                        content_type="application/json")
+    response = web.Response(body=data.encode("utf-8"),
+                            content_type="application/json")
+    # With compression, the size of the data goes down even further, almost
+    # an order of magnitude. Typical size is a few 10s of kB! It's up to the
+    # client to allow it, though.
+    response.enable_compression()
+    return response
 
 
 if __name__ == "__main__":
