@@ -59,15 +59,15 @@ export class ImagePlot {
      */
 
     
-    constructor(containerElement, onChange) {
+    constructor(containerElement, timeRange, onChange) {
         this.containerElement = containerElement;
         this.onChange = onChange
-        this.runChangeCallback = debounce(this._runChangeCallback, 100);        
+        this.runChangeCallback = debounce(this._runChangeCallback, 100);
         this.setSize();
-        this.setUp();
+        this.setUp(timeRange);
     }
 
-    setUp() {
+    setUp(timeRange) {
 
         this.yScales = {}
         this.yAxes = {}
@@ -84,8 +84,7 @@ export class ImagePlot {
         // scales
         this.x = d3.time.scale()
             .range([Y_AXIS_WIDTH, this.innerWidth])
-            .domain([new Date(Date.now() - 24*3600e3),
-                     new Date(Date.now())]);
+            .domain(timeRange);
 
         this.zoom = d3.behavior.zoom()
             .x(this.x)
@@ -365,10 +364,10 @@ export class ImagePlot {
         })
     }
     setTimeRange(range) {
-        this.x.domain(range)
+        this.x.domain(range);
         this.zoom.x(this.x)  // reset the zoom behavior
         this.zoomed()
-    }
+    } 
 
     setConfig(config) {
         this.config = config;

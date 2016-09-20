@@ -11,11 +11,20 @@ class PlotWrapper extends React.Component {
     /* This is a "dummy" react component which acts as an adapter for
        the Plot, which is based on D3. This may or may not be a good
        way to do it, but at least it's relatively simple. */
+
+    constructor () {
+        super();
+        this.state = {
+            timeRange: [new Date(Date.now() - 24*3600e3),
+                        new Date(Date.now())]
+        }
+    }
     
     componentDidMount () {
         // create the SVG plot immediately, once
         let container = findDOMNode(this.refs.plot);
-        this.plot = new ImagePlot(container, this.onChange.bind(this));
+        this.plot = new ImagePlot(container, this.state.timeRange,
+                                  this.onChange.bind(this));
     }
 
     componentWillReceiveProps (props) {
@@ -24,9 +33,7 @@ class PlotWrapper extends React.Component {
             this.plot.runChangeCallback()
         }
         if (props.data != this.props.data) {
-            let t0 = (new Date).getTime();            
             this.plot.setData(props.data);
-            console.log("plottingn took", (new Date).getTime() - t0)
         }
         if (props.config != this.props.config) {
             this.plot.setConfig(props.config)
@@ -34,15 +41,14 @@ class PlotWrapper extends React.Component {
         if (props.descriptions != this.props.descriptions) {
             this.plot.setDescriptions(props.descriptions);
         }
-        const newRange = props.timeRange;
-        const oldRange = this.props.timeRange;
-        if (oldRange.start.getTime() != newRange.start.getTime() ||
-            oldRange.end.getTime() != newRange.end.getTime()) {
-            this.plot.setTimeRange([newRange.start.getTime(),
-                                    newRange.end.getTime()]);
+        const [oldStart, oldEnd] = this.state.timeRange,
+              {start, end} = props.timeRange;
+        // to avoid double updates, we check if the time scale has actually changed
+        if (oldStart != start || oldEnd != end) {
+            this.setState({timeRange: [start, end]})            
+            this.plot.setTimeRange([start, end]);
         }
         if (props.axes != this.props.axes) {
-            console.log("set axis scale", props.axes)
             Object.keys(props.axes).forEach(axis => {
                 this.plot.setYAxisScale(axis, props.axes[axis].scale);
             })
@@ -61,6 +67,7 @@ class PlotWrapper extends React.Component {
 
     onChange (start, end, width, height) {
         // callback from the plot
+        this.setState({timeRange: [start, end]})
         this.props.dispatch(setTimeRange(start, end));
         this.props.dispatch(fetchArchiveData(start, end, width, height));
     }

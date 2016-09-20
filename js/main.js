@@ -124,7 +124,7 @@ function dispatchFromHash() {
     axisNames.forEach(axis => {
         let attrs = axes[axis];
         store.dispatch(addAttributes(attrs, parseInt(axis)))
-        const axisConfig = hashData.axes[axis];
+        const axisConfig = hashData.axes[axis] || {};
         store.dispatch(setAxisScale(parseInt(axis),
                                     axisConfig.scale || "linear"))
     });
