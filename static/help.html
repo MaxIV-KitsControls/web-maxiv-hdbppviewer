@@ -1,0 +1,46 @@
+<title>Help: HDB++ Archive Viewer</title>
+
+<h2> HDP++ Archive viewer </h2>
+
+<p>This is an application for inspecting historical data from TANGO attributes. It is a web based front end to the HDB++ system which periodically stores the values of a set of TANGO attributes in a Cassandra database. The viewer allows searching for attributes, and plotting them over a time range.</p>
+
+<p>The attribute plots are aggregated from <b>all</b> the points in the time window. There's no downsampling, which means that peaks and outliers will always show up no matter the scale. The cost is that the service needs to handle potentially large numbers of points each time the plot is redrawn - millions, if the time window is large - which can take some time. Most is usually taken up by database requests, but the server does cache the latest data trying to speed up interactions.</p>
+
+
+<h3>User interface</h3>
+
+The interface consists of three main parts; the <b>header</b> (at the top), the <b>attribute finder</b> (on the left) and the <b>plot</b> (on the right).
+
+<h4>Header</h4>
+
+<p>Clicking the title part of the header reloads the page and clears out all attributes and settings.</p>
+
+<p>The header also contains a link to this help page.</p>
+
+<p>Finally he header contains the <b>date range selector</b>, which is the button on the far right. It displays the current range of dates shown in the plot. Pressing it brings up an interface for setting a new range of dates. The "Apply" button on the botton changes the time axis of the plot to correspond to the selected range.</p>
+
+
+<h4>Attribute finder</h4>
+<p>This is the way you find attributes for plotting. Typing something in the search field at the top starts matching the input against all the attributes available in the database. The matches appear in a list below the search field. It's possible to use the asterisk ("*") as a "wildcard" to match partial names, e.g. "*/vac/*/pressure".</p>
+
+<p>Once you have found some attributes, select the ones that are interested in plotting in the list (you can select several by holding <b>ctrl</b> while clicking) and then press the "Add" button beneath. This will open a small menu asking which Y axis to use, left or right.</p>
+
+<p>The attributes you have added will appear in the lower part of the finder, under the appropriate Y axis. They should also start to load in the plot, provided that there is any data for them in the current time range.</p>
+
+<p> From here it's possible to configure each axis to be <b>logarithmic</b>, by checking the "Log" box by the axis. Note that doing this forces the plot to be redrawn. </p>
+
+<p> <b>Remove</b> attributes from the plot by selecting them in the list and pressing "Delete". This will also cause the plot to redraw.</p>
+
+
+<h4>Plot</h4>
+<p>The main part of the UI is the graphical representation of attribute data. It's a standard plot with time on the X scale and two separate Y axes for attribute value.</p>
+
+<p>There is an indicator at the bottom right that tells you whether data is being loaded, or how long the latest fetch took. </p>
+
+<p>You can interact with the plot by pressing the left mouse button and dragging left/right to move the time scale, and by scrolling the mouse wheel to zoom in/out. The Y scales automatically rescale to fit all the visible data. Once you stop interacting for a short period, the plot will be automatically refreshed from the server.</p>
+
+<p>When the mouse pointer is over the plot, some information about the nearest line is shown in a hovering box. This information depends on the scale; the x-scale is "binned" per-pixel so if there are more than one point in the given bin, the count and maximum/minimum values are displayed, otherwise the value of the actual point is shown.</p>
+
+
+<h3>Saving views</h3>
+It may be useful to save a view of some attributes for future use. This can be accomplished simply by using the bookmarks feature of your browser. The URL contains all the settings (attributes, time range, etc) currently set so that loading a bookmark will take you back to exactly the same view. Also, by copying the current address it's possible to share a link to the current view.

@@ -48,7 +48,7 @@ class App extends React.Component {
                           <MenuItem divider/>
                           <MenuItem eventKey={3.3}>All</MenuItem>
                           </NavDropdown>
-                          <NavItem eventKey={2} href="#">Help</NavItem>
+                          <NavItem eventKey={2} href="/help.html">Help</NavItem>
                         </Nav>
 
                         <Navbar.Form pullRight>
