@@ -2,7 +2,7 @@
 
 This is a web based viewer for HDB++ archive data, currently only supporting the Cassandra backend.
 
-It is currently in a proof-of-concept stage, and several features are partially working or broken.
+It is currently in a "beta" stage, with basic functionality in place but very limited testing. Bug reports are welcome!
 
 
 ## Features
@@ -10,32 +10,40 @@ It is currently in a proof-of-concept stage, and several features are partially 
 ### Basic functionality
 * Searching for stored attributes
 * Selecting which attributes to add
-* Free scrolling/zooming in the plot
+* Free scrolling/zooming the time scale in the plot
 * Two separate Y axes (no hard restriction, but needs UI)
 * Y axes autoscale
 * Encodes current view in URL (e.g. for saving as a bookmark)
 * Display min/max etc. on mouseover
+* Linear and logarithmic Y axes
+* Cache database queries in memory.
 
 ### Missing functionality
-* Log Y axes
 * Configure color, Y-axis etc for each line
 * Periodical updates
 * Display attribute configuration
 * Display errors
-* General robustness
 * "Special" datatypes: String, Boolean, State, Spectrum, ...
-* Cassandra authentication?
+* Cassandra authentication (?)
 * Subsecond timestamps
+* General robustness
+* Allow downloading "raw" data
+* Displaying data as a table
+* Manual scaling of Y axes.
 
 ### Improvements needed
-* Data readout and packaging is hacky
-* Re-loads the view each time anything changes, maybe possible to be smarter here?
-* UI is very basic
-* Plotting is a mess
-* Mouseover stuff also messy
+* Optimize data readout and processing
+* UI is pretty basic
+* Mouseover stuff is a mess
+* Server configuration
+* Not sure about the url hash json stuff...
 
 ### Ideas
-* Use websocket to send data incrementally instead of once?
+* Use websocket to send data incrementally?
+* Use canvas for plotting
+* Now re-loads the view each time anything changes, maybe possible to be smarter here?
+* Would it be useful (or just confusing) to allow more than two Y-axes?
+* Other ways of browsing for attributes; e.g. a tree?
 
 
 ## Requirements
@@ -45,6 +53,9 @@ It is currently in a proof-of-concept stage, and several features are partially 
  * aiohttp
  * cassandra-driver >= 3.6 (needs to be built with numpy support!)
  * datashader
+
+Datashader has a bunch of scientific python dependencies, the easiest way to get it is probably through anaconda.
+
 
 ### Javascript (for building)
  * node.js
