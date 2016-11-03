@@ -98,6 +98,7 @@ class TimeRange extends React.Component {
                              right: "10px"}}>
                   <DateRange startDate={startDate}
                              endDate={endDate}
+                             firstDayOfWeek={1}  // start week on mondays
                              onChange={this.handleSelect.bind(this)}
                              ranges={defaultRanges}
                              theme= {{Calendar : {width : '300px',
