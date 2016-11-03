@@ -174,15 +174,17 @@ def get_extrema(attributes, results, time_range, axes):
         # find local extrema
         y_axis = info["y_axis"]
         axis_config = axes.get(str(y_axis), {})
-        print("y_axis", y_axis, axes, axis_config)
         relevant = data[(data["t"] >= time_range[0]) &
                         (data["t"] <= time_range[1])]
-        value_max = relevant["v"].max()
+
         if axis_config.get("scale") == "log":
             # ignore zero or negative values
-            value_min = np.take(relevant["v"],
-                                np.where(relevant["v"] > 0)[0]).min()
+            valid = np.take(relevant["v"],
+                            np.where(relevant["v"] > 0)[0])
+            value_min = valid.min()
+            value_max = valid.max()
         else:
+            value_max = relevant["v"].max()
             value_min = relevant["v"].min()
 
         per_axis[y_axis][name] = dict(
@@ -247,13 +249,9 @@ def make_axis_images(per_axis, time_range, size, axes):
                 vmin = 1.5*v
                 vmax = v / 2
             y_range = (vmin, vmax)
-        elif scale == "log":
-            y_range = axis_min, axis_max
         else:
-            # just pad the extreme values a bit
-            axis_d = axis_max - axis_min
-            padding = 0.05 * axis_d
-            y_range = (axis_min - padding, axis_max + padding)
+            y_range = axis_min, axis_max
+
         logging.debug("Axis %r has range %r", y_axis, y_range)
 
         # project the data into an image (using datashader)
