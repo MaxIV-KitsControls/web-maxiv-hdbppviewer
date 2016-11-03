@@ -25,12 +25,12 @@ It is currently in a "beta" stage, with basic functionality in place but very li
 * Display errors
 * "Special" datatypes: String, Boolean, State, Spectrum, ...
 * Cassandra authentication (?)
-* Subsecond timestamps
 * General robustness
 * Allow downloading "raw" data
 * Displaying data as a table
 * Manual scaling of Y axes.
 * Rescale the UI when the window size changes
+* Handling different control systems/keyspaces
 
 ### Improvements needed
 * Optimize data readout and processing
