@@ -43,7 +43,8 @@ HDBPP_DATA_TYPES = [
 ]
 
 
-timestampify = np.vectorize(lambda x: x.timestamp()*1000, otypes=[np.float64])
+timestampify = np.vectorize(lambda d, us: d.timestamp()*1000 + us/1000.,
+                            otypes=[np.float64])
 
 
 class HDBPlusPlusConnection(object):
@@ -97,7 +98,7 @@ class HDBPlusPlusConnection(object):
         for data_type in HDBPP_DATA_TYPES:
             try:
                 self.prepared["data"][data_type] = self.session.prepare(
-                    ("SELECT data_time,value_r,error_desc "
+                    ("SELECT data_time,data_time_us,value_r,error_desc "
                      "FROM att_%s "
                      "WHERE att_conf_id = ? "
                      "AND period = ? ") % data_type)
@@ -202,9 +203,16 @@ class HDBPlusPlusConnection(object):
         dfs = []
         while True:
             rows = res.current_rows[0]
+            timestamps = rows["data_time"]
+            microseconds = rows["data_time_us"]
+
+            # Add the microseconds to the timestamp
+            # TODO: this seems very slow, as it's done per element.
+            # Find a better way!
+            t = timestampify(timestamps, microseconds)
             df = pd.DataFrame(dict(v=rows["value_r"],
-                                   e=rows["error_desc"],
-                                   t=timestampify(rows["data_time"])))
+                                   e=rows["error_desc"], t=t))
+
             dfs.append(df)
             if res.has_more_pages:
                 res.fetch_next_page()

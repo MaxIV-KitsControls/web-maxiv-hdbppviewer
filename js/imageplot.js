@@ -317,7 +317,7 @@ export class ImagePlot {
             text = (`<b style="color:${color};">${closest}</b>` +
                     `<br>Value: ${max}` +
                     `<br>Date: ${timestamp.toLocaleDateString()}` +
-                    `<br>Time: ${timestamp.toLocaleTimeString()}`);
+                    `<br>Timez: ${timestamp.toLocaleTimeString()}.${timestamp.getMilliseconds()}`);
         } else {
             text = (`<b style="color:${color};">${closest}</b>` +
                     `<br>Points: ${count}` +
