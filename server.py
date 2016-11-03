@@ -288,7 +288,7 @@ def make_axis_images(per_axis, time_range, size, axes):
 def timer(msg):
     start = time.time()
     yield
-    logging.debug(msg, time.time() - start)
+    logging.debug("%s took %f s", msg, time.time() - start)
 
 
 async def get_images(hdbpp, request):
@@ -316,16 +316,16 @@ async def get_images(hdbpp, request):
     # parts can be done in parallel.
 
     # get archived data from cassandra
-    with timer("Fetching from database took %f s"):
+    with timer("Fetching from database"):
         data = await get_data(hdbpp, attributes, time_range)
 
     # calculate the max/min for each y-axis
-    with timer("Calculating extrema took %f s"):
+    with timer("Calculating extrema"):
         per_axis = get_extrema(attributes, data, time_range, axes)
 
     # Now generate one image for each y-axis.
     loop = asyncio.get_event_loop()
-    with timer("Processing took %f s"):
+    with timer("Processing"):
         images, descs = await loop.run_in_executor(
             None, partial(make_axis_images, per_axis, time_range, size, axes))
 
