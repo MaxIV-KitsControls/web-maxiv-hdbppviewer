@@ -87,11 +87,12 @@ def make_image(data, time_range, y_range, size, scale=None, width=0):
                                 vmax=datashader.max("v")
                             ))
     color = data["info"].get("color", "red")
-    image = datashader.transfer_functions.shade(agg_line, cmap=[color])
+    #image = datashader.transfer_functions.shade(agg_line, cmap=[color])  # newer datashader version
+    image = datashader.transfer_functions.interpolate(agg_line, cmap=[color])
     if width > 0:
         image = datashader.transfer_functions.spread(image, px=width)
 
-    with timer("Making hover info took %f s"):
+    with timer("Making hover info"):
         indices = np.where(np.nanmax(agg_points["count"].values, axis=0))[0]
         vmin = np.take(np.nanmin(agg_points["vmin"].values, axis=0), indices)
         vmax = np.take(np.nanmax(agg_points["vmax"].values, axis=0), indices)
