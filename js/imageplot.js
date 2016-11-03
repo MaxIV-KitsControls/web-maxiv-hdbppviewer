@@ -6,6 +6,9 @@ import {debounce} from "./utils"
 const Y_AXIS_WIDTH = 0;  // how much horizontal room to reserve for each Y axis,
                            // to make room for tick labels
 
+const Y_RANGE_PADDING = 0.05;  // how much room to leave above and below the
+                               // lines, relative to the height
+
 var customTimeFormat = d3.time.format.multi([
   [".%L", function(d) { return d.getMilliseconds(); }],
   [":%S", function(d) { return d.getSeconds(); }],
@@ -66,6 +69,7 @@ export class ImagePlot {
         this.setSize();
         this.setUp(timeRange);
     }
+    
 
     setUp(timeRange) {
 
@@ -377,6 +381,15 @@ export class ImagePlot {
         this.descriptions = descriptions;
     }
 
+    // Given the (min, max) Y range of the data, return a (min', max') range
+    // that covers the data Y range plus a visually consistent amount of padding.
+    calculateYRange(data_range, log) {
+        const [ymin, ymax] = data_range;
+        const height = Math.abs(ymax - ymin);
+        const padding = height * Y_RANGE_PADDING;
+        return [ymin - padding, ymax + padding]
+    }
+
     setData(data) {
 
         const axes = Object.keys(data);
@@ -394,14 +407,15 @@ export class ImagePlot {
             }
             
             const {image, x_range, y_range} = data[axis];
-            const [currentYMin, currentYMax] = this.yScales[axis].domain(),
-                  [yMin, yMax] = y_range,
-                  yScale = (Math.abs(yMax - yMin) /
+            const [currentYMin, currentYMax] = this.yScales[axis].domain();
+            const [yMin, yMax] = this.calculateYRange(y_range);
+            const yScale = (Math.abs(yMax - yMin) /
                             Math.abs(currentYMax - currentYMin));
             this.imageTimeRanges[(this.currentImage + 1) % 2] = x_range;            
             // Set the data of the "offscreen" image, and reset the
             // transform Is there a way to do this "atomically"? Maybe
             // use a canvas instead...
+            this.yScales[axis].domain([yMin, yMax]);                        
             this.getNextImage(axis)
                 .attr("transform",
                       `translate(${this.x(x_range[0])},${this.yScales[axis](yMax)-this.margin.top})` +
@@ -411,7 +425,7 @@ export class ImagePlot {
                 .transition()
                 .attr("transform", `translate(${this.x(x_range[0])},0)` +
                       `scale(1,1)`)
-            this.yScales[axis].domain(data[axis].y_range);            
+
             this.yAxisElements[axis]
                 .transition()
                 .call(this.yAxes[axis])
@@ -499,7 +513,9 @@ export class ImagePlot {
         const [xStart, xEnd] = this.x.domain(),
               [xMin, xMax] = this.x.range(),
               [yMin, yMax] = this.yScales[0].range();
-        this.onChange(xStart, xEnd, xMax - xMin, yMin - yMax)
+        const height = Math.abs(yMax - yMin);
+        const padding = height * Y_RANGE_PADDING;
+        this.onChange(xStart, xEnd, xMax - xMin, Math.floor(height - padding*2))
     }
         
 }
