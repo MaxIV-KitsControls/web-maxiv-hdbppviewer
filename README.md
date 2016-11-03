@@ -30,6 +30,7 @@ It is currently in a "beta" stage, with basic functionality in place but very li
 * Allow downloading "raw" data
 * Displaying data as a table
 * Manual scaling of Y axes.
+* Rescale the UI when the window size changes
 
 ### Improvements needed
 * Optimize data readout and processing
@@ -44,6 +45,7 @@ It is currently in a "beta" stage, with basic functionality in place but very li
 * Now re-loads the view each time anything changes, maybe possible to be smarter here?
 * Would it be useful (or just confusing) to allow more than two Y-axes?
 * Other ways of browsing for attributes; e.g. a tree?
+* Mobile optimized view? The plot actually works pretty well on a mobile screen, but the rest is unusable as it is.
 
 
 ## Requirements
