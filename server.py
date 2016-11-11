@@ -61,9 +61,18 @@ from dask.delayed import delayed
 from hdbpp import HDBPlusPlusConnection
 
 
-CASSANDRA_NODES = ["localhost"]
-#CASSANDRA_NODES = ["b-v-db-cn-3"]
+#CASSANDRA_NODES = ["localhost"]
+CASSANDRA_NODES = ["g-v-db-cn-0"]  #, "g-v-db-cn-1", "g-v-db-cn-2", "g-v-db-cn-3"]
 CASSANDRA_KEYSPACE = "hdb"
+# This is a map between blue IPs and green hostnames. It's needed for clients
+# on the green network to be able to automatically find cassandra nodes since
+# they use blue IPs.
+CASSANDRA_ADDRESS_TRANSLATION = {
+    "172.16.2.31": "g-v-db-cn-0",
+    "172.16.2.32": "g-v-db-cn-1",
+    "172.16.2.33": "g-v-db-cn-2",
+    "172.16.2.34": "g-v-db-cn-3"
+}
 PORT = 5005
 
 
@@ -128,7 +137,6 @@ async def get_attributes(hdbpp, request):
     data = json.dumps({"attributes": matches})
     return web.Response(body=data.encode("utf-8"),
                         content_type="application/json")
-
 
 
 def encode_image(image):
@@ -348,7 +356,8 @@ if __name__ == "__main__":
     loop.set_default_executor(ThreadPoolExecutor(10))
 
     hdbpp = HDBPlusPlusConnection(nodes=CASSANDRA_NODES,
-                                  keyspace=CASSANDRA_KEYSPACE)
+                                  keyspace=CASSANDRA_KEYSPACE,
+                                  address_map=CASSANDRA_ADDRESS_TRANSLATION)
     cache = {}
 
     app.router.add_route('GET', '/attributes', partial(get_attributes, hdbpp))

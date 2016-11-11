@@ -5,8 +5,10 @@ from datetime import date, timedelta, datetime
 
 from cassandra.cluster import Cluster
 from cassandra.protocol import NumpyProtocolHandler, LazyProtocolHandler
+from cassandra.policies import AddressTranslator
 from cassandra.query import tuple_factory
 from cassandra.connection import InvalidRequestException
+
 import numpy as np
 import pandas as pd
 
@@ -47,13 +49,33 @@ timestampify = np.vectorize(lambda d, us: d.timestamp()*1000 + us/1000.,
                             otypes=[np.float64])
 
 
+class LocalNetworkAdressTranslator(AddressTranslator):
+
+    # A simple translator for ip addresses. It's only used
+    # for automatic node discovery and can be useful for
+    # the case where clients are on a different network
+    # from cassandra.
+
+    def __init__(self, addr_map=None):
+        self.addr_map = addr_map
+
+    def translate(self, addr):
+        new_addr = self.addr_map.get(addr)
+        return new_addr
+
+
 class HDBPlusPlusConnection(object):
 
     "A very simple direct interface to the HDB++ cassandra backend"
 
-    def __init__(self, nodes=None, keyspace="hdb", fetch_size=50000):
+    def __init__(self, nodes=None, keyspace="hdb", address_map=None,
+                 fetch_size=50000):
         self.nodes = nodes if nodes else ["localhost"]
-        self.cluster = Cluster(self.nodes)
+        if address_map:
+            translator = LocalNetworkAdressTranslator(address_map)
+            self.cluster = Cluster(self.nodes, address_translator=translator)
+        else:
+            self.cluster = Cluster(self.nodes)
 
         self.session = self.cluster.connect(keyspace)
         self.session.default_fetch_size = fetch_size
