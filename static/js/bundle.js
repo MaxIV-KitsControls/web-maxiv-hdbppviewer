@@ -114,6 +114,8 @@
 	var reducer = (0, _redux.combineReducers)(reducers);
 	var store = createStoreWithMiddleware(reducer);
 
+	store.dispatch((0, _actions.getControlsystems)());
+
 	var App = function (_React$Component) {
 	    _inherits(App, _React$Component);
 
@@ -154,36 +156,6 @@
 	                            _react2.default.createElement(
 	                                _reactBootstrap.Nav,
 	                                null,
-	                                _react2.default.createElement(
-	                                    _reactBootstrap.NavDropdown,
-	                                    { eventKey: 1, title: "Database", id: "basic-nav-dropdown" },
-	                                    _react2.default.createElement(
-	                                        _reactBootstrap.MenuItem,
-	                                        { eventKey: 3.1 },
-	                                        "g-v-csdb-0"
-	                                    ),
-	                                    _react2.default.createElement(
-	                                        _reactBootstrap.MenuItem,
-	                                        { eventKey: 3.2 },
-	                                        "b-femtomax-csdb-0"
-	                                    ),
-	                                    _react2.default.createElement(
-	                                        _reactBootstrap.MenuItem,
-	                                        { eventKey: 3.3 },
-	                                        "b-veritas-csdb-0"
-	                                    ),
-	                                    _react2.default.createElement(
-	                                        _reactBootstrap.MenuItem,
-	                                        { eventKey: 3.4 },
-	                                        "..."
-	                                    ),
-	                                    _react2.default.createElement(_reactBootstrap.MenuItem, { divider: true }),
-	                                    _react2.default.createElement(
-	                                        _reactBootstrap.MenuItem,
-	                                        { eventKey: 3.3 },
-	                                        "All"
-	                                    )
-	                                ),
 	                                _react2.default.createElement(
 	                                    _reactBootstrap.NavItem,
 	                                    { eventKey: 2, href: "/help.html" },
@@ -42525,6 +42497,7 @@
 
 	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+	exports.controlsystems = controlsystems;
 	exports.attributeSuggestions = attributeSuggestions;
 	exports.archiveData = archiveData;
 	exports.details = details;
@@ -42542,6 +42515,17 @@
 	var _actions = __webpack_require__(458);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function controlsystems() {
+	    var state = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+	    var action = arguments[1];
+
+	    switch (action.type) {
+	        case _actions.RECEIVE_CONTROLSYSTEMS:
+	            return action.controlsystems;
+	    }
+	    return state;
+	}
 
 	function attributeSuggestions() {
 	    var state = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
@@ -42621,8 +42605,8 @@
 	                (function () {
 	                    var usedColors = new Set(Object.keys(state).map(function (k) {
 	                        return state[k].color;
-	                    }));
-	                    var remainingColors = LINE_COLORS.filter(function (c) {
+	                    })),
+	                        remainingColors = LINE_COLORS.filter(function (c) {
 	                        return !usedColors.has(c);
 	                    });
 	                    color = remainingColors[0];
@@ -51484,10 +51468,11 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.SET_AXIS_SCALE = exports.SET_ATTRIBUTE_COLOR = exports.SET_ATTRIBUTES_AXIS = exports.REMOVE_ATTRIBUTES = exports.ADD_ATTRIBUTES = exports.SET_TIME_RANGE = exports.RECEIVE_DETAILS = exports.RECEIVE_ARCHIVE_DESCS = exports.RECEIVE_ARCHIVE_DATA = exports.FETCH_ARCHIVE_DATA = exports.RECEIVE_SUGGESTIONS = undefined;
+	exports.SET_AXIS_SCALE = exports.SET_ATTRIBUTE_COLOR = exports.SET_ATTRIBUTES_AXIS = exports.REMOVE_ATTRIBUTES = exports.ADD_ATTRIBUTES = exports.SET_TIME_RANGE = exports.RECEIVE_DETAILS = exports.RECEIVE_ARCHIVE_DESCS = exports.RECEIVE_ARCHIVE_DATA = exports.FETCH_ARCHIVE_DATA = exports.RECEIVE_SUGGESTIONS = exports.RECEIVE_CONTROLSYSTEMS = undefined;
 
 	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
+	exports.getControlsystems = getControlsystems;
 	exports.getSuggestions = getSuggestions;
 	exports.addAttributes = addAttributes;
 	exports.removeAttributes = removeAttributes;
@@ -51503,6 +51488,7 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	var RECEIVE_CONTROLSYSTEMS = exports.RECEIVE_CONTROLSYSTEMS = "RECEIVE_CONTROLSYSTEMS";
 	var RECEIVE_SUGGESTIONS = exports.RECEIVE_SUGGESTIONS = "RECEIVE_SUGGESTIONS";
 	var FETCH_ARCHIVE_DATA = exports.FETCH_ARCHIVE_DATA = "FETCH_ARCHIVE_DATA";
 	var RECEIVE_ARCHIVE_DATA = exports.RECEIVE_ARCHIVE_DATA = "RECEIVE_ARCHIVE_DATA";
@@ -51515,10 +51501,22 @@
 	var SET_ATTRIBUTE_COLOR = exports.SET_ATTRIBUTE_COLOR = "SET_ATTRIBUTE_COLOR";
 	var SET_AXIS_SCALE = exports.SET_AXIS_SCALE = "SET_AXIS_SCALE";
 
-	function getSuggestions(pattern) {
+	function getControlsystems() {
 	    // ask the server for attributes matching the given pattern
 	    return (0, _utils.debounce)(function (dispatch) {
-	        (0, _isomorphicFetch2.default)("/attributes?search=" + pattern).then(function (response) {
+	        (0, _isomorphicFetch2.default)('/controlsystems').then(function (response) {
+	            return response.json();
+	        }).then(function (data) {
+	            return dispatch({ type: RECEIVE_CONTROLSYSTEMS,
+	                controlsystems: data.controlsystems });
+	        });
+	    }, 500); // no point in asking too often
+	}
+
+	function getSuggestions(controlsystem, pattern) {
+	    // ask the server for attributes matching the given pattern
+	    return (0, _utils.debounce)(function (dispatch) {
+	        (0, _isomorphicFetch2.default)("/attributes?cs=" + controlsystem + "&search=" + pattern).then(function (response) {
 	            return response.json();
 	        }).then(function (data) {
 	            return dispatch({ type: RECEIVE_SUGGESTIONS, suggestions: data.attributes });
@@ -51528,6 +51526,7 @@
 
 	function addAttributes(attributes, axis) {
 	    // add a list of attributes to the given axis in the plot
+	    // the attributes must be on the form "{controlsystem}/{device}/{name}".
 	    return function (dispatch, getState) {
 	        var attrs = [];
 	        attributes.forEach(function (attr) {
@@ -52538,7 +52537,7 @@
 	            // Display a text box that reveals some numbers about the closest point
 	            var text = void 0;
 	            if (count == 1) {
-	                text = "<b style=\"color:" + color + ";\">" + closest + "</b>" + ("<br>Value: " + max) + ("<br>Date: " + timestamp.toLocaleDateString()) + ("<br>Time: " + timestamp.toLocaleTimeString());
+	                text = "<b style=\"color:" + color + ";\">" + closest + "</b>" + ("<br>Value: " + max) + ("<br>Date: " + timestamp.toLocaleDateString()) + ("<br>Timez: " + timestamp.toLocaleTimeString() + "." + timestamp.getMilliseconds());
 	            } else {
 	                text = "<b style=\"color:" + color + ";\">" + closest + "</b>" + ("<br>Points: " + count) + ("<br>Max: " + max) + ("<br>Min: " + min) + ("<br>Date: " + timestamp.toLocaleDateString()) + ("<br>Time: " + timestamp.toLocaleTimeString());
 	                // `<br>Mean: ${mean}`)
@@ -52946,7 +52945,8 @@
 	                        right: "10px" } },
 	                _react2.default.createElement(_reactDateRange.DateRange, { startDate: startDate,
 	                    endDate: endDate,
-	                    onChange: this.handleSelect.bind(this),
+	                    firstDayOfWeek: 1 // start week on mondays
+	                    , onChange: this.handleSelect.bind(this),
 	                    ranges: defaultRanges,
 	                    theme: { Calendar: { width: '300px',
 	                            padding: '10px 9px' } } }),
@@ -68390,6 +68390,8 @@
 
 	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _react = __webpack_require__(1);
@@ -68422,41 +68424,31 @@
 	// import AutoSuggest from 'react-autosuggest';
 
 
-	var SearchResults = function (_React$Component) {
-	    _inherits(SearchResults, _React$Component);
+	var ATTRIBUTE_REGEX = /(.*)\/([^/]+\/[^/]*\/[^/]*\/[^/]*)/;
 
-	    function SearchResults() {
-	        _classCallCheck(this, SearchResults);
-
-	        return _possibleConstructorReturn(this, (SearchResults.__proto__ || Object.getPrototypeOf(SearchResults)).apply(this, arguments));
-	    }
-
-	    return SearchResults;
-	}(_react2.default.Component);
-
-	var PlottedAttributes = function (_React$Component2) {
-	    _inherits(PlottedAttributes, _React$Component2);
+	var PlottedAttributes = function (_React$Component) {
+	    _inherits(PlottedAttributes, _React$Component);
 
 	    function PlottedAttributes() {
 	        _classCallCheck(this, PlottedAttributes);
 
-	        var _this2 = _possibleConstructorReturn(this, (PlottedAttributes.__proto__ || Object.getPrototypeOf(PlottedAttributes)).call(this));
+	        var _this = _possibleConstructorReturn(this, (PlottedAttributes.__proto__ || Object.getPrototypeOf(PlottedAttributes)).call(this));
 
-	        _this2.state = {
+	        _this.state = {
 	            selected: []
 	        };
-	        return _this2;
+	        return _this;
 	    }
 
 	    _createClass(PlottedAttributes, [{
 	        key: "getAttributesOnYAxis",
 	        value: function getAttributesOnYAxis(axis) {
-	            var _this3 = this;
+	            var _this2 = this;
 
 	            return this.props.attributes
 	            //.map(k => this.props.config[k])
 	            .filter(function (a) {
-	                return _this3.props.config[a].axis == axis;
+	                return _this2.props.config[a].axis == axis;
 	            });
 	        }
 	    }, {
@@ -68483,29 +68475,85 @@
 	        }
 	    }, {
 	        key: "makeAttributePopover",
-	        value: function makeAttributePopover(attr) {
+	        value: function makeAttributePopover(attr, cs, name) {
 	            var config = this.props.config[attr] || {};
 	            var desc = this.props.desc[attr] || {};
 	            return _react2.default.createElement(
 	                _reactBootstrap.Popover,
-	                { id: "attribute-" + attr, title: attr },
+	                { className: "attribute-info", id: "attribute-" + name },
 	                _react2.default.createElement(
-	                    "div",
+	                    "table",
 	                    null,
-	                    "Axis: ",
-	                    config.axis
-	                ),
-	                _react2.default.createElement(
-	                    "div",
-	                    null,
-	                    "Color: ",
-	                    config.color
-	                ),
-	                _react2.default.createElement(
-	                    "div",
-	                    null,
-	                    "Points: ",
-	                    desc.total_points
+	                    _react2.default.createElement(
+	                        "tbody",
+	                        null,
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Name:"
+	                            ),
+	                            _react2.default.createElement(
+	                                "td",
+	                                { colSpan: "5" },
+	                                name
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "CS:"
+	                            ),
+	                            " ",
+	                            _react2.default.createElement(
+	                                "td",
+	                                { colSpan: "5" },
+	                                cs
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Axis:"
+	                            ),
+	                            " ",
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                config.axis
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Color:"
+	                            ),
+	                            " ",
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                config.color
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Points:"
+	                            ),
+	                            " ",
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                desc.total_points
+	                            )
+	                        )
+	                    )
 	                )
 	            );
 	        }
@@ -68527,6 +68575,15 @@
 	    }, {
 	        key: "makeAttribute",
 	        value: function makeAttribute(a) {
+	            console.log("makeAttribute", a);
+
+	            var _ATTRIBUTE_REGEX$exec = ATTRIBUTE_REGEX.exec(a).slice(1);
+
+	            var _ATTRIBUTE_REGEX$exec2 = _slicedToArray(_ATTRIBUTE_REGEX$exec, 2);
+
+	            var cs = _ATTRIBUTE_REGEX$exec2[0];
+	            var name = _ATTRIBUTE_REGEX$exec2[1];
+
 	            return _react2.default.createElement(
 	                "li",
 	                { key: a, onClick: this.onAttributeClick.bind(this, a),
@@ -68536,7 +68593,7 @@
 	                _react2.default.createElement(
 	                    _reactBootstrap.OverlayTrigger,
 	                    { trigger: ["hover", "focus"], placement: "right",
-	                        overlay: this.makeAttributePopover(a) },
+	                        overlay: this.makeAttributePopover(a, cs, name) },
 	                    _react2.default.createElement(
 	                        "div",
 	                        null,
@@ -68549,7 +68606,7 @@
 	                        _react2.default.createElement(
 	                            "span",
 	                            null,
-	                            a
+	                            name
 	                        )
 	                    )
 	                )
@@ -68558,13 +68615,13 @@
 	    }, {
 	        key: "render",
 	        value: function render() {
-	            var _this4 = this;
+	            var _this3 = this;
 
 	            var leftYAxis = this.getAttributesOnYAxis(0).map(function (a) {
-	                return _this4.makeAttribute(a);
+	                return _this3.makeAttribute(a);
 	            }),
 	                rightYAxis = this.getAttributesOnYAxis(1).map(function (a) {
-	                return _this4.makeAttribute(a);
+	                return _this3.makeAttribute(a);
 	            });
 
 	            return _react2.default.createElement(
@@ -68631,92 +68688,91 @@
 	    return PlottedAttributes;
 	}(_react2.default.Component);
 
-	var Attributes = function (_React$Component3) {
-	    _inherits(Attributes, _React$Component3);
+	var Attributes = function (_React$Component2) {
+	    _inherits(Attributes, _React$Component2);
 
-	    function Attributes() {
+	    function Attributes(props) {
 	        _classCallCheck(this, Attributes);
 
-	        var _this5 = _possibleConstructorReturn(this, (Attributes.__proto__ || Object.getPrototypeOf(Attributes)).call(this));
+	        // if the controlsystems list is already populated, default to
+	        // the first one
+	        var _this4 = _possibleConstructorReturn(this, (Attributes.__proto__ || Object.getPrototypeOf(Attributes)).call(this));
 
-	        _this5.state = {
+	        var cs = props.controlsystems.length > 0 ? props.controlsystems[0] : null;
+	        _this4.state = {
 	            pattern: '',
 	            selectedSuggestions: [],
 	            selectedAttributes: [],
+	            controlsystem: cs,
 	            showSuggestions: false
 	        };
-	        return _this5;
+	        return _this4;
 	    }
 
 	    _createClass(Attributes, [{
+	        key: "componentWillReceiveProps",
+	        value: function componentWillReceiveProps(props) {
+	            // if we receive a new list of control systems, again default
+	            // to the first one.
+	            if (props.controlsystems.length > 0 && !this.state.controlsystem) {
+	                this.setState({ controlsystem: props.controlsystems[0] });
+	            }
+	        }
+
+	        // the user has typed something in the search field
+
+	    }, {
 	        key: "onPatternChange",
 	        value: function onPatternChange(event) {
 	            var pattern = event.target.value;
-	            this.props.getSuggestions(pattern);
+	            var cs = this.state.controlsystem;
+	            this.props.getSuggestions(cs, pattern);
 	            this.setState({ pattern: pattern });
 	        }
+
+	        // the user has changed the selection of search results
+
 	    }, {
 	        key: "onSelectSuggestions",
 	        value: function onSelectSuggestions(event) {
 	            var selected = getSelectedOptions(event.target);
 	            this.setState({ selectedSuggestions: selected });
 	        }
+
+	        // the user has marked/unmarked some of the plotted attributes
+
 	    }, {
 	        key: "onSelectAttributes",
 	        value: function onSelectAttributes(event) {
 	            var selected = getSelectedOptions(event.target);
 	            this.setState({ selectedAttributes: selected });
 	        }
+
+	        // the user is adding attributes to the plot
+
 	    }, {
 	        key: "onAddAttributes",
 	        value: function onAddAttributes(axis, event) {
-	            this.props.addAttributes(this.state.selectedSuggestions, axis);
+	            var cs = this.state.controlsystem;
+	            var attributes = this.state.selectedSuggestions.map(function (attr) {
+	                return cs + "/" + attr;
+	            });
+	            this.props.addAttributes(attributes, axis);
 	        }
+
+	        // the user is removing attributes from the plot
+
 	    }, {
 	        key: "onRemoveAttributes",
 	        value: function onRemoveAttributes(attributes) {
 	            this.props.removeAttributes(attributes);
 	        }
-
-	        // return appropriate content for a select element that
-	        // shows the current attributes, grouped by Y axis
-
 	    }, {
-	        key: "getCurrentAttributeOptions",
-	        value: function getCurrentAttributeOptions() {
-	            var _this6 = this;
-
-	            var axes = Array.from(new Set(Object.keys(this.props.config).map(function (k) {
-	                return _this6.props.config[k].axis;
-	            }))).sort();
-	            return axes.map(function (axis) {
-	                return _react2.default.createElement(
-	                    "optgroup",
-	                    { label: axis === 0 ? "Left Y axis" : "Right Y axis" },
-	                    _this6.props.attributes.filter(function (a) {
-	                        return _this6.props.config[a].axis == axis;
-	                    }).map(function (attr) {
-	                        return _react2.default.createElement(
-	                            "option",
-	                            { key: attr, value: attr, label: attr, title: attr },
-	                            _react2.default.createElement(
-	                                "span",
-	                                null,
-	                                _react2.default.createElement(
-	                                    "span",
-	                                    { style: {
-	                                            fontWeight: "bold",
-	                                            color: _this6.props.config[attr].color
-	                                        } },
-	                                    " / "
-	                                ),
-	                                " ",
-	                                attr
-	                            )
-	                        );
-	                    })
-	                );
-	            });
+	        key: "onSelectControlsystem",
+	        value: function onSelectControlsystem(event) {
+	            var controlsystem = event.target.value;
+	            this.setState({ controlsystem: controlsystem, selectedAttributes: [] });
+	            this.props.getSuggestions(controlsystem, this.state.pattern);
 	        }
 	    }, {
 	        key: "renderAttributeInfo",
@@ -68802,25 +68858,32 @@
 	    }, {
 	        key: "render",
 	        value: function render() {
-	            var _this7 = this;
+	            var _this5 = this;
 
-	            var attributeOptions = this.getCurrentAttributeOptions();
+	            // the list of available control systems
+	            var controlsystemOptions = this.props.controlsystems.map(function (cs, i) {
+	                return _react2.default.createElement(
+	                    "option",
+	                    { key: i, value: cs },
+	                    cs
+	                );
+	            });
+
+	            // the list of attribute matches
 	            var suggestOptions = this.props.suggestions.map(function (sugg) {
 	                return _react2.default.createElement(
 	                    "option",
 	                    { key: sugg, value: sugg, title: sugg,
-	                        disabled: _this7.props.attributes.indexOf(sugg) != -1 },
+	                        disabled: _this5.props.attributes.indexOf(sugg) != -1 },
 	                    sugg
 	                );
 	            });
-	            var attributeFilter = _react2.default.createElement(_reactBootstrap.FormControl, { type: "search", ref: "search",
-	                value: this.state.pattern,
-	                onChange: this.onPatternChange.bind(this),
-	                placeholder: "e.g */vac/*/pressure" });
+
+	            // the list of plotted attributes
 	            var plottedAttributes = _react2.default.createElement(PlottedAttributes, _extends({}, this.props, {
 	                removeAttributes: this.onRemoveAttributes.bind(this) }));
 
-	            var buttons = _react2.default.createElement(
+	            var addButton = _react2.default.createElement(
 	                _reactBootstrap.DropdownButton,
 	                { id: "add-attribute", bsStyle: "success", title: "Add",
 	                    disabled: this.state.selectedSuggestions.length == 0 },
@@ -68846,12 +68909,34 @@
 	                    null,
 	                    _react2.default.createElement(
 	                        _reactBootstrap.Panel,
-	                        { header: attributeFilter, footer: buttons },
+	                        { footer: addButton },
+	                        _react2.default.createElement(
+	                            _reactBootstrap.FormGroup,
+	                            null,
+	                            _react2.default.createElement(
+	                                _reactBootstrap.FormControl,
+	                                { componentClass: "select", ref: "cs",
+	                                    title: "Pick your control system",
+	                                    value: this.state.controlsystem,
+	                                    onChange: this.onSelectControlsystem.bind(this) },
+	                                controlsystemOptions
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            _reactBootstrap.FormGroup,
+	                            null,
+	                            _react2.default.createElement(_reactBootstrap.FormControl, { type: "search", ref: "search",
+	                                title: "Search for some attribute(s)",
+	                                value: this.state.pattern,
+	                                onChange: this.onPatternChange.bind(this),
+	                                placeholder: "e.g */vac/*/pressure" })
+	                        ),
 	                        _react2.default.createElement(
 	                            _reactBootstrap.FormControl,
 	                            { componentClass: "select", ref: "attributes",
+	                                title: "Select the interesting ones from the matching list of attributes",
 	                                multiple: true, value: this.state.selectedSuggestions,
-	                                style: { width: "100%", height: "150px" },
+	                                style: { width: "100%" }, size: "10",
 	                                onChange: this.onSelectSuggestions.bind(this) },
 	                            suggestOptions
 	                        )
@@ -68867,6 +68952,7 @@
 
 	function mapStateToProps(state) {
 	    return {
+	        controlsystems: state.controlsystems,
 	        attributes: state.attributes,
 	        config: state.attributeConfig,
 	        desc: state.descriptions,
@@ -68877,8 +68963,11 @@
 
 	function mapDispatchToProps(dispatch) {
 	    return {
-	        getSuggestions: function getSuggestions(pattern) {
-	            return dispatch((0, _actions.getSuggestions)(pattern));
+	        getControlsystems: function getControlsystems() {
+	            return dispatch((0, _actions.getControlsystems)());
+	        },
+	        getSuggestions: function getSuggestions(controlsystem, pattern) {
+	            return dispatch((0, _actions.getSuggestions)(controlsystem, pattern));
 	        },
 	        addAttributes: function addAttributes(attributes, axis) {
 	            return dispatch((0, _actions.addAttributes)(attributes, axis));
