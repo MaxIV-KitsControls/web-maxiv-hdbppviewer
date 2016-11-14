@@ -1,7 +1,7 @@
 import R from "ramda";
 
 import {
-    RECEIVE_SUGGESTIONS,
+    RECEIVE_SUGGESTIONS, RECEIVE_CONTROLSYSTEMS,
     FETCH_ARCHIVE_DATA, RECEIVE_ARCHIVE_DATA, RECEIVE_DETAILS,
     RECEIVE_ARCHIVE_DESCS,
     ADD_ATTRIBUTES, REMOVE_ATTRIBUTES, SET_ATTRIBUTES_AXIS,
@@ -10,6 +10,14 @@ import {
     SET_AXIS_SCALE
 } from "./actions"
 
+
+export function controlsystems(state=[], action) {
+    switch (action.type) {
+    case RECEIVE_CONTROLSYSTEMS:
+        return action.controlsystems;
+    }
+    return state;
+}
 
 export function attributeSuggestions(state=[], action) {
     switch (action.type) {

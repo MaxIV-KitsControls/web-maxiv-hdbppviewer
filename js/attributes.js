@@ -8,12 +8,12 @@ import { Input, Button, DropdownButton, MenuItem, Col, Panel, Popover,
          OverlayTrigger, FormGroup, FormControl, Modal, Accordion, Table, Well,
          Checkbox } from 'react-bootstrap';
 
-import { getSuggestions, addAttributes, removeAttributes,
+import { getControlsystems, getSuggestions,
+         addAttributes, removeAttributes,
          setAxisScale } from "./actions";
 
 
-class SearchResults extends React.Component {
-}
+const ATTRIBUTE_REGEX = /(.*)\/([^/]+\/[^/]*\/[^/]*\/[^/]*)/;
 
 
 class PlottedAttributes extends React.Component {
@@ -50,13 +50,25 @@ class PlottedAttributes extends React.Component {
         this.props.removeAttributes(this.state.selected)
     }
 
-    makeAttributePopover (attr) {
+    makeAttributePopover (attr, cs, name) {
         const config = this.props.config[attr] || {}
         const desc = this.props.desc[attr] || {};
-        return (<Popover id={`attribute-${attr}`} title={attr}>
-                  <div>Axis: {config.axis}</div>
-                  <div>Color: {config.color}</div>
-                  <div>Points: {desc.total_points}</div>
+        return (<Popover className="attribute-info" id={`attribute-${name}`}>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <th>Name:</th><td colSpan="5">{name}</td>
+                      </tr>
+                        <tr>
+                          <th>CS:</th> <td colSpan="5">{cs}</td>
+                        </tr>
+                        <tr>
+                          <th>Axis:</th> <td>{config.axis}</td>
+                          <th>Color:</th> <td>{config.color}</td>
+                          <th>Points:</th> <td>{desc.total_points}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                 </Popover>)
     }
 
@@ -75,16 +87,18 @@ class PlottedAttributes extends React.Component {
     // }
     
     makeAttribute(a) {
+        console.log("makeAttribute", a)
+        const [cs, name] = ATTRIBUTE_REGEX.exec(a).slice(1);
         return (<li key={a} onClick={this.onAttributeClick.bind(this, a)}
                 style={{
                     background: this.state.selected.indexOf(a) != -1? "lightgrey" : null
                 }}>
                   <OverlayTrigger trigger={["hover", "focus"]} placement="right"
-                                  overlay={this.makeAttributePopover(a)}>
+                                  overlay={this.makeAttributePopover(a, cs, name)}>
                     <div>
                       <span style={{color: this.props.config[a].color}}>■</span>
                         &nbsp;                         
-                      <span>{a}</span>
+                      <span>{name}</span>
                     </div>
                   </OverlayTrigger>
                 </li>)
@@ -150,64 +164,66 @@ class PlottedAttributes extends React.Component {
     
 class Attributes extends React.Component {
 
-    constructor() {
+    constructor(props) {
         super();
+        // if the controlsystems list is already populated, default to
+        // the first one
+        const cs = props.controlsystems.length > 0? props.controlsystems[0] : null;
         this.state = {
             pattern: '',
             selectedSuggestions: [],
             selectedAttributes: [],
+            controlsystem: cs,
             showSuggestions: false
         };
     }
 
+    componentWillReceiveProps (props) {
+        // if we receive a new list of control systems, again default
+        // to the first one.
+        if (props.controlsystems.length > 0 && !this.state.controlsystem) {
+            this.setState({controlsystem: props.controlsystems[0]});
+        }
+    }
+
+    // the user has typed something in the search field
     onPatternChange (event) {
         let pattern = event.target.value;
-        this.props.getSuggestions(pattern);
+        const cs = this.state.controlsystem;
+        this.props.getSuggestions(cs, pattern);
         this.setState({pattern});
     }
 
+    // the user has changed the selection of search results
     onSelectSuggestions (event) {
         let selected = getSelectedOptions(event.target);
         this.setState({selectedSuggestions: selected});
     }
 
+    // the user has marked/unmarked some of the plotted attributes
     onSelectAttributes (event) {
         let selected = getSelectedOptions(event.target);
         this.setState({selectedAttributes: selected});
     }
-    
+
+    // the user is adding attributes to the plot
     onAddAttributes (axis, event) {
-        this.props.addAttributes(this.state.selectedSuggestions, axis);
+        const cs = this.state.controlsystem;
+        const attributes = this.state.selectedSuggestions.map(attr => `${cs}/${attr}`);
+        this.props.addAttributes(attributes, axis);
     }
 
+    // the user is removing attributes from the plot
     onRemoveAttributes (attributes) {
         this.props.removeAttributes(attributes);
     }
-
-    // return appropriate content for a select element that
-    // shows the current attributes, grouped by Y axis
-    getCurrentAttributeOptions () {        
-        const axes = Array.from(new Set(
-            Object.keys(this.props.config).map(k => this.props.config[k].axis))).sort();
-        return axes.map(axis => (
-                <optgroup label={axis === 0? "Left Y axis" : "Right Y axis"}>
-                {this.props.attributes
-                 .filter(a => this.props.config[a].axis == axis)
-                 .map(attr => (
-                       <option key={attr} value={attr} label={attr} title={attr}>
-                         <span>     
-                           <span style={{
-                             fontWeight: "bold",
-                             color: this.props.config[attr].color
-                           }}> / </span> {attr}
-                         </span>
-                       </option>)
-                     )}
-                </optgroup>
-        ));
-        
+    
+    onSelectControlsystem (event) {
+        const controlsystem = event.target.value;
+        this.setState({controlsystem, selectedAttributes: []});
+        this.props.getSuggestions(controlsystem, this.state.pattern);        
     }
-
+    
     renderAttributeInfo() {
         if (this.state.selectedAttributes.length > 0) {
             const attr = this.state.selectedAttributes[0];
@@ -235,24 +251,25 @@ class Attributes extends React.Component {
     }
     
     render () {
+        
+        // the list of available control systems
+        const controlsystemOptions = this.props.controlsystems.map(
+            (cs, i) => <option key={i} value={cs}>{cs}</option>);
+        
 
-        const attributeOptions = this.getCurrentAttributeOptions();
+        // the list of attribute matches
         const suggestOptions = this.props.suggestions.map(sugg => {
             return <option key={sugg} value={sugg} title={sugg}
                            disabled={this.props.attributes.indexOf(sugg) != -1}>
                        {sugg}
                    </option>;
         });
-        const attributeFilter = (
-                <FormControl type="search" ref="search"
-                    value={this.state.pattern}
-                    onChange={this.onPatternChange.bind(this)}
-                    placeholder="e.g */vac/*/pressure"/>
-        );
+
+        // the list of plotted attributes
         const plottedAttributes = <PlottedAttributes {...this.props}
                                       removeAttributes={this.onRemoveAttributes.bind(this)}/>
 
-        const buttons = (
+        const addButton = (
                 <DropdownButton id="add-attribute" bsStyle="success" title="Add"
                      disabled={this.state.selectedSuggestions.length == 0}>
                   <MenuItem eventKey={0}
@@ -261,16 +278,33 @@ class Attributes extends React.Component {
                   </MenuItem>
                   <MenuItem eventKey={1}
                             onSelect={this.onAddAttributes.bind(this)}>
-                    Right Y</MenuItem>
-                  </DropdownButton>);
+                    Right Y
+                  </MenuItem>
+                </DropdownButton>);
       
         return (
                 <div>
                   <form>               
-                    <Panel header={attributeFilter} footer={buttons}>
-                        <FormControl componentClass="select" ref="attributes"  
+                    <Panel footer={addButton}>
+                      <FormGroup>
+                        <FormControl componentClass="select" ref="cs"
+                                     title="Pick your control system"
+                                     value={this.state.controlsystem}
+                                     onChange={this.onSelectControlsystem.bind(this)}> 
+                          {controlsystemOptions}
+                        </FormControl>
+                      </FormGroup>
+                      <FormGroup>                
+                        <FormControl type="search" ref="search"
+                                     title="Search for some attribute(s)"
+                                     value={this.state.pattern}
+                                     onChange={this.onPatternChange.bind(this)}
+                                     placeholder="e.g */vac/*/pressure"/>
+                        </FormGroup>
+                        <FormControl componentClass="select" ref="attributes"
+                                     title="Select the interesting ones from the matching list of attributes"
                                      multiple value={this.state.selectedSuggestions}
-                                     style={{width: "100%", height: "150px"}}
+                                     style={{width: "100%"}} size="10"
                                      onChange={this.onSelectSuggestions.bind(this)}>
                           {suggestOptions}
                         </FormControl>
@@ -285,6 +319,7 @@ class Attributes extends React.Component {
 
 function mapStateToProps (state) {
     return {
+        controlsystems: state.controlsystems,
         attributes: state.attributes,
         config: state.attributeConfig,
         desc: state.descriptions,
@@ -296,7 +331,8 @@ function mapStateToProps (state) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        getSuggestions: pattern => dispatch(getSuggestions(pattern)),
+        getControlsystems: () => dispatch(getControlsystems()),
+        getSuggestions: (controlsystem, pattern) => dispatch(getSuggestions(controlsystem, pattern)),
         addAttributes: (attributes, axis) => dispatch(addAttributes(attributes, axis)),
         removeAttributes: attributes => dispatch(removeAttributes(attributes)),
         setAxisScale: (axis, scale) => dispatch(setAxisScale(axis, scale))

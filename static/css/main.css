@@ -93,7 +93,6 @@ div.description {
     color: white;
 }
 
-
 line.cursor.x {
     stroke: white;
     opacity: 0.5;
@@ -116,4 +115,21 @@ select option:disabled {
 
 ul.y-axis-attributes li:hover {
     background: #eee;
+}
+
+
+.attribute-info td {
+    padding: 3px 10px;
+    white-space: nowrap;
+}
+
+.attribute-info th {
+    white-space: nowrap;
+    text-align: right;
+}
+
+
+/* a fix to allow the popover to fit the width of the info */
+.popover.attribute-info {
+    max-width: 100%;
 }

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from functools import lru_cache
 import logging
 import time
@@ -47,6 +48,11 @@ HDBPP_DATA_TYPES = [
 
 timestampify = np.vectorize(lambda d, us: d.timestamp()*1000 + us/1000.,
                             otypes=[np.float64])
+
+
+def split_cs_and_attribute(attr):
+    cs, domain, family, member, name = attr.rsplit("/", 4)
+    return cs, "/".join([domain, family, member, name])
 
 
 class LocalNetworkAdressTranslator(AddressTranslator):
@@ -102,7 +108,7 @@ class HDBPlusPlusConnection(object):
                 "from att_names "
             ),
             "config": self.session.prepare(
-                "select att_name,att_conf_id,data_type "
+                "select cs_name,att_name,att_conf_id,data_type "
                 "from att_conf "
             ),
             "parameter": self.session.prepare(
@@ -137,24 +143,29 @@ class HDBPlusPlusConnection(object):
         # have to fetch the whole attribute list (it won't be huge
         # anyway, perhaps 100000 or so) and do matching ourselves.
         names = self.session.execute(self.prepared["attributes"])
-        attributes = zip(names[0]["domain"],
-                         names[0]["family"],
-                         names[0]["member"],
-                         names[0]["name"])
-        return list(attributes)
+        attributes = defaultdict(list)
+        for cs, domain, family, member, device in zip(names[0]["cs_name"],
+                                                      names[0]["domain"],
+                                                      names[0]["family"],
+                                                      names[0]["member"],
+                                                      names[0]["name"]):
+            attributes[cs].append((domain, family, member, device))
+
+        return attributes
 
     @memoized_ttl(60)
     def get_att_configs(self):
         result = self.session.execute(self.prepared["config"])
-        configs = {
-            att_name: {
-                "id": att_conf_id,
-                "data_type": data_type
-            }
-            for row in result
-            for att_name, att_conf_id, data_type
-            in zip(row["att_name"], row["att_conf_id"], row["data_type"])
-        }
+        configs = defaultdict(dict)
+        for row in result:
+            for cs, att, conf_id, data_type in zip(row["cs_name"],
+                                                   row["att_name"],
+                                                   row["att_conf_id"],
+                                                   row["data_type"]):
+                configs[cs][att] = {
+                    "id": conf_id,
+                    "data_type": data_type
+                }
         return configs
 
     # def get_parameter(self, attr, start_time=None, end_time=None):
@@ -199,26 +210,27 @@ class HDBPlusPlusConnection(object):
         end_date = date.fromtimestamp(end_time/1000)
         periods = (str(start_date + timedelta(days=d))
                    for d in range((end_date - start_date).days + 1))
-        return [self.get_attribute_period(attr, period)
+        cs, name = split_cs_and_attribute(attr)
+        return [self.get_attribute_period(cs, name, period)
                 for period in periods]
 
-    def get_attribute_period(self, attr, period):
+    def get_attribute_period(self, cs, attr, period):
         "Return the data for a given attribute and period (day)"
         if period == str(date.today()):
-            print("Today's data requested; not using cache")
-            return self._get_attribute_period.__wrapped__(self, attr, period)
+            # Today's data requested; not using cache
+            return self._get_attribute_period.__wrapped__(self, cs, attr, period)
         try:
-            return self._get_attribute_period(attr, period)
+            return self._get_attribute_period(cs, attr, period)
         except KeyError:
-            # Don't know why this sometimes happens?
-            return self._get_attribute_period.__wrapped__(self, attr, period)
+            # TODO: Don't know why this sometimes happens?
+            return self._get_attribute_period.__wrapped__(self, cs, attr, period)
 
     @lru_cache(maxsize=1024)
-    def _get_attribute_period(self, attr, period):
+    def _get_attribute_period(self, cs, attr, period):
         """Cached version. Since past archived data never changes, it's
         straightforward to cache it.
         """
-        config = self.configs[attr]
+        config = self.configs[cs][attr]
         query = self.prepared["data"][config["data_type"]]
         attr_bound = query.bind([config["id"], period])
         res = self.session.execute(attr_bound)

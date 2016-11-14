@@ -3,6 +3,7 @@ import fetch from "isomorphic-fetch";
 import {debounce} from "./utils";
 
 
+export const RECEIVE_CONTROLSYSTEMS = "RECEIVE_CONTROLSYSTEMS";
 export const RECEIVE_SUGGESTIONS = "RECEIVE_SUGGESTIONS";
 export const FETCH_ARCHIVE_DATA = "FETCH_ARCHIVE_DATA";
 export const RECEIVE_ARCHIVE_DATA = "RECEIVE_ARCHIVE_DATA";
@@ -16,10 +17,21 @@ export const SET_ATTRIBUTE_COLOR = "SET_ATTRIBUTE_COLOR";
 export const SET_AXIS_SCALE = "SET_AXIS_SCALE";
 
 
-export function getSuggestions(pattern) {
+export function getControlsystems() {
     // ask the server for attributes matching the given pattern
     return debounce(function (dispatch) {
-        fetch(`/attributes?search=${pattern}`)
+        fetch('/controlsystems')
+            .then(response => response.json())
+            .then(data => dispatch({type: RECEIVE_CONTROLSYSTEMS,
+                                    controlsystems: data.controlsystems}));
+    }, 500);  // no point in asking too often
+}
+
+
+export function getSuggestions(controlsystem, pattern) {
+    // ask the server for attributes matching the given pattern
+    return debounce(function (dispatch) {
+        fetch(`/attributes?cs=${controlsystem}&search=${pattern}`)
             .then(response => response.json())
             .then(data => dispatch({type: RECEIVE_SUGGESTIONS, suggestions: data.attributes}));
     }, 500);  // no point in asking too often
@@ -28,6 +40,7 @@ export function getSuggestions(pattern) {
 
 export function addAttributes(attributes, axis) {
     // add a list of attributes to the given axis in the plot
+    // the attributes must be on the form "{controlsystem}/{device}/{name}".
     return function (dispatch, getState) {
         let attrs = [];
         attributes.forEach(attr => {

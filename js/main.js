@@ -8,7 +8,7 @@ import createLogger from 'redux-logger';
 import { Nav, Navbar, NavItem, NavDropdown, MenuItem, Grid, Col, Row } from 'react-bootstrap';
 
 import * as reducers from "./reducers";
-import {addAttributes, setTimeRange, setAxisScale } from "./actions";
+import {getControlsystems, addAttributes, setTimeRange, setAxisScale } from "./actions";
 import PlotWrapper from "./plotwrapper";
 import TimeRange from "./timerange";
 import AttributeSearch from "./attributes";
@@ -27,6 +27,9 @@ const reducer = combineReducers(reducers);
 let store = createStoreWithMiddleware(reducer);
 
 
+store.dispatch(getControlsystems())
+
+
 class App extends React.Component {
 
     render () {
@@ -40,14 +43,6 @@ class App extends React.Component {
                           </Navbar.Brand>
                         </Navbar.Header>
                         <Nav>
-                          <NavDropdown eventKey={1} title="Database" id="basic-nav-dropdown">
-                          <MenuItem eventKey={3.1}>g-v-csdb-0</MenuItem>
-                          <MenuItem eventKey={3.2}>b-femtomax-csdb-0</MenuItem>
-                          <MenuItem eventKey={3.3}>b-veritas-csdb-0</MenuItem>
-                          <MenuItem eventKey={3.4}>...</MenuItem>
-                          <MenuItem divider/>
-                          <MenuItem eventKey={3.3}>All</MenuItem>
-                          </NavDropdown>
                           <NavItem eventKey={2} href="/help.html">Help</NavItem>
                         </Nav>
 

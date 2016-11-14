@@ -61,8 +61,8 @@ from dask.delayed import delayed
 from hdbpp import HDBPlusPlusConnection
 
 
-#CASSANDRA_NODES = ["localhost"]
-CASSANDRA_NODES = ["g-v-db-cn-0"]  #, "g-v-db-cn-1", "g-v-db-cn-2", "g-v-db-cn-3"]
+CASSANDRA_NODES = ["localhost"]
+#CASSANDRA_NODES = ["g-v-db-cn-0"]  #, "g-v-db-cn-1", "g-v-db-cn-2", "g-v-db-cn-3"]
 CASSANDRA_KEYSPACE = "hdb"
 # This is a map between blue IPs and green hostnames. It's needed for clients
 # on the green network to be able to automatically find cassandra nodes since
@@ -121,7 +121,17 @@ def make_image(data, time_range, y_range, size, scale=None, width=0):
     return image, desc
 
 
+async def get_controlsystems(hdbpp, request):
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, hdbpp.get_att_configs)
+    controlsystems = sorted(result.keys())
+    data = json.dumps({"controlsystems": controlsystems})
+    return web.Response(body=data.encode("utf-8"),
+                        content_type="application/json")
+
+
 async def get_attributes(hdbpp, request):
+    cs = request.GET["cs"]
     search = request.GET["search"]
     max_n = request.GET.get("max", 100)
     regex = fnmatch.translate(search)
@@ -130,8 +140,7 @@ async def get_attributes(hdbpp, request):
 
     result = await loop.run_in_executor(None, hdbpp.get_attributes)
     attributes = sorted("%s/%s/%s/%s" % attr
-                        for attr in result)
-
+                        for attr in result[cs])
     matches = [attr for attr in attributes
                if re.match(regex, attr, re.IGNORECASE)]
     data = json.dumps({"attributes": matches})
@@ -149,16 +158,17 @@ def encode_image(image):
     return base64.b64encode(data)
 
 
+
 async def get_data(hdbpp, attributes, time_range):
     "Fetch data for all the given attributes over the time range"
     # First get data from the DB and sort by y-axis
     futures = {}
     for attribute in attributes:
         # load data points for the attribute from the archive database
-        name = attribute["name"]
+        name = attribute["name"].lower()
         call = partial(
             hdbpp.get_attribute_data,
-            attr=name.lower(),
+            attr=name,
             start_time=time_range[0],
             end_time=time_range[1])
         # TODO: use the async functionality of cassandra-driver
@@ -360,6 +370,7 @@ if __name__ == "__main__":
                                   address_map=CASSANDRA_ADDRESS_TRANSLATION)
     cache = {}
 
+    app.router.add_route('GET', '/controlsystems', partial(get_controlsystems, hdbpp))
     app.router.add_route('GET', '/attributes', partial(get_attributes, hdbpp))
     app.router.add_route('POST', '/image', partial(get_images, hdbpp))
     app.router.add_static('/', 'static')
