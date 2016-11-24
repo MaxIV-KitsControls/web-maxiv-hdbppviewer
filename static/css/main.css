@@ -77,6 +77,10 @@ image {
     color: white;
 }
 
+.plot-wrapper {
+    position: relative;  /* we want to position e.g. hover stuff relative to this */
+}
+
 div.description {
     pointer-events: none;
     z-index: 100;
@@ -86,6 +90,7 @@ div.description {
     white-space: nowrap;
     padding: 3px;
     border-radius: 3px;
+    margin: 10px;
 }
 
 #current-attributes {

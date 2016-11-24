@@ -199,7 +199,7 @@ export class ImagePlot {
                 .attr("height", this.innerHeight)
         ];
 
-        this.inner
+        this.container
             .on("mousemove", this.showDescription.bind(this))
             .on("mouseenter", this.showDescription.bind(this))
             .on("mouseleave", this.hideDescription.bind(this))
@@ -234,7 +234,7 @@ export class ImagePlot {
         // Display some overlay elements that give more detail about the points
         // close to the mouse.
         
-        const [x, y] = d3.mouse(this.inner.node()),
+        const [x, y] = d3.mouse(this.clipBox.node()),
               i = Math.round(x);
 
         const attributes = Object.keys(this.descriptions);
@@ -322,30 +322,33 @@ export class ImagePlot {
         }
         
         // display a box with numeric info close to the point
+        const right =  Math.round(this.innerHeight -
+                                  (max? this.yScales[axis](max) : y) +
+                                  this.margin.bottom) + 5,
+              left = Math.min(this.innerWidth -
+                              this.margin.left - this.margin.right,
+                              this.margin.left + desc.indices[index]
+                              + 15 + 5),
+              bottom = Math.round(this.innerHeight -
+                                  (max? this.yScales[axis](max) : y) +
+                                  this.margin.bottom) + 5;
+
+        const [cx, cy] = d3.mouse(this.containerElement);        
         if (axis === 0) {
             // attribute on left axis
             this.descElement
                 .style("display", "block")
-                .style("left", null)
-                .style("right", Math.max(0, this.innerWidth -
-                                         desc.indices[index] +
-                                         this.margin.right + 15 + 5))
-                .style("bottom", Math.round(this.innerHeight -
-                                            (max? this.yScales[axis](max) : y) +
-                                            this.margin.bottom) + 5)
+                .style("left", cx)
+                // .style("right", null)
+                .style("top", cy)
                 .html(text)
         } else {
             // attribute on right axis
             this.descElement
                 .style("display", "block")
-                .style("right", null)
-                .style("left", Math.min(this.innerWidth -
-                                        this.margin.left - this.margin.right,
-                                        this.margin.left + desc.indices[index]
-                                        + 15 + 5))
-                .style("bottom", Math.round(this.innerHeight -
-                                            (max? this.yScales[axis](max) : y) +
-                                            this.margin.bottom + 5))
+                // .style("right", null)
+                .style("left", cx)
+                .style("top", cy)
                 .html(text);
         }
     }
