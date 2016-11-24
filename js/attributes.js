@@ -260,7 +260,7 @@ class Attributes extends React.Component {
         // the list of attribute matches
         const suggestOptions = this.props.suggestions.map(sugg => {
             return <option key={sugg} value={sugg} title={sugg}
-                           disabled={this.props.attributes.indexOf(sugg) != -1}>
+                         disabled={this.props.attributes.indexOf(`${this.state.controlsystem}/${sugg}`) != -1}>
                        {sugg}
                    </option>;
         });
