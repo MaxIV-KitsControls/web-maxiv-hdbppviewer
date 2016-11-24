@@ -34,3 +34,10 @@ export function setHashFromState(state) {
     })
     document.location.hash = hash;
 }
+
+
+const ATTRIBUTE_REGEX = /(.*)\/([^/]+\/[^/]*\/[^/]*\/[^/]*)/;
+
+export function parseAttribute(attr) {
+    return ATTRIBUTE_REGEX.exec(attr).slice(1);
+}

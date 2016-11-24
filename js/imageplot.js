@@ -1,6 +1,6 @@
 import d3 from "d3";
 
-import {debounce} from "./utils"
+import {debounce, parseAttribute} from "./utils"
 
 
 const Y_AXIS_WIDTH = 0;  // how much horizontal room to reserve for each Y axis,
@@ -306,13 +306,14 @@ export class ImagePlot {
 
         // Display a text box that reveals some numbers about the closest point
         let text;
+        const [cs, name] = parseAttribute(closest);
         if (count == 1) {
-            text = (`<b style="color:${color};">${closest}</b>` +
+            text = (`<b style="color:${color};">${name}</b>` +
                     `<br>Value: ${max}` +
                     `<br>Date: ${timestamp.toLocaleDateString()}` +
                     `<br>Timez: ${timestamp.toLocaleTimeString()}.${timestamp.getMilliseconds()}`);
         } else {
-            text = (`<b style="color:${color};">${closest}</b>` +
+            text = (`<b style="color:${color};">${name}</b>` +
                     `<br>Points: ${count}` +
                     `<br>Max: ${max}` +
                     `<br>Min: ${min}` +

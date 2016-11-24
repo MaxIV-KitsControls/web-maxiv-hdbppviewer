@@ -11,9 +11,7 @@ import { Input, Button, DropdownButton, MenuItem, Col, Panel, Popover,
 import { getControlsystems, getSuggestions,
          addAttributes, removeAttributes,
          setAxisScale } from "./actions";
-
-
-const ATTRIBUTE_REGEX = /(.*)\/([^/]+\/[^/]*\/[^/]*\/[^/]*)/;
+import { parseAttribute } from "./utils";
 
 
 class PlottedAttributes extends React.Component {
@@ -87,8 +85,7 @@ class PlottedAttributes extends React.Component {
     // }
     
     makeAttribute(a) {
-        console.log("makeAttribute", a)
-        const [cs, name] = ATTRIBUTE_REGEX.exec(a).slice(1);
+        const [cs, name] = parseAttribute(a)
         return (<li key={a} onClick={this.onAttributeClick.bind(this, a)}
                 style={{
                     background: this.state.selected.indexOf(a) != -1? "lightgrey" : null
