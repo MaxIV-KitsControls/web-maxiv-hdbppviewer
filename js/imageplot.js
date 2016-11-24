@@ -222,13 +222,6 @@ export class ImagePlot {
         // const domain = this.yScales[yAxis].domain();
         const scale = d3.scale[scaleType]()
               .range([this.innerHeight + this.margin.top, this.margin.top])
-        // if (scaleType == "log") {
-        //     var [lower,higher] = domain;
-        //     scale.domain([Math.max(0, lower), higher]);
-        // } else {
-        //     scale.domain(domain);
-        // }
-
         this.yScales[yAxis] = scale;
         const axis = this.yAxes[yAxis];
         axis.scale(scale);
@@ -367,6 +360,7 @@ export class ImagePlot {
                 .attr("display", "none");
         })
     }
+    
     setTimeRange(range) {
         this.x.domain(range);
         this.zoom.x(this.x)  // reset the zoom behavior
@@ -383,11 +377,20 @@ export class ImagePlot {
 
     // Given the (min, max) Y range of the data, return a (min', max') range
     // that covers the data Y range plus a visually consistent amount of padding.
-    calculateYRange(data_range, log) {
-        const [ymin, ymax] = data_range;
-        const height = Math.abs(ymax - ymin);
-        const padding = height * Y_RANGE_PADDING;
-        return [ymin - padding, ymax + padding]
+    calculatePaddedYRange(yRange, log) {
+        const [ymin, ymax] = yRange;
+        if (log) {
+            const height = Math.abs(Math.log10(ymax) - Math.log10(ymin)),
+                  padding = ((height / (1 - 2*Y_RANGE_PADDING)) - height) / 2;            
+            return [
+                Math.pow(10, Math.log10(ymin) - padding),
+                Math.pow(10, Math.log10(ymax) + padding)
+            ]
+        } else {
+            const height = Math.abs(ymax - ymin),
+                  padding = ((height / (1 - 2*Y_RANGE_PADDING)) - height) / 2;        
+            return [ymin - padding, ymax + padding]
+        }
     }
 
     setData(data) {
@@ -405,20 +408,21 @@ export class ImagePlot {
                     .attr("visibility", "hidden")
                 continue;
             }
-            
+
+
             const {image, x_range, y_range} = data[axis];
             const [currentYMin, currentYMax] = this.yScales[axis].domain();
-            const [yMin, yMax] = this.calculateYRange(y_range);
+            const [yMin, yMax] = this.calculatePaddedYRange(y_range, !!this.yScales[axis].base);
             const yScale = (Math.abs(yMax - yMin) /
                             Math.abs(currentYMax - currentYMin));
             this.imageTimeRanges[(this.currentImage + 1) % 2] = x_range;            
             // Set the data of the "offscreen" image, and reset the
             // transform Is there a way to do this "atomically"? Maybe
             // use a canvas instead...
-            this.yScales[axis].domain([yMin, yMax]);                        
+            this.yScales[axis].domain([yMin, yMax]);
             this.getNextImage(axis)
                 .attr("transform",
-                      `translate(${this.x(x_range[0])},${this.yScales[axis](yMax)-this.margin.top})` +
+                      `translate(${this.x(x_range[0])},${-this.margin.top})` +
                       `scale(1,${yScale})`)
                 .attr("xlink:href", "data:image/png;base64," + image)
                 .attr("visibility", null)
