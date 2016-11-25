@@ -266,9 +266,9 @@ def make_axis_images(per_axis, time_range, size, axes):
             else:
                 vmin = 1.5*v
                 vmax = v / 2
-            y_range = (vmin, vmax)
+            y_range = (float(vmin), float(vmax))
         else:
-            y_range = axis_min, axis_max
+            y_range = float(axis_min), float(axis_max)
 
         logging.debug("Axis %r has range %r", y_axis, y_range)
 
