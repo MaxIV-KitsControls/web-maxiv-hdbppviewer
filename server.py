@@ -263,6 +263,9 @@ def make_axis_images(per_axis, time_range, size, axes):
             if v > 0:
                 vmin = v / 2
                 vmax = 1.5*v
+            elif v == 0:
+                vmin = -0.5
+                vmax = 0.5
             else:
                 vmin = 1.5*v
                 vmax = v / 2
