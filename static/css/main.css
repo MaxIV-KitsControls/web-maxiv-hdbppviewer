@@ -100,7 +100,7 @@ div.description {
 
 line.cursor.x {
     stroke: white;
-    opacity: 0.5;
+    opacity: 1;
     stroke-width: 1;
     pointer-events: none;
     shape-rendering: crispEdges;
@@ -113,10 +113,14 @@ line.cursor.y {
     shape-rendering: crispEdges;
 }
 
-select option:disabled {
-    color: #000;
-    font-weight: bold;
+select option {
+
 }
+
+select option:disabled {
+    color: #888;
+}
+
 
 ul.y-axis-attributes li:hover {
     background: #eee;
@@ -137,4 +141,10 @@ ul.y-axis-attributes li:hover {
 /* a fix to allow the popover to fit the width of the info */
 .popover.attribute-info {
     max-width: 100%;
+}
+
+
+svg circle {
+    stroke-width: 1.5px;
+    stroke: white;
 }

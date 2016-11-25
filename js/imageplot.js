@@ -276,7 +276,7 @@ export class ImagePlot {
                     .style("display", null)
                 // TODO: why are these offsets needed to center the
                 // circle correctly on the point? 
-                    .attr("cx", x+1)
+                    .attr("cx", x)
                     .attr("cy", ymax-5)
             } else {
                 // Don't show indicator if it's an "aggregated" point
@@ -296,13 +296,14 @@ export class ImagePlot {
               // mean = desc.mean[index].toPrecision(5),
               timestamp = new Date(desc.timestamp[index]),
               axis = this.config[closest].axis,
-              color = this.config[closest].color;
+              color = this.config[closest].color,
+              px = desc.indices[index];
 
         // vertical line indicating where the cursor is
         this.cursorLineX
             .style("display", "block")            
-            .attr("x1", i+.5)
-            .attr("x2", i+.5)
+            .attr("x1", px)
+            .attr("x2", px)
 
         // Display a text box that reveals some numbers about the closest point
         let text;
@@ -425,12 +426,12 @@ export class ImagePlot {
             // use a canvas instead...
             this.yScales[axis].domain([yMin, yMax]);
             this.getNextImage(axis)
-                .attr("transform",
-                      `translate(${this.x(x_range[0])},${-this.margin.top})` +
-                      `scale(1,${yScale})`)
+                // .attr("transform",
+                //       `translate(${this.x(x_range[0])},${-this.margin.top})` +
+                //       `scale(1,${yScale})`)
                 .attr("xlink:href", "data:image/png;base64," + image)
                 .attr("visibility", null)
-                .transition()
+                // .transition()
                 .attr("transform", `translate(${this.x(x_range[0])},0)` +
                       `scale(1,1)`)
 
@@ -464,7 +465,7 @@ export class ImagePlot {
         // calculate element dimensions
         let containerWidth = this.containerElement.offsetWidth;
         let pageHeight = window.innerHeight;
-        const margin = this.margin = {top: 5, right: 50, bottom: 20, left: 50};
+        const margin = this.margin = {top: 5, right: 70, bottom: 20, left: 70};
         this.width = containerWidth;
         this.height = pageHeight - 100;
         const width = this.width - margin.left - margin.right;
@@ -525,5 +526,5 @@ export class ImagePlot {
         const padding = height * Y_RANGE_PADDING;
         this.onChange(xStart, xEnd, xMax - xMin, Math.floor(height - padding*2))
     }
-        
+
 }
