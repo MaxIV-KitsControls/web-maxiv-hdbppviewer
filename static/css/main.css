@@ -148,3 +148,9 @@ svg circle {
     stroke-width: 1.5px;
     stroke: white;
 }
+
+
+.crosshair text {
+    fill: white;
+    font-size: small;
+}

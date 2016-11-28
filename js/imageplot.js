@@ -22,18 +22,22 @@ var customTimeFormat = d3.time.format.multi([
 
 
 function closestIndex (num, arr) {
-    let curr = arr[0],
-        diff = Math.abs (num - curr),
-        index = -1;
+    let diff = num - arr[0];
+        // index = -1;
     for (var val = 0; val < arr.length; val++) {
-        let newdiff = Math.abs (num - arr[val]);
-        if (newdiff < diff) {
+        let newdiff = num - arr[val];
+        if (newdiff < 0) {
+            if (-newdiff < diff)
+                return val;
+            else
+                return val-1;
             diff = newdiff;
-            curr = arr[val];
-            index = val;
+            // curr = arr[val];
+            // index = val;
         }
     }
-    return index;
+    return val-1;
+    // return index;
 }
 
 
@@ -133,17 +137,49 @@ export class ImagePlot {
         
         this.inner = this.clipBox.append("g");
 
-        // a vertical line showing the mouse position
-        this.cursorLineX = this.inner.append("svg:line")
+        // Y axes
+        // TODO: should be pretty easy to support arbitrary numbers of
+        // Y axes, mostly it's a matter of making room for them...
+        
+        this.addYAxis("linear")
+        this.addYAxis("linear")                
+
+        // vertical and horizontal lines showing the mouse position        
+        this.crosshair = this.inner.append("svg:g")
+            .classed("crosshair", true)
+        
+        this.crosshairLineX = this.crosshair.append("svg:line")
             .classed({cursor: true, x: true})
             .attr("y1", 0)
             .attr("y2", this.innerHeight)
 
-        // Y axes
-        // TODO: should be pretty easy to support arbitrary numbers of
-        // Y axes, mostly it's a matter of making room for them...
-        this.addYAxis("linear")
-        this.addYAxis("linear")                
+        this.crosshairLabelX = this.crosshair
+            .append("svg:text")
+            .attr("y", this.innerHeight)
+            .attr("dy", "-0.2em")
+            .text("hej")
+        
+        this.crosshairLineY = this.crosshair
+            .append("svg:line")
+            .classed({cursor: true, x: true})
+            .attr("x1", 0)
+            .attr("x2", this.innerWidth)
+
+        this.crosshairLabelY1 = this.crosshair
+            .append("svg:text")
+            .attr("x", Y_AXIS_WIDTH)
+            .attr("dx", 2)
+            .attr("dy", "-.2em")
+            .style("text-anchor", "start")
+            .text("hej")
+        
+        this.crosshairLabelY2 = this.crosshair
+            .append("svg:text")
+            .attr("x", this.innerWidth - Y_AXIS_WIDTH)
+            .attr("dy", "-.2em")
+            .attr("dx", -2)
+            .style("text-anchor", "end")
+            .text("hej")
                 
         let [startTime, endTime] = this.x.domain()
         this.currentImage = 0
@@ -200,9 +236,8 @@ export class ImagePlot {
         ];
 
         this.container
-            .on("mousemove", this.showDescription.bind(this))
-            .on("mouseenter", this.showDescription.bind(this))
-            .on("mouseleave", this.hideDescription.bind(this))
+            .on("mousemove", this.showCrosshair.bind(this))
+            .on("mouseleave", this.hideCrosshair.bind(this))
 
         return name;
         
@@ -227,143 +262,6 @@ export class ImagePlot {
         axis.scale(scale);
         // this.yAxisElements[yAxis].call(axis)
         this.runChangeCallback();
-    }
-    
-    showDescription() {
-
-        // Display some overlay elements that give more detail about the points
-        // close to the mouse.
-        
-        const [x, y] = d3.mouse(this.clipBox.node()),
-              i = Math.round(x);
-
-        const attributes = Object.keys(this.descriptions);
-        let distances = [], indices = {};
-
-        // first, go through all the attributes in the plot and find
-        // where the closest point is.
-        attributes.forEach(attr => {
-            const desc = this.descriptions[attr],
-                  config = this.config[attr],
-                  index = closestIndex(i, desc.indices);
-            indices[attr] = index;
-
-            // Filled circle indicates a point
-            let indicator = this.indicators[attr];
-            if (!indicator) {
-                indicator = this.inner.append("circle")
-                    .attr("r", 5)
-                    .style("fill", config.color)
-                    .style("pointer-events", "none")
-                this.indicators[attr] = indicator;
-            } else {
-                indicator.attr("display", null);
-            }
-            
-            const x = desc.indices[index],
-                  yScale = this.yScales[this.config[attr].axis],
-                  ymax = yScale(desc.max[index]),
-                  ymin = yScale(desc.min[index]);
-            
-            // Calculate how "close" the pointer is to the line
-            // TODO: improve this!
-            distances.push(Math.abs((y - ymin) - (ymax - y)));
-            
-            if (desc.count[index] == 1) {
-                // If there's exactly one point in the column, we show
-                // a nice indicator that tells where it is.
-                indicator
-                    .style("display", null)
-                // TODO: why are these offsets needed to center the
-                // circle correctly on the point? 
-                    .attr("cx", x)
-                    .attr("cy", ymax-5)
-            } else {
-                // Don't show indicator if it's an "aggregated" point
-                // i.e. if there's more than one point in the column
-                indicator.style("display", "none");
-            }
-
-        });
-
-        // find the line closest to the cursor
-        const closest = attributes[distances.indexOf(Math.min(...distances))],
-              index = indices[closest],
-              desc = this.descriptions[closest],
-              count = desc.count[index],
-              max = desc.max[index].toPrecision(5),
-              min = desc.min[index].toPrecision(5),
-              // mean = desc.mean[index].toPrecision(5),
-              timestamp = new Date(desc.timestamp[index]),
-              axis = this.config[closest].axis,
-              color = this.config[closest].color,
-              px = desc.indices[index];
-
-        // vertical line indicating where the cursor is
-        this.cursorLineX
-            .style("display", "block")            
-            .attr("x1", px)
-            .attr("x2", px)
-
-        // Display a text box that reveals some numbers about the closest point
-        let text;
-        const [cs, name] = parseAttribute(closest);
-        if (count == 1) {
-            text = (`<b style="color:${color};">${name}</b>` +
-                    `<br>Value: ${max}` +
-                    `<br>Date: ${timestamp.toLocaleDateString()}` +
-                    `<br>Timez: ${timestamp.toLocaleTimeString()}.${timestamp.getMilliseconds()}`);
-        } else {
-            text = (`<b style="color:${color};">${name}</b>` +
-                    `<br>Points: ${count}` +
-                    `<br>Max: ${max}` +
-                    `<br>Min: ${min}` +
-                    `<br>Date: ${timestamp.toLocaleDateString()}` +
-                    `<br>Time: ${timestamp.toLocaleTimeString()}`);
-                    // `<br>Mean: ${mean}`)
-        }
-        
-        // display a box with numeric info close to the point
-        const right =  Math.round(this.innerHeight -
-                                  (max? this.yScales[axis](max) : y) +
-                                  this.margin.bottom) + 5,
-              left = Math.min(this.innerWidth -
-                              this.margin.left - this.margin.right,
-                              this.margin.left + desc.indices[index]
-                              + 15 + 5),
-              bottom = Math.round(this.innerHeight -
-                                  (max? this.yScales[axis](max) : y) +
-                                  this.margin.bottom) + 5;
-
-        const [cx, cy] = d3.mouse(this.containerElement);        
-        if (axis === 0) {
-            // attribute on left axis
-            this.descElement
-                .style("display", "block")
-                .style("left", cx)
-                // .style("right", null)
-                .style("top", cy)
-                .html(text)
-        } else {
-            // attribute on right axis
-            this.descElement
-                .style("display", "block")
-                // .style("right", null)
-                .style("left", cx)
-                .style("top", cy)
-                .html(text);
-        }
-    }
-
-    hideDescription() {
-        this.descElement
-            .style("display", "none")
-        this.cursorLineX
-            .style("display", "none")
-        Object.keys(this.indicators).forEach(attr => {
-            this.indicators[attr]
-                .attr("display", "none");
-        })
     }
     
     setTimeRange(range) {
@@ -398,6 +296,44 @@ export class ImagePlot {
         }
     }
 
+    showCrosshair() {
+        const [mouseX, mouseY] = d3.mouse(this.clipBox.node());
+        this.crosshairLineX
+            .style("display", "block")
+            .attr("x1", mouseX)
+            .attr("x2", mouseX);
+        this.crosshairLabelX
+            .style({
+                display: "block",
+                "text-anchor": mouseX > (this.innerWidth / 2)? "end" : "start"
+            })
+            .attr("x", mouseX)
+            .text(this.x.invert(mouseX).toLocaleString())
+        this.crosshairLineY
+            .style({
+                display: "block",
+            })
+            .attr("y1", mouseY)
+            .attr("y2", mouseY);
+        this.crosshairLabelY1
+            .style("display", "block")
+            .attr("transform", "translate(0," + mouseY + ")")
+            .text(d3.format(".2e")(this.yScales[0].invert(mouseY)))
+        this.crosshairLabelY2
+            .style("display", "block")
+            .attr("transform", "translate(0," + mouseY + ")")
+            .text(d3.format(".2e")(this.yScales[1].invert(mouseY)))
+    }
+
+    hideCrosshair() {
+        this.crosshairLineX.style("display", "none")
+        this.crosshairLineY.style("display", "none")        
+        this.crosshairLabelX.style("display", "none")
+        this.crosshairLabelY1.style("display", "none")
+        this.crosshairLabelY2.style("display", "none")        
+        
+    }
+    
     setData(data) {
 
         const axes = Object.keys(data);
@@ -489,7 +425,7 @@ export class ImagePlot {
     }
     
     zoomed() {
-        this.hideDescription();
+        // this.hideDescription();
         this.updateTimeRange();
         this.runChangeCallback();
     }
