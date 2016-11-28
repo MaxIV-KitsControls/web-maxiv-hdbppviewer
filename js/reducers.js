@@ -64,7 +64,7 @@ export function attributes(state=[], action) {
 export function descriptions(state=[], action) {
     switch (action.type) {
     case RECEIVE_ARCHIVE_DESCS:
-        return {...state, ...action.descs};
+        return {...action.descs};
     }
     return state;
 }
