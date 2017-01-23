@@ -34,6 +34,7 @@ Ideas:
 import base64
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from datetime import datetime
 from functools import partial
 import fnmatch
 import json
@@ -82,7 +83,17 @@ timestampify = np.vectorize(lambda x: x.timestamp()*1000, otypes=[np.float64])
 def make_image(data, time_range, y_range, size, scale=None, width=0):
     print("make_image", scale)
     "Flatten the given range of the data into a 2d image"
-    cvs = datashader.Canvas(x_range=time_range, y_range=y_range,
+
+    # Since the data comes with UTC timestamps, we need to shift it
+    # according to the current timezone. This is a crude way, it would
+    # be nice if datashader supported a proper time datatype natively...
+    # Also note that the timestamps are milliseconds while python usually
+    # deals in seconds. I guess this comes from Cassandra's JVM roots.
+    t0, t1 = time_range
+    utc_offset = (datetime.fromtimestamp(t0/1000) -
+                  datetime.utcfromtimestamp(t0/1000)).total_seconds() * 1000
+    offset_range = [t0 - utc_offset, t1 - utc_offset]
+    cvs = datashader.Canvas(x_range=offset_range, y_range=y_range,
                             plot_width=size[0], plot_height=size[1],
                             y_axis_type=scale or "linear")
     # aggregate some useful measures
