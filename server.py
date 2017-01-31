@@ -203,8 +203,15 @@ def get_extrema(attributes, results, time_range, axes):
         # find local extrema
         y_axis = info["y_axis"]
         axis_config = axes.get(str(y_axis), {})
-        relevant = data[(data["t"] >= time_range[0]) &
-                        (data["t"] <= time_range[1])]
+
+        # TODO: since we're shifting the data in make_image, we also
+        # need to shift the window we use here, to get the extreme
+        # points right. It feels bad to do this twice...
+        t0, t1 = time_range
+        utc_offset = (datetime.fromtimestamp(t0/1000) -
+                      datetime.utcfromtimestamp(t0/1000)).total_seconds()
+        relevant = data[(data["t"] >= time_range[0] - utc_offset*1000) &
+                        (data["t"] <= time_range[1] - utc_offset*1000)]
 
         if axis_config.get("scale") == "log":
             # ignore zero or negative values
