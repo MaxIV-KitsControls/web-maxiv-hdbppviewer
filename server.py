@@ -11,8 +11,6 @@ Basic functionality:
 - min/max etc on mouseover
 
 Missing functionality:
-- Log Y axes
-- dialog for setting time range
 - configure color, Y-axis etc for each line
 - realtime updates
 
