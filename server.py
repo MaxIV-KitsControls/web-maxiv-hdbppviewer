@@ -51,22 +51,6 @@ from hdbpp import HDBPlusPlusConnection
 from utils import timer
 
 
-CASSANDRA_NODES = ["10.0.3.1"]
-# CASSANDRA_NODES = ["g-v-db-cn-0"]  #, "g-v-db-cn-1", "g-v-db-cn-2", "g-v-db-cn-3"]
-# CASSANDRA_NODES = ["b-v-db-cn-1"]  #, "g-v-db-cn-1", "g-v-db-cn-2", "g-v-db-cn-3"]
-CASSANDRA_KEYSPACE = "hdb"
-# This is a map between blue IPs and green hostnames. It's needed for clients
-# on the green network to be able to automatically find cassandra nodes since
-# they use blue IPs.
-CASSANDRA_ADDRESS_TRANSLATION = {
-     # "172.16.2.31": "g-v-db-cn-0",
-     # "172.16.2.32": "g-v-db-cn-1",
-     # "172.16.2.33": "g-v-db-cn-2",
-     # "172.16.2.34": "g-v-db-cn-3"
-}
-PORT = 5005
-
-
 async def get_controlsystems(hdbpp, request):
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, hdbpp.get_att_configs)
@@ -144,9 +128,37 @@ async def get_images(hdbpp, request):
 
 if __name__ == "__main__":
 
-    logging.basicConfig(level=logging.DEBUG)
+    import argparse
+    import configparser
 
-    app = aiohttp.web.Application(debug=True)
+    # parse commandline arguments
+    parser = argparse.ArgumentParser(
+        description='A web based viewer for HDB++ data')
+    parser.add_argument("-c", "--config", type=str, default="hdbppviewer.conf",
+                        help="Path to a configuration file")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="Run in debug mode")
+    args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    # load configuration
+    config = configparser.RawConfigParser()
+    config.read(args.config)
+    PORT = config.getint("server", "port")
+    CASSANDRA_NODES = config.get("hdbpp:cassandra", "nodes").split(",")
+    CASSANDRA_KEYSPACE = config.get("hdbpp:cassandra", "keyspace")
+    if config.has_section("hdbpp:cassandra_address_translation"):
+        CASSANDRA_ADDRESS_TRANSLATION = dict(
+            config.items("hdbpp:cassandra_address_translation"))
+    else:
+        CASSANDRA_ADDRESS_TRANSLATION = {}
+
+    # start web server
+    app = aiohttp.web.Application(debug=args.debug)
     loop = asyncio.get_event_loop()
     loop.set_default_executor(ThreadPoolExecutor(10))
 
@@ -154,9 +166,12 @@ if __name__ == "__main__":
                                   keyspace=CASSANDRA_KEYSPACE,
                                   address_map=CASSANDRA_ADDRESS_TRANSLATION)
 
-    app.router.add_route('GET', '/controlsystems', partial(get_controlsystems, hdbpp))
-    app.router.add_route('GET', '/attributes', partial(get_attributes, hdbpp))
-    app.router.add_route('POST', '/image', partial(get_images, hdbpp))
+    app.router.add_route('GET', '/controlsystems',
+                         partial(get_controlsystems, hdbpp))
+    app.router.add_route('GET', '/attributes',
+                         partial(get_attributes, hdbpp))
+    app.router.add_route('POST', '/image',
+                         partial(get_images, hdbpp))
     app.router.add_static('/', 'static')
 
     handler = app.make_handler(debug=True)

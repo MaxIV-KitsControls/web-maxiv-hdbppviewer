@@ -74,7 +74,7 @@ $ webpack
 
 ## Configuration
 
-Currently you have to edit ``server.py`` and edit the constants ``CASSANDRA_NODES`` and ``CASSANDRA_KEYSPACE`` according to your database configuration. You can also configure which port to use for the webserver.
+By default, the server will load the config file "hdbppviewer.conf". It contains some example configuration and comments. You can create your own configuration file and put it wherever you like, and point the server to it using the "-c" argument.
 
 
 ## Running

@@ -14,7 +14,7 @@ from utils import timer
 
 
 def make_image(data, time_range, y_range, size, scale=None, width=0):
-    print("make_image", scale)
+
     "Flatten the given range of the data into a 2d image"
 
     # Since the data comes with UTC timestamps, we need to shift it
@@ -182,7 +182,6 @@ def make_axis_images(per_axis, time_range, size, axes):
             continue
 
         # calculate a reasonable range for the y axis
-        print(axes)
         scale = axes.get(str(y_axis), {}).get("scale")
         if axis_min == axis_max:
             # Looks like the value is constant so we can't derive
@@ -208,7 +207,6 @@ def make_axis_images(per_axis, time_range, size, axes):
         for name, data in attributes.items():
             if name in nodata:
                 continue
-            print(y_range)
             image, desc = make_image(data, time_range, y_range, size, scale)
             axis_images.append(image)
             descs[name] = desc
