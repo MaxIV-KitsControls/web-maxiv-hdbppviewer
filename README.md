@@ -30,7 +30,7 @@ It is currently in a "beta" stage, with basic functionality in place but very li
 * Displaying data as a table
 * Manual scaling of Y axes.
 * Rescale the UI when the window size changes
-* Handling different control systems/keyspaces
+* Handling different keyspaces
 
 ### Improvements needed
 * Optimize data readout and processing
@@ -51,22 +51,28 @@ It is currently in a "beta" stage, with basic functionality in place but very li
 ## Requirements
 
 ### Python (for running)
+
  * python >= 3.5
  * aiohttp
  * cassandra-driver >= 3.6 (needs to be built with numpy support!)
  * datashader
 
-Datashader has a bunch of scientific python dependencies, the easiest way to get it is probably through anaconda.
+Datashader has a bunch of scientific python dependencies, the easiest way to get it is probably through anaconda (https://www.continuum.io/downloads)
 
 
-### Javascript (for building)
+### Javascript (for frontend development)
+
  * node.js
  * npm
+  
 
-You also need to have a Cassandra installation somewhere, containing HDB++ format data.
+### Cassandra
+You also, obviously, need to have a Cassandra installation somewhere, containing HDB++ formatted data.
 
 
 ## Building
+
+The frontend is written using React and Redux and managed with webpack. To build it, the following steps should suffice:
 
 $ npm install
 $ webpack
