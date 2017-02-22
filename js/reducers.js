@@ -1,3 +1,12 @@
+/*
+A "reducer" is a function that takes a (partial) redux state and an
+action, and returns a new state with the updates corresponding to the 
+action.
+
+The global state is never changed in-place, it is just replaced with
+a new state, via reducers, whenever an action is dispatched.
+*/
+
 import R from "ramda";
 
 import {
@@ -8,7 +17,7 @@ import {
     SET_ATTRIBUTE_COLOR,
     SET_TIME_RANGE,
     SET_AXIS_SCALE
-} from "./actions"
+} from "./actions";
 
 
 export function controlsystems(state=[], action) {
@@ -117,6 +126,8 @@ export function attributeConfig(state={}, action) {
             }
         );
         return {...state, ...updates};
+    case REMOVE_ATTRIBUTES:
+        return R.omit(action.attributes, state);
     default:
         return state;
     }
