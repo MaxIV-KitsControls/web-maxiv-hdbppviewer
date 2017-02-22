@@ -70,7 +70,8 @@ export function descriptions(state=[], action) {
 }
 
 
-const LINE_COLORS = ["red", "#5080FF", "#00FF00", "orange", "magenta", "cyan"]
+// brewer color scale "Set1"
+const LINE_COLORS = ["#e41a1c","#377eb8","#4daf4a","#984ea3","#ff7f00","#ffff33","#a65628","#f781bf","#999999"];
 
 
 export function attributeConfig(state={}, action) {
@@ -81,22 +82,40 @@ export function attributeConfig(state={}, action) {
         if (action.color) {
             color = action.color;
         } else {
-            const usedColors = new Set(Object.keys(state).map(k => state[k].color));
-            const remainingColors = LINE_COLORS.filter(c => !usedColors.has(c));
-            color = remainingColors[0]
-            // TODO: handle case where there are more than 6 lines!
+            // if there are unused colors, we pick the first one of those
+            const usedColors = new Set(Object.keys(state).map(k => state[k].color)),
+                  remainingColors = LINE_COLORS.filter(c => !usedColors.has(c));
+            if (remainingColors.length > 0) {
+                color = remainingColors[0];
+            } else {
+                // all colors are taken, we'll just simply check which colors are used
+                // the least and pick the first one of those.
+                let colorUsage = {};
+                Object.keys(state).forEach(k => {
+                    const line = state[k];                
+                    if (line.attribute == action.attribute) {return;}
+                    colorUsage[line.color] = colorUsage[line.color] && colorUsage[line.color] + 1 || 1;
+                });
+                var leastUsed;
+                Object.keys(colorUsage).forEach(k =>  {
+                    if (leastUsed === undefined || colorUsage[k] < colorUsage[leastUsed]) {
+                        leastUsed = k;
+                    }
+                });
+                color = leastUsed;
+            }
         }        
-        updates[action.attribute] = {...state[action.attribute], color}
+        updates[action.attribute] = {...state[action.attribute], color};
         return {...state, ...updates};
     case SET_ATTRIBUTES_AXIS:
         action.attributes.forEach(
             attr => {
                 if (attr in state)
-                    updates[attr] = {...state[attr], axis: action.axis}
+                    updates[attr] = {...state[attr], axis: action.axis};
                 else
                     updates[attr] = {axis: action.axis};
             }
-        )
+        );
         return {...state, ...updates};
     default:
         return state;
