@@ -1,8 +1,23 @@
+/*
+
+"Actions" are the only way to change the global state in a redux app.
+
+An action is just an object that describes a change of state. It is
+used as input to reducers. Normally, there is a convenience function
+for creating an action.
+
+There are also asynchronous actions, a.k.a "thunks". They are
+functions that themselves use "dispatch" to cause other actions to
+happen, depending on the outcome of e.g. network calls.
+
+*/
+
 import fetch from "isomorphic-fetch";
 
 import {debounce} from "./utils";
 
 
+// action types
 export const RECEIVE_CONTROLSYSTEMS = "RECEIVE_CONTROLSYSTEMS";
 export const RECEIVE_SUGGESTIONS = "RECEIVE_SUGGESTIONS";
 export const FETCH_ARCHIVE_DATA = "FETCH_ARCHIVE_DATA";
