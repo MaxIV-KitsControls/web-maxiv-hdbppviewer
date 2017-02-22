@@ -174,7 +174,7 @@ if __name__ == "__main__":
                          partial(get_images, hdbpp))
     app.router.add_static('/', 'static')
 
-    handler = app.make_handler(debug=True)
+    handler = app.make_handler(debug=args.debug)
     f = loop.create_server(handler, '0.0.0.0', PORT)
     logging.info("Point your browser to http://localhost:%d/index.html", PORT)
     srv = loop.run_until_complete(f)
