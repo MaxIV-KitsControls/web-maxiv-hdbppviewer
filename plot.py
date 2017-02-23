@@ -121,17 +121,16 @@ def get_extrema(attributes, results, time_range, axes):
         utc_offset = (datetime.fromtimestamp(t0/1000) -
                       datetime.utcfromtimestamp(t0/1000)).total_seconds()
         relevant = data[(data["t"] >= time_range[0] - utc_offset*1000) &
-                        (data["t"] <= time_range[1] - utc_offset*1000)]
+                        (data["t"] <= time_range[1] - utc_offset*1000)]["v"].values
 
         if axis_config.get("scale") == "log":
             # ignore zero or negative values
-            valid = np.take(relevant["v"],
-                            np.where(relevant["v"] > 0)[0])
+            valid = np.take(relevant, np.where(relevant > 0)[0])
             value_min = valid.min()
             value_max = valid.max()
         else:
-            value_max = relevant["v"].max()
-            value_min = relevant["v"].min()
+            value_max = relevant.max()
+            value_min = relevant.min()
 
         per_axis[y_axis][name] = dict(
             data=data, info=info, points=len(relevant),
