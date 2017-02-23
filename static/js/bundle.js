@@ -51656,7 +51656,7 @@
 	        }).then(function (data) {
 	            if (latestFetchTime > fetchTime) return;
 	            dispatch({ type: RECEIVE_ARCHIVE_DESCS, descs: data.descs });
-	            dispatch({ type: RECEIVE_ARCHIVE_DATA, data: data.axes });
+	            dispatch({ type: RECEIVE_ARCHIVE_DATA, data: data.images });
 	        });
 	    };
 	}
@@ -52203,34 +52203,8 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var HoverInfo = function (_React$Component) {
-	    _inherits(HoverInfo, _React$Component);
-
-	    function HoverInfo() {
-	        _classCallCheck(this, HoverInfo);
-
-	        return _possibleConstructorReturn(this, (HoverInfo.__proto__ || Object.getPrototypeOf(HoverInfo)).apply(this, arguments));
-	    }
-
-	    _createClass(HoverInfo, [{
-	        key: "render",
-	        value: function render() {
-	            console.log("dsaodjs");
-	            return _react2.default.createElement(
-	                "div",
-	                { style: { position: "absolute",
-	                        top: this.props.position[1],
-	                        left: this.props.position[0] } },
-	                "Hej!"
-	            );
-	        }
-	    }]);
-
-	    return HoverInfo;
-	}(_react2.default.Component);
-
-	var PlotWrapper = function (_React$Component2) {
-	    _inherits(PlotWrapper, _React$Component2);
+	var PlotWrapper = function (_React$Component) {
+	    _inherits(PlotWrapper, _React$Component);
 
 	    /* This is a "dummy" react component which acts as an adapter for
 	       the Plot, which is based on D3. This may or may not be a good
@@ -52239,14 +52213,12 @@
 	    function PlotWrapper() {
 	        _classCallCheck(this, PlotWrapper);
 
-	        var _this2 = _possibleConstructorReturn(this, (PlotWrapper.__proto__ || Object.getPrototypeOf(PlotWrapper)).call(this));
+	        var _this = _possibleConstructorReturn(this, (PlotWrapper.__proto__ || Object.getPrototypeOf(PlotWrapper)).call(this));
 
-	        _this2.state = {
-	            timeRange: [new Date(Date.now() - 24 * 3600e3), new Date(Date.now())],
-	            hoverPosition: null,
-	            hoverData: null
+	        _this.state = {
+	            timeRange: [new Date(Date.now() - 24 * 3600e3), new Date(Date.now())]
 	        };
-	        return _this2;
+	        return _this;
 	    }
 
 	    _createClass(PlotWrapper, [{
@@ -52254,12 +52226,12 @@
 	        value: function componentDidMount() {
 	            // create the SVG plot immediately, once
 	            var container = (0, _reactDom.findDOMNode)(this.refs.plot);
-	            this.plot = new _imageplot.ImagePlot(container, this.state.timeRange, this.onChange.bind(this), this.onHover.bind(this));
+	            this.plot = new _imageplot.ImagePlot(container, this.state.timeRange, this.onChange.bind(this));
 	        }
 	    }, {
 	        key: "componentWillReceiveProps",
 	        value: function componentWillReceiveProps(props) {
-	            var _this3 = this;
+	            var _this2 = this;
 
 	            // update the plot as needed
 	            if (props.attributes != this.props.attributes) {
@@ -52290,7 +52262,7 @@
 	            }
 	            if (props.axes != this.props.axes) {
 	                Object.keys(props.axes).forEach(function (axis) {
-	                    _this3.plot.setYAxisScale(axis, props.axes[axis].scale);
+	                    _this2.plot.setYAxisScale(axis, props.axes[axis].scale);
 	                });
 	            }
 	        }
@@ -52304,17 +52276,7 @@
 	    }, {
 	        key: "render",
 	        value: function render() {
-
-	            var hover;
-	            if (this.state.hoverPosition) {
-	                hover = _react2.default.createElement(HoverInfo, { position: this.state.hoverPosition, data: this.state.hoverData });
-	            }
-
-	            return _react2.default.createElement(
-	                "div",
-	                { className: "plot-wrapper", ref: "plot" },
-	                hover
-	            );
+	            return _react2.default.createElement("div", { className: "plot-wrapper", ref: "plot" });
 	        }
 	    }, {
 	        key: "onChange",
@@ -52323,12 +52285,6 @@
 	            this.setState({ timeRange: [start, end] });
 	            this.props.dispatch((0, _actions.setTimeRange)(start, end));
 	            this.props.dispatch((0, _actions.fetchArchiveData)(start, end, width, height));
-	        }
-	    }, {
-	        key: "onHover",
-	        value: function onHover(hoverPosition, hoverData) {
-	            console.log("onHover");
-	            this.setState({ hoverPosition: hoverPosition, hoverData: hoverData });
 	        }
 	    }]);
 
@@ -52347,30 +52303,7 @@
 	    }, _defineProperty(_ref, "config", state.attributeConfig), _defineProperty(_ref, "axes", state.axisConfiguration), _ref;
 	};
 
-	var Plot = function (_React$Component3) {
-	    _inherits(Plot, _React$Component3);
-
-	    function Plot() {
-	        _classCallCheck(this, Plot);
-
-	        return _possibleConstructorReturn(this, (Plot.__proto__ || Object.getPrototypeOf(Plot)).apply(this, arguments));
-	    }
-
-	    _createClass(Plot, [{
-	        key: "render",
-	        value: function render() {
-	            return _react2.default.createElement(
-	                "div",
-	                null,
-	                _react2.default.createElement(PlotWrapper, this.props)
-	            );
-	        }
-	    }]);
-
-	    return Plot;
-	}(_react2.default.Component);
-
-	exports.default = (0, _reactRedux.connect)(mapStateToProps)(Plot);
+	exports.default = (0, _reactRedux.connect)(mapStateToProps)(PlotWrapper);
 
 /***/ },
 /* 463 */
@@ -52558,11 +52491,7 @@
 	            // One image per axis, for displaying data
 	            // But, in fact we create two, to use for "double bufferint"
 	            // This is mostly a work-around to make image transitions smoother
-	            this.images[name] = [this.inner.append("g"),
-	            // .append("svg:image")
-	            // .attr("width", this.innerWidth - Y_AXIS_WIDTH)
-	            // .attr("height", this.innerHeight),
-	            this.inner.append("g")];
+	            this.images[name] = [this.inner.append("svg:image").attr("width", this.innerWidth - Y_AXIS_WIDTH).attr("height", this.innerHeight), this.inner.append("svg:image").attr("width", this.innerWidth - Y_AXIS_WIDTH).attr("height", this.innerHeight)];
 
 	            this.container.on("mousemove", this.showCrosshair.bind(this)).on("mouseleave", this.hideCrosshair.bind(this));
 
@@ -52679,7 +52608,7 @@
 	                }
 
 	                var _data$axis = data[axis];
-	                var images = _data$axis.images;
+	                var image = _data$axis.image;
 	                var x_range = _data$axis.x_range;
 	                var y_range = _data$axis.y_range;
 
@@ -52703,7 +52632,7 @@
 	                // transform Is there a way to do this "atomically"? Maybe
 	                // use a canvas instead...
 	                this.yScales[axis].domain([yMin, yMax]);
-	                this.getNextImage(axis).selectAll("*").delete()
+	                this.getNextImage(axis)
 	                // .attr("transform",
 	                //       `translate(${this.x(x_range[0])},${-this.margin.top})` +
 	                //       `scale(1,${yScale})`)
