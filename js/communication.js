@@ -16,7 +16,7 @@ class CommunicationInfo extends React.Component {
 
     componentWillReceiveProps (props) {
         const msg = findDOMNode(this.refs.msg);
-        clearInterval(this._blinker)        
+        clearInterval(this._blinker);
         if (props.info.waitingForData) {
             this._blinker = setInterval(() => {
                 this.setState({showMessage: !this.state.showMessage});
@@ -25,19 +25,22 @@ class CommunicationInfo extends React.Component {
             this.setState({showMessage: true})
         } 
     }
-    
+
     render () {
-        let msg;
-        if (this.props.info.waitingForData) {
-            msg = "Waiting for data..."
+        let msg, color = "#999";
+        if (this.props.info.error) {
+            msg = "Error getting data!";
+            color = "#F00";
+        } else if (this.props.info.waitingForData) {
+            msg = "Waiting for data...";
         } else if (this.props.info.receiveTime) {
             const elapsed = (this.props.info.receiveTime.getTime() -
                              this.props.info.fetchTime.getTime()) / 1000;
-            msg = `Done in ${elapsed} s.`
+            msg = `Done in ${elapsed} s.`;
         }
         return (
                 <div ref="msg" style={{
-                    color: "#999",
+                    color: color,
                     position: "absolute", right: 0, bottom: 0,
                     display: this.state.showMessage? "block" : "none"}}>
                   {msg}

@@ -12,7 +12,7 @@ import R from "ramda";
 import {
     RECEIVE_SUGGESTIONS, RECEIVE_CONTROLSYSTEMS,
     FETCH_ARCHIVE_DATA, RECEIVE_ARCHIVE_DATA, RECEIVE_DETAILS,
-    RECEIVE_ARCHIVE_DESCS,
+    RECEIVE_ARCHIVE_DESCS, FETCH_FAILED,
     ADD_ATTRIBUTES, REMOVE_ATTRIBUTES, SET_ATTRIBUTES_AXIS,
     SET_ATTRIBUTE_COLOR,
     SET_TIME_RANGE,
@@ -148,13 +148,21 @@ export function axisConfiguration(state={}, action) {
 export function communicationInfo(state={}, action) {
     switch (action.type) {
     case FETCH_ARCHIVE_DATA:
-        return {waitingForData: true,
-                fetchTime: new Date()};
+        return { error: null,
+                 waitingForData: true,
+                 fetchTime: new Date()};
     case RECEIVE_ARCHIVE_DATA:
         return {...state,
+                error: null,
+                waitingForData: false,
+                receiveTime: new Date()};
+    case FETCH_FAILED:
+        return {...state,
+                error: action.error,
                 waitingForData: false,
                 receiveTime: new Date()};
     }
+    
     return state;
 }
 
