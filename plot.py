@@ -37,8 +37,7 @@ def make_image(data, time_range, y_range, size, scale=None, width=0):
                                 count=datashader.count("v"),
                                 vmean=datashader.mean("v"),
                                 vmin=datashader.min("v"),
-                                vmax=datashader.max("v")
-                            ))
+                                vmax=datashader.max("v")))
     color = data["info"].get("color", "red")
     image = datashader.transfer_functions.shade(agg_line, cmap=[color])
 
@@ -121,11 +120,11 @@ def get_extrema(attributes, results, time_range, axes):
         utc_offset = (datetime.fromtimestamp(t0/1000) -
                       datetime.utcfromtimestamp(t0/1000)).total_seconds()
         relevant = data[(data["t"] >= time_range[0] - utc_offset*1000) &
-                        (data["t"] <= time_range[1] - utc_offset*1000)]["v"].values
+                        (data["t"] <= time_range[1] - utc_offset*1000)]["v"]
 
         if axis_config.get("scale") == "log":
             # ignore zero or negative values
-            valid = np.take(relevant, np.where(relevant > 0)[0])
+            valid = relevant.where(relevant > 0)
             value_min = valid.min()
             value_max = valid.max()
         else:
