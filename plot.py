@@ -40,8 +40,8 @@ def make_image(data, time_range, y_range, size, scale=None, width=0):
                                 vmax=datashader.max("v")
                             ))
     color = data["info"].get("color", "red")
-    #image = datashader.transfer_functions.shade(agg_line, cmap=[color])  # newer datashader version
-    image = datashader.transfer_functions.interpolate(agg_line, cmap=[color])
+    image = datashader.transfer_functions.shade(agg_line, cmap=[color])
+
     if width > 0:
         image = datashader.transfer_functions.spread(image, px=width)
         # image = datashader.transfer_functions.spread(
