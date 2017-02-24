@@ -42678,13 +42678,21 @@
 
 	    switch (action.type) {
 	        case _actions.FETCH_ARCHIVE_DATA:
-	            return { waitingForData: true,
+	            return { error: null,
+	                waitingForData: true,
 	                fetchTime: new Date() };
 	        case _actions.RECEIVE_ARCHIVE_DATA:
 	            return _extends({}, state, {
+	                error: null,
+	                waitingForData: false,
+	                receiveTime: new Date() });
+	        case _actions.FETCH_FAILED:
+	            return _extends({}, state, {
+	                error: action.error,
 	                waitingForData: false,
 	                receiveTime: new Date() });
 	    }
+
 	    return state;
 	}
 
@@ -51502,7 +51510,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.SET_AXIS_SCALE = exports.SET_ATTRIBUTE_COLOR = exports.SET_ATTRIBUTES_AXIS = exports.REMOVE_ATTRIBUTES = exports.ADD_ATTRIBUTES = exports.SET_TIME_RANGE = exports.RECEIVE_DETAILS = exports.RECEIVE_ARCHIVE_DESCS = exports.RECEIVE_ARCHIVE_DATA = exports.FETCH_ARCHIVE_DATA = exports.RECEIVE_SUGGESTIONS = exports.RECEIVE_CONTROLSYSTEMS = undefined;
+	exports.SET_AXIS_SCALE = exports.SET_ATTRIBUTE_COLOR = exports.SET_ATTRIBUTES_AXIS = exports.REMOVE_ATTRIBUTES = exports.ADD_ATTRIBUTES = exports.SET_TIME_RANGE = exports.RECEIVE_DETAILS = exports.RECEIVE_ARCHIVE_DESCS = exports.RECEIVE_ARCHIVE_DATA = exports.FETCH_FAILED = exports.FETCH_ARCHIVE_DATA = exports.RECEIVE_SUGGESTIONS = exports.RECEIVE_CONTROLSYSTEMS = undefined;
 
 	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }(); /*
 	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
@@ -51538,6 +51546,7 @@
 	var RECEIVE_CONTROLSYSTEMS = exports.RECEIVE_CONTROLSYSTEMS = "RECEIVE_CONTROLSYSTEMS";
 	var RECEIVE_SUGGESTIONS = exports.RECEIVE_SUGGESTIONS = "RECEIVE_SUGGESTIONS";
 	var FETCH_ARCHIVE_DATA = exports.FETCH_ARCHIVE_DATA = "FETCH_ARCHIVE_DATA";
+	var FETCH_FAILED = exports.FETCH_FAILED = "FETCH_FAILED";
 	var RECEIVE_ARCHIVE_DATA = exports.RECEIVE_ARCHIVE_DATA = "RECEIVE_ARCHIVE_DATA";
 	var RECEIVE_ARCHIVE_DESCS = exports.RECEIVE_ARCHIVE_DESCS = "RECEIVE_ARCHIVE_DESCS";
 	var RECEIVE_DETAILS = exports.RECEIVE_DETAILS = "RECEIVE_DETAILS";
@@ -51566,7 +51575,8 @@
 	        (0, _isomorphicFetch2.default)("/attributes?cs=" + controlsystem + "&search=" + pattern).then(function (response) {
 	            return response.json();
 	        }).then(function (data) {
-	            return dispatch({ type: RECEIVE_SUGGESTIONS, suggestions: data.attributes });
+	            return dispatch({ type: RECEIVE_SUGGESTIONS,
+	                suggestions: data.attributes });
 	        });
 	    }, 500); // no point in asking too often
 	}
@@ -51629,7 +51639,7 @@
 	        var fetchTime = new Date().getTime();
 	        latestFetchTime = fetchTime;
 
-	        (0, _isomorphicFetch2.default)("/image", {
+	        var p = (0, _isomorphicFetch2.default)("/image", {
 	            method: "POST",
 	            body: JSON.stringify({
 	                attributes: state.attributes.map(function (attr) {
@@ -51646,13 +51656,27 @@
 	            headers: {
 	                "Content-Type": "application/json"
 	            }
-	        }).then(function (response) {
-	            if (latestFetchTime > fetchTime) {
+	        });
+
+	        p.then(function (response) {
+	            if (response.status >= 400) {
+	                console.log(response);
+	                dispatch({
+	                    type: "FETCH_FAILED",
+	                    error: response.status
+	                });
+	                throw new Error("Did not receive archive data!");
+	            } else if (latestFetchTime > fetchTime) {
 	                // Trying to cancel because there's been a new request
-	                response.body && response.body.cancel();
-	                return;
+	                // response.body && response.body.cancel();
+	                p.reject("Moving on");
+	            } else {
+	                return response.json();
 	            }
-	            return response.json();
+	        }, function (error) {
+	            console.log(error);
+	            dispatch({ type: "FETCH_FAILED", error: 500 });
+	            throw new Error("Could not fetch archive data!");
 	        }).then(function (data) {
 	            if (latestFetchTime > fetchTime) return;
 	            dispatch({ type: RECEIVE_ARCHIVE_DESCS, descs: data.descs });
@@ -69053,8 +69077,12 @@
 	    }, {
 	        key: "render",
 	        value: function render() {
-	            var msg = void 0;
-	            if (this.props.info.waitingForData) {
+	            var msg = void 0,
+	                color = "#999";
+	            if (this.props.info.error) {
+	                msg = "Error getting data!";
+	                color = "#F00";
+	            } else if (this.props.info.waitingForData) {
 	                msg = "Waiting for data...";
 	            } else if (this.props.info.receiveTime) {
 	                var elapsed = (this.props.info.receiveTime.getTime() - this.props.info.fetchTime.getTime()) / 1000;
@@ -69063,7 +69091,7 @@
 	            return _react2.default.createElement(
 	                "div",
 	                { ref: "msg", style: {
-	                        color: "#999",
+	                        color: color,
 	                        position: "absolute", right: 0, bottom: 0,
 	                        display: this.state.showMessage ? "block" : "none" } },
 	                msg
