@@ -131,6 +131,8 @@ if __name__ == "__main__":
     import argparse
     import configparser
 
+    from middleware import IndexMiddleware
+
     # parse commandline arguments
     parser = argparse.ArgumentParser(
         description='A web based viewer for HDB++ data')
@@ -158,7 +160,8 @@ if __name__ == "__main__":
         CASSANDRA_ADDRESS_TRANSLATION = {}
 
     # start web server
-    app = aiohttp.web.Application(debug=args.debug)
+    app = aiohttp.web.Application(debug=args.debug,
+                                  middlewares=[IndexMiddleware()])
     loop = asyncio.get_event_loop()
     loop.set_default_executor(ThreadPoolExecutor(10))
 
@@ -176,7 +179,7 @@ if __name__ == "__main__":
 
     handler = app.make_handler(debug=args.debug)
     f = loop.create_server(handler, '0.0.0.0', PORT)
-    logging.info("Point your browser to http://localhost:%d/index.html", PORT)
+    logging.info("Point your browser to http://localhost:%d/", PORT)
     srv = loop.run_until_complete(f)
     try:
         loop.run_forever()
