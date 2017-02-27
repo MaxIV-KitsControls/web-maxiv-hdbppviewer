@@ -6,9 +6,6 @@ import {debounce, parseAttribute} from "./utils"
 const Y_AXIS_WIDTH = 0;  // how much horizontal room to reserve for each Y axis,
                            // to make room for tick labels
 
-const Y_RANGE_PADDING = 0.05;  // how much room to leave above and below the
-                               // lines, relative to the height
-
 var customTimeFormat = d3.time.format.multi([
   [".%L", function(d) { return d.getMilliseconds(); }],
   [":%S", function(d) { return d.getSeconds(); }],
@@ -278,24 +275,6 @@ export class ImagePlot {
         this.descriptions = descriptions;
     }
 
-    // Given the (min, max) Y range of the data, return a (min', max') range
-    // that covers the data Y range plus a visually consistent amount of padding.
-    calculatePaddedYRange(yRange, log) {
-        const [ymin, ymax] = yRange;
-        if (log) {
-            const height = Math.abs(Math.log10(ymax) - Math.log10(ymin)),
-                  padding = ((height / (1 - 2*Y_RANGE_PADDING)) - height) / 2;            
-            return [
-                Math.pow(10, Math.log10(ymin) - padding),
-                Math.pow(10, Math.log10(ymax) + padding)
-            ]
-        } else {
-            const height = Math.abs(ymax - ymin),
-                  padding = ((height / (1 - 2*Y_RANGE_PADDING)) - height) / 2;        
-            return [ymin - padding, ymax + padding]
-        }
-    }
-
     showCrosshair() {
         const [mouseX, mouseY] = d3.mouse(this.clipBox.node());
         this.crosshairLineX
@@ -353,7 +332,7 @@ export class ImagePlot {
 
             const {image, x_range, y_range} = data[axis];
             const [currentYMin, currentYMax] = this.yScales[axis].domain();
-            const [yMin, yMax] = this.calculatePaddedYRange(y_range, !!this.yScales[axis].base);
+            const [yMin, yMax] = y_range;
             const yScale = (Math.abs(yMax - yMin) /
                             Math.abs(currentYMax - currentYMin));
             this.imageTimeRanges[(this.currentImage + 1) % 2] = x_range;            
@@ -459,8 +438,7 @@ export class ImagePlot {
               [xMin, xMax] = this.x.range(),
               [yMin, yMax] = this.yScales[0].range();
         const height = Math.abs(yMax - yMin);
-        const padding = height * Y_RANGE_PADDING;
-        this.onChange(xStart, xEnd, xMax - xMin, Math.floor(height - padding*2))
+        this.onChange(xStart, xEnd, xMax - xMin, height);
     }
 
 }

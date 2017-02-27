@@ -5,6 +5,7 @@ from datetime import datetime
 from functools import partial
 import io
 import logging
+from math import log10
 
 import datashader
 import numpy as np
@@ -196,7 +197,16 @@ def make_axis_images(per_axis, time_range, size, axes):
                 vmax = v / 2
             y_range = (float(vmin), float(vmax))
         else:
-            y_range = float(axis_min), float(axis_max)
+            # calculate some padding to add above and below the plot, for
+            # visual reasons (e.g. don't want the line to overlap the x axis)
+            if scale == "log":
+                logmax = log10(axis_max)
+                logmin = log10(axis_min)
+                padding = 0.05 * (logmax - logmin)
+                y_range = 10**(logmin - padding), 10**(logmax + padding)
+            else:
+                padding = 0.05 * (axis_max - axis_min)
+                y_range = float(axis_min - padding), float(axis_max + padding)
 
         logging.debug("Axis %r has range %r", y_axis, y_range)
 
