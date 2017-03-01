@@ -173,6 +173,12 @@ def make_axis_images(per_axis, time_range, size, axes):
         axis_min, axis_max, nodata = get_axis_limits(y_axis, attributes)
 
         if axis_min is None or axis_max is None:
+            # TODO: this may happen because the view is between two
+            # points, neither one within sight. Datashader can draw a
+            # line anyway, so it might be worth checking this case. I
+            # guess just checking if there is a point on either side
+            # might be good enough, but it will still fail if any of
+            # the points is in a different period.
             logging.debug("Could not calculate limits for axis %r!", y_axis)
             continue
 
@@ -185,6 +191,8 @@ def make_axis_images(per_axis, time_range, size, axes):
         if axis_min == axis_max:
             # Looks like the value is constant so we can't derive
             # a range the normal way. Let's invent one instead.
+            # TODO: I haven't put much thought into this, there might
+            # be a better way. Does it work OK with log axes?
             v = axis_min
             if v > 0:
                 vmin = v / 2
