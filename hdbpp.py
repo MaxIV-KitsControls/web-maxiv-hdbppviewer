@@ -3,6 +3,7 @@ from functools import lru_cache
 import logging
 import time
 from datetime import date, timedelta, datetime
+from dateutil import tz
 
 from cassandra.cluster import Cluster
 from cassandra.protocol import NumpyProtocolHandler, LazyProtocolHandler
@@ -13,7 +14,7 @@ from cassandra.connection import InvalidRequestException
 import numpy as np
 import pandas as pd
 
-from util import memoized_ttl
+from utils import memoized_ttl, LRUDict
 
 
 HDBPP_DATA_TYPES = [
@@ -45,7 +46,8 @@ HDBPP_DATA_TYPES = [
     "scalar_devushort_rw"
 ]
 
-
+# HDB++ stores seconds and microseconds in separate fields, but
+# we want to combine them into one value. This probably a slow way...
 timestampify = np.vectorize(lambda d, us: d.timestamp()*1000 + us/1000.,
                             otypes=[np.float64])
 
@@ -92,6 +94,9 @@ class HDBPlusPlusConnection(object):
 
         self.prepare_queries()
 
+        self._today = None
+        self._today_cache = LRUDict(maxduration=3600)
+
     @property
     def attributes(self):
         return self.get_attributes()
@@ -101,60 +106,97 @@ class HDBPlusPlusConnection(object):
         return self.get_att_configs()
 
     def prepare_queries(self):
-        # get a mapping from attribute => UUID
+        """
+        Prepared statements run faster, since they are pre-parsed
+        and stored on the db nodes. We only need to send the arguments
+        for each query. Here we prepare all the queries we will use.
+        """
         self.prepared = {
             "attributes": self.session.prepare(
-                "select cs_name, domain, family, member, name "
-                "from att_names "
+                "SELECT cs_name, domain, family, member, name"
+                " FROM att_names"
             ),
+            # get info about how to retrieve all attributes
+            # ('att_conf_id' is the unique attribute id, 'data_type' tells us
+            # which table to look in)
             "config": self.session.prepare(
-                "select cs_name,att_name,att_conf_id,data_type "
-                "from att_conf "
+                "SELECT cs_name, att_name, att_conf_id, data_type"
+                " FROM att_conf"
             ),
+            # get parameters (i.e. attribute properties) for one attribute
+            # gives the latest values before a given time
             "parameter": self.session.prepare(
-                "select * from att_parameter "
-                "where att_conf_id = ? and "
-                "recv_time > ? and recv_time < ?"
+                "SELECT * from att_parameter "
+                " WHERE att_conf_id = ?"
+                " AND recv_time < ?"
+                " ORDER BY recv_time DESC LIMIT 1"
             ),
             "latest_parameter": self.session.prepare(
-                "select * from att_parameter "
-                "where att_conf_id = ? "
-                "order by recv_time desc limit 1"
+                "SELECT * from att_parameter"
+                " WHERE att_conf_id = ?"
+                " ORDER BY recv_time DESC LIMIT 1"
             ),
-            "data": {}
+            # get the global history
+            # (attributes added/removed/started/stopped...)
+            "history": self.session.prepare(
+                "SELECT time, time_us, event from att_history "
+                " WHERE att_conf_id = ?"
+                " AND time > ? AND time < ?"
+                " ORDER BY time"
+                " LIMIT 10"  # no point trying to display too many events
+            ),
+            "all_history": self.session.prepare(
+                "SELECT time, time_us, event from att_history "
+                " WHERE att_conf_id = ?"
+                " ORDER BY time"
+            ),
+            # get data (one statement for each of the type tables)
+            "data": {},
+            "data_after": {}
         }
         for data_type in HDBPP_DATA_TYPES:
             try:
                 self.prepared["data"][data_type] = self.session.prepare(
-                    ("SELECT data_time,data_time_us,value_r,error_desc "
-                     "FROM att_%s "
-                     "WHERE att_conf_id = ? "
-                     "AND period = ? ") % data_type)
+                    ("SELECT data_time, data_time_us, value_r, error_desc"
+                     " FROM att_%s"
+                     " WHERE att_conf_id = ?"
+                     " AND period = ?") % data_type)
                      # "AND data_time > ? "
                      # "AND data_time < ?") % data_type)
+                self.prepared["data_after"][data_type] = self.session.prepare(
+                    ("SELECT data_time, data_time_us, value_r, error_desc"
+                     " FROM att_%s"
+                     " WHERE att_conf_id = ?"
+                     " AND period = ?"
+                     " AND data_time >= ?"
+                     # " AND data_time_us > ?"
+                     # "AND data_time < ?") % data_type)
+                    ) % data_type)
+
             except Exception as e:
                 logging.warn("Exception creating query for %s", data_type)
                 pass
 
     @memoized_ttl(60)
     def get_attributes(self):
-        # get a list of attributes, per domain/family/member
+        "get a list of attributes, per domain/family/member"
         # Note that cassandra does not do stuff like wildcards so we
         # have to fetch the whole attribute list (it won't be huge
         # anyway, perhaps 100000 or so) and do matching ourselves.
         names = self.session.execute(self.prepared["attributes"])
         attributes = defaultdict(list)
-        for cs, domain, family, member, device in zip(names[0]["cs_name"],
-                                                      names[0]["domain"],
-                                                      names[0]["family"],
-                                                      names[0]["member"],
-                                                      names[0]["name"]):
-            attributes[cs].append((domain, family, member, device))
+        for cs, domain, family, member, name in zip(names[0]["cs_name"],
+                                                    names[0]["domain"],
+                                                    names[0]["family"],
+                                                    names[0]["member"],
+                                                    names[0]["name"]):
+            attributes[cs].append((domain, family, member, name))
 
         return attributes
 
     @memoized_ttl(60)
     def get_att_configs(self):
+        "The attribute config table tells us where to find the data"
         result = self.session.execute(self.prepared["config"])
         configs = defaultdict(dict)
         for row in result:
@@ -162,16 +204,36 @@ class HDBPlusPlusConnection(object):
                                                    row["att_name"],
                                                    row["att_conf_id"],
                                                    row["data_type"]):
-                configs[cs][att] = {
-                    "id": conf_id,
-                    "data_type": data_type
-                }
+                configs[cs][att] = {"id": conf_id, "data_type": data_type}
         return configs
 
-    # def get_parameter(self, attr, start_time=None, end_time=None):
-    #     att_conf_id = self.configs[attr]
-    #     if not start_time or not end_time:
-    #         params = self.session.execute(self.prepared["latest_parameter"], att_conf_id)
+    def get_history(self, attr, time_window=None):
+        "Get the attribute event history (add/remove/start/stop/pause...)"
+        att_conf_id = self.configs[attr]
+        if time_window:
+            query = self.prepared["history"]
+            start_time, end_time = time_window
+            bound = query.bind(att_conf_id, start_time, end_time)
+        else:
+            query = self.prepared["all_history"]
+            bound = query.bind(att_conf_id)
+        result = self.session.execute(bound)
+        return [
+            {"timestamp": row["time"] + row["time_us"] * 1e-6,
+             "event": row["event"]}
+            for row in result
+        ]
+
+    def get_parameters(self, attr, end_time):
+        """Get the latest parameters stored for the attribute, until the given
+        end time"""
+        att_conf_id = self.configs[attr]
+        query = self.prepared["parameter"]
+        result = self.session.execute(query, att_conf_id, end_time)
+        params = None
+        for row in result:
+            params = row
+        return params
 
     def get_attribute_data(self, attr,
                            start_time=None,
@@ -208,31 +270,71 @@ class HDBPlusPlusConnection(object):
 
         start_date = date.fromtimestamp(start_time/1000)
         end_date = date.fromtimestamp(end_time/1000)
-        periods = (str(start_date + timedelta(days=d))
-                   for d in range((end_date - start_date).days + 1))
+        periods = [(start_date + timedelta(days=d)).strftime("%Y-%m-%d")
+                   for d in range((end_date - start_date).days + 1)]
+        logging.debug("periods: %r", periods)
         cs, name = split_cs_and_attribute(attr)
+
         return [self.get_attribute_period(cs, name, period)
                 for period in periods]
 
     def get_attribute_period(self, cs, attr, period):
         "Return the data for a given attribute and period (day)"
         if period == str(date.today()):
-            # Today's data requested; not using cache
-            return self._get_attribute_period.__wrapped__(self, cs, attr, period)
+            # OK, we're requesting today's data. This means we're
+            # still writing data to this period and caching is not
+            # quite as simple as with older data.
+            return self._get_attribute_period_today(cs, attr)
         try:
             return self._get_attribute_period(cs, attr, period)
         except KeyError:
             # TODO: Don't know why this sometimes happens?
             return self._get_attribute_period.__wrapped__(self, cs, attr, period)
 
+    def _get_attribute_period_today(self, cs, attr):
+        today = str(date.today())
+        if today != self._today:
+            logging.debug("emptying today cache")
+            self._today = today
+            self._today_cache.clear()
+
+        # latest data point we know about
+        cached = self._today_cache.get((cs, attr))
+        if cached is None:
+            # This means we have no knowledge of today's data for
+            # this attribute and we'll have to fetch from the DB
+            data = self._get_attribute_period.__wrapped__(self, cs, attr, today)
+            latest = data["t"].max()
+        else:
+            # There is cached data, but we still need to fetch any new
+            # data points and append them. This is a little tricky
+            # since the "time" column is in seconds and then
+            # microseconds are stored in "time_us". This means that we
+            # can't query at better than second precision and have to
+            # truncate the cached data before appending the new
+            # points, or we'd risk overlapping points.
+            latest = cached["t"].max()
+            latest_s = int(latest/1000)
+            rest = self._get_attribute_period.__wrapped__(
+                self, cs, attr, today, datetime.fromtimestamp(latest_s))
+            truncated = cached[cached["t"] < 1000*latest_s]
+            data = pd.concat([truncated, rest], ignore_index=True)
+        # cache the result
+        self._today_cache[(cs, attr)] = data
+        return data
+
     @lru_cache(maxsize=1024)
-    def _get_attribute_period(self, cs, attr, period):
+    def _get_attribute_period(self, cs, attr, period, after=None):
         """Cached version. Since past archived data never changes, it's
         straightforward to cache it.
         """
         config = self.configs[cs][attr]
-        query = self.prepared["data"][config["data_type"]]
-        attr_bound = query.bind([config["id"], period])
+        if after:
+            query = self.prepared["data_after"][config["data_type"]]
+            attr_bound = query.bind([config["id"], period, after])
+        else:
+            query = self.prepared["data"][config["data_type"]]
+            attr_bound = query.bind([config["id"], period])
         res = self.session.execute(attr_bound)
         dfs = []
         while True:
