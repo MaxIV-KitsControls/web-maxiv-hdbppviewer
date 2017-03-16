@@ -52357,9 +52357,6 @@
 	var Y_AXIS_WIDTH = 0; // how much horizontal room to reserve for each Y axis,
 	// to make room for tick labels
 
-	var Y_RANGE_PADDING = 0.05; // how much room to leave above and below the
-	// lines, relative to the height
-
 	var customTimeFormat = _d3.default.time.format.multi([[".%L", function (d) {
 	    return d.getMilliseconds();
 	}], [":%S", function (d) {
@@ -52560,28 +52557,6 @@
 	        value: function setDescriptions(descriptions) {
 	            this.descriptions = descriptions;
 	        }
-
-	        // Given the (min, max) Y range of the data, return a (min', max') range
-	        // that covers the data Y range plus a visually consistent amount of padding.
-
-	    }, {
-	        key: "calculatePaddedYRange",
-	        value: function calculatePaddedYRange(yRange, log) {
-	            var _yRange = _slicedToArray(yRange, 2);
-
-	            var ymin = _yRange[0];
-	            var ymax = _yRange[1];
-
-	            if (log) {
-	                var height = Math.abs(Math.log10(ymax) - Math.log10(ymin)),
-	                    padding = (height / (1 - 2 * Y_RANGE_PADDING) - height) / 2;
-	                return [Math.pow(10, Math.log10(ymin) - padding), Math.pow(10, Math.log10(ymax) + padding)];
-	            } else {
-	                var _height = Math.abs(ymax - ymin),
-	                    _padding = (_height / (1 - 2 * Y_RANGE_PADDING) - _height) / 2;
-	                return [ymin - _padding, ymax + _padding];
-	            }
-	        }
 	    }, {
 	        key: "showCrosshair",
 	        value: function showCrosshair() {
@@ -52643,12 +52618,10 @@
 	                var currentYMin = _yScales$axis$domain2[0];
 	                var currentYMax = _yScales$axis$domain2[1];
 
-	                var _calculatePaddedYRang = this.calculatePaddedYRange(y_range, !!this.yScales[axis].base);
+	                var _y_range = _slicedToArray(y_range, 2);
 
-	                var _calculatePaddedYRang2 = _slicedToArray(_calculatePaddedYRang, 2);
-
-	                var yMin = _calculatePaddedYRang2[0];
-	                var yMax = _calculatePaddedYRang2[1];
+	                var yMin = _y_range[0];
+	                var yMax = _y_range[1];
 
 	                var yScale = Math.abs(yMax - yMin) / Math.abs(currentYMax - currentYMin);
 	                this.imageTimeRanges[(this.currentImage + 1) % 2] = x_range;
@@ -52818,8 +52791,7 @@
 	            var yMax = _yScales$0$range2[1];
 
 	            var height = Math.abs(yMax - yMin);
-	            var padding = height * Y_RANGE_PADDING;
-	            this.onChange(xStart, xEnd, xMax - xMin, Math.floor(height - padding * 2));
+	            this.onChange(xStart, xEnd, xMax - xMin, height);
 	        }
 	    }]);
 
@@ -68903,7 +68875,7 @@
 	            var plottedAttributes = _react2.default.createElement(PlottedAttributes, _extends({}, this.props, {
 	                removeAttributes: this.onRemoveAttributes.bind(this) }));
 
-	            var addButton = _react2.default.createElement(
+	            var addButtons = _react2.default.createElement(
 	                _reactBootstrap.DropdownButton,
 	                { id: "add-attribute", bsStyle: "success", title: "Add",
 	                    disabled: this.state.selectedSuggestions.length == 0 },
@@ -68911,13 +68883,13 @@
 	                    _reactBootstrap.MenuItem,
 	                    { eventKey: 0,
 	                        onSelect: this.onAddAttributes.bind(this) },
-	                    "Left Y"
+	                    "Left Y axis"
 	                ),
 	                _react2.default.createElement(
 	                    _reactBootstrap.MenuItem,
 	                    { eventKey: 1,
 	                        onSelect: this.onAddAttributes.bind(this) },
-	                    "Right Y"
+	                    "Right Y axis"
 	                )
 	            );
 
@@ -68925,11 +68897,11 @@
 	                "div",
 	                null,
 	                _react2.default.createElement(
-	                    "form",
+	                    _reactBootstrap.Form,
 	                    null,
 	                    _react2.default.createElement(
 	                        _reactBootstrap.Panel,
-	                        { footer: addButton },
+	                        { footer: addButtons },
 	                        _react2.default.createElement(
 	                            _reactBootstrap.FormGroup,
 	                            null,
@@ -68945,11 +68917,12 @@
 	                        _react2.default.createElement(
 	                            _reactBootstrap.FormGroup,
 	                            null,
-	                            _react2.default.createElement(_reactBootstrap.FormControl, { type: "search", ref: "search",
+	                            _react2.default.createElement(_reactBootstrap.FormControl, { ref: "search",
+	                                name: "attribute-search",
 	                                title: "Search for some attribute(s)",
 	                                value: this.state.pattern,
 	                                onChange: this.onPatternChange.bind(this),
-	                                placeholder: "e.g */vac/*/pressure" })
+	                                placeholder: "e.g. */vac/*/pressure" })
 	                        ),
 	                        _react2.default.createElement(
 	                            _reactBootstrap.FormControl,
