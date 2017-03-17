@@ -50,6 +50,8 @@ It is currently in a "beta" stage, with basic functionality in place but very li
 
 ## Requirements
 
+Note: the repo includes a Dockerfile, that can be used to build a docker container image for easy deployment together with all dependencies. Have a look in the file for instructions, you will probably need to modify some things to suit your needs.
+
 ### Python (for running)
 
  * python >= 3.5
@@ -67,12 +69,13 @@ Datashader has a bunch of scientific python dependencies, the easiest way to get
   
 
 ### Cassandra
-You also, obviously, need to have a Cassandra installation somewhere, containing HDB++ formatted data.
+
+You also, obviously, need to have access to a Cassandra installation somewhere, containing HDB++ formatted data.
 
 
 ## Building
 
-The frontend is written using React and Redux and managed with webpack. To build it, the following steps should suffice:
+The frontend is written using babel, react and redux and managed with webpack. To build it, the following steps should work:
 
 $ npm install
 $ webpack
