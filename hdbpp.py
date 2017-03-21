@@ -313,12 +313,17 @@ class HDBPlusPlusConnection(object):
             # can't query at better than second precision and have to
             # truncate the cached data before appending the new
             # points, or we'd risk overlapping points.
-            latest = cached["t"].max()
-            latest_s = int(latest/1000)
-            rest = self._get_attribute_period.__wrapped__(
-                self, cs, attr, today, datetime.fromtimestamp(latest_s))
-            truncated = cached[cached["t"] < 1000*latest_s]
-            data = pd.concat([truncated, rest], ignore_index=True)
+            if len(cached) > 0:
+                latest = cached["t"].max()
+                latest_s = int(latest/1000)
+                rest = self._get_attribute_period.__wrapped__(
+                    self, cs, attr, today, datetime.fromtimestamp(latest_s))
+                truncated = cached[cached["t"] < 1000*latest_s]
+                data = pd.concat([truncated, rest], ignore_index=True)
+            else:
+                # cached data is empty; check if there is any now
+                data = self._get_attribute_period.__wrapped__(
+                    self, cs, attr, today)
         # cache the result
         self._today_cache[(cs, attr)] = data
         return data
