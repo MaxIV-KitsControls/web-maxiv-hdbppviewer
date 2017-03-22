@@ -1,8 +1,6 @@
-import asyncio
-import base64
+gimport base64
 from collections import defaultdict
 from datetime import datetime
-from functools import partial
 import io
 import logging
 from math import log10
@@ -30,10 +28,10 @@ def make_image(data, time_range, y_range, size, scale=None, width=0):
     cvs = datashader.Canvas(x_range=offset_range, y_range=y_range,
                             plot_width=size[0], plot_height=size[1],
                             y_axis_type=scale or "linear")
+
     # aggregate some useful measures
     agg_line = cvs.line(source=data["data"], x="t", y="v")
-    agg_points = cvs.points(source=data["data"],
-                            x="t", y="v",
+    agg_points = cvs.points(source=data["data"], x="t", y="v",
                             agg=datashader.summary(
                                 count=datashader.count("v"),
                                 vmean=datashader.mean("v"),
@@ -77,28 +75,6 @@ def encode_image(image):
     pil_image.save(bytesio, format='PNG')
     data = bytesio.getvalue()
     return base64.b64encode(data)
-
-
-async def get_data(hdbpp, attributes, time_range):
-    "Fetch data for all the given attributes over the time range"
-    # First get data from the DB and sort by y-axis
-    futures = {}
-    for attribute in attributes:
-        # load data points for the attribute from the archive database
-        name = attribute["name"].lower()
-        call = partial(
-            hdbpp.get_attribute_data,
-            attr=name,
-            start_time=time_range[0],
-            end_time=time_range[1])
-        # TODO: use the async functionality of cassandra-driver
-        loop = asyncio.get_event_loop()
-        futures[name] = loop.run_in_executor(None, call)
-
-    # wait for all the attributes to be fetched
-    await asyncio.gather(*futures.values())
-    return {attribute["name"]: futures[attribute["name"]].result()
-            for attribute in attributes}
 
 
 def get_extrema(attributes, results, time_range, axes):

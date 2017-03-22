@@ -13,6 +13,9 @@ Basic functionality:
 Missing functionality:
 - configure color, Y-axis etc for each line
 - realtime updates
+- show units, labels, ...
+- ability to identify lines e.g. by hover
+- display errors?
 
 Improvements needed:
 - data readout and packaging is hacky
@@ -31,6 +34,8 @@ Ideas:
 
 import base64
 from concurrent.futures import ThreadPoolExecutor
+from collections import OrderedDict
+from dateutil.parser import parse as parse_time
 from functools import partial
 import fnmatch
 import json
@@ -42,13 +47,14 @@ from weakref import WeakSet, WeakValueDictionary
 import aiohttp
 import asyncio
 from aiohttp import web
-from aiohttp import MultiDict
+import aiohttp_cors
+from aiohttp_utils import negotiation
 from asyncio import Queue, QueueEmpty
-import numpy as np
 
-from plot import get_data, get_extrema, make_axis_images
+from plot import get_extrema, make_axis_images
 from hdbpp import HDBPlusPlusConnection
 from utils import timer
+from data import get_data, render_data_csv, render_data_json
 
 
 async def get_controlsystems(hdbpp, request):
@@ -104,7 +110,7 @@ async def get_images(hdbpp, request):
 
     # get archived data from cassandra
     with timer("Fetching from database"):
-        data = await get_data(hdbpp, attributes, time_range)
+        data = await get_data(hdbpp, [a["name"] for a in attributes], time_range)
 
     # calculate the max/min for each y-axis
     with timer("Calculating extrema"):
@@ -124,6 +130,48 @@ async def get_images(hdbpp, request):
     # client to allow it, though.
     response.enable_compression()
     return response
+
+
+async def post_raw_query(hdbpp, request):
+    params = await request.json()
+    attributes = ["{cs}/{target}".format(**t) for t in params["targets"]]
+    time_range = [parse_time(params["range"]["from"]).timestamp()*1000,
+                  parse_time(params["range"]["to"]).timestamp()*1000]
+    interval = params.get("interval")
+
+    if interval:
+        if interval.endswith("ms"):
+            interval = interval.replace("ms", "L")
+        elif interval.endswith("s"):
+            interval = interval.replace("s", "S")
+        elif interval.endswith("m"):
+            interval = interval.replace("m", "T")
+
+    data = await get_data(hdbpp, attributes, time_range, interval)
+
+    return negotiation.Response(data=data)
+
+
+async def post_raw_search(hdbpp, request):
+    params = await request.json()
+    term = params["target"]
+    cs = params["cs"]
+
+    search = params["target"]
+
+    regex = ".*{}.*".format(search)
+    logging.info("search: %s", search)
+    loop = asyncio.get_event_loop()
+
+    result = await loop.run_in_executor(None, hdbpp.get_attributes)
+    attributes = sorted("%s/%s/%s/%s" % attr
+                        for attr in result[cs])
+    matches = [attr
+               for attr in attributes
+               if re.match(regex, attr, re.IGNORECASE)]
+    data = json.dumps(matches)
+    return web.Response(body=data.encode("utf-8"),
+                        content_type="application/json")
 
 
 if __name__ == "__main__":
@@ -175,7 +223,33 @@ if __name__ == "__main__":
                          partial(get_attributes, hdbpp))
     app.router.add_route('POST', '/image',
                          partial(get_images, hdbpp))
-    app.router.add_static('/', 'static')
+
+    # Configure default CORS settings. This is required for e.g. grafana
+    # to be able to access the service.
+    # TODO: this may be too permissive.
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+            )
+    })
+    # set up content negotiation so that clients can request
+    # e.g. csv data.
+    negotiation.setup(app, renderers=OrderedDict([
+        ('text/plain', render_data_csv),
+        ('text/csv', render_data_csv),
+        ('application/json', render_data_json)
+    ]))
+
+    cors.add(app.router.add_route('POST', '/query',
+                                  partial(post_raw_query, hdbpp)))
+    cors.add(app.router.add_route('POST', '/search',
+                                  partial(post_raw_search, hdbpp)))
+
+    # everything else assumed to be requests for static files
+    # maybe add '/static'?
+    cors.add(app.router.add_static('/', 'static'))
 
     handler = app.make_handler(debug=args.debug)
     f = loop.create_server(handler, '0.0.0.0', PORT)
@@ -189,6 +263,5 @@ if __name__ == "__main__":
         srv.close()
         loop.run_until_complete(srv.wait_closed())
         loop.run_until_complete(handler.finish_connections(1.0))
-        loop.run_until_complete(app.finish())
 
     loop.close()
