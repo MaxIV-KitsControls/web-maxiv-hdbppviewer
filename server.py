@@ -147,7 +147,8 @@ async def post_raw_query(hdbpp, request):
         elif interval.endswith("m"):
             interval = interval.replace("m", "T")
 
-    data = await get_data(hdbpp, attributes, time_range, interval)
+    data = await get_data(hdbpp, attributes, time_range, interval,
+                          restrict_time=True)
 
     return negotiation.Response(data=data)
 

@@ -51,28 +51,31 @@ def render_data_json(request, data):
     ])
 
 
-async def get_data(hdbpp, attributes, time_range, interval=None):
+async def get_data(hdbpp, attributes, time_range, interval=None,
+                   restrict_time=False):
     "Fetch data for all the given attributes over the time range"
     # First get data from the DB and sort by y-axis
     futures = {}
     loop = asyncio.get_event_loop()
-    tz = time.timezone
+    t0, t1 = time_range
     for attribute in attributes:
         # load data points for the attribute from the archive database
         name = attribute.lower()
         call = partial(
             hdbpp.get_attribute_data,
             attr=name,
-            start_time=time_range[0]-tz,
-            end_time=time_range[1]-tz)
+            start_time=t0,
+            end_time=t1)
         # TODO: use the async functionality of cassandra-driver
         # instead of running in a thread like this
         futures[name] = loop.run_in_executor(None, call)
 
     # wait for all the attributes to be fetched
-    t0, t1 = time_range
     await asyncio.gather(*futures.values())
-    return {attribute: [resample(df[(t0 <= df["t"]) & (df["t"] <= t1)],
-                                 interval)
+    if restrict_time:
+        return {attribute: [resample(df[(t0 <= df["t"]) & (df["t"] <= t1)], interval)
+                            for df in futures[attribute].result()]
+                for attribute in attributes}
+    return {attribute: [resample(df, interval)
                         for df in futures[attribute].result()]
             for attribute in attributes}
