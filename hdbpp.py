@@ -1,12 +1,44 @@
+"""This module contains a convenient wrapper for asynchronously getting data
+from a HDB++ cassandra database. It also provices a caching mechanism that
+keeps recently used data in memory.
+
+Some observations:
+
+Read http://www.datastax.com/dev/blog/basic-rules-of-cassandra-data-modeling
+
+Since data in Cassandra/HDB++ is stored with the day's date as part of
+the partition key it's not efficient to make queries that reach across
+several dates. Therefore we always split up larger queries into one
+separate query per date and run these concurrently. This way we should
+make optimal use of the distributed nature of cassandra. Note that
+there are plans to change the partition size from date to date+hour in
+HDB++, but this should be easy to adapt to.
+
+Mostly in order to make caching easier, we'll always query and return
+entire days (except in the special case of today's date). This means
+that a very small request will be slower than necessary, but only the
+first query.  Subsequently the whole day will be in the cache. This
+might change in the future.
+
+The handling of timestamps is messy, mostly I guess because cassandra
+does not support microsecond resolution (only milliseconds). Therefore
+the timestamps are split into "*_time" (which is a cassandra datetime
+column with second precision) and "*_time_us" which is an integer that
+contains the number of microseconds to add to the '*_time' column. But
+only the "*_time" column can be filtered on.
+
+get_attribute_data() always returns a future, which resolves to a pandas
+dataframe containing the data.
+"""
+
+import asyncio
 from collections import defaultdict
-from functools import lru_cache
 import logging
 import time
 from datetime import date, timedelta, datetime
-from dateutil import tz
 
 from cassandra.cluster import Cluster
-from cassandra.protocol import NumpyProtocolHandler, LazyProtocolHandler
+from cassandra.protocol import NumpyProtocolHandler
 from cassandra.policies import AddressTranslator
 from cassandra.query import tuple_factory
 from cassandra.connection import InvalidRequestException
@@ -14,7 +46,8 @@ from cassandra.connection import InvalidRequestException
 import numpy as np
 import pandas as pd
 
-from utils import memoized_ttl, LRUDict
+from utils import memoized_ttl, SizeLimitedCache, retry_future
+from aiocassandra import aiosession
 
 
 HDBPP_DATA_TYPES = [
@@ -77,7 +110,7 @@ class HDBPlusPlusConnection(object):
     "A very simple direct interface to the HDB++ cassandra backend"
 
     def __init__(self, nodes=None, keyspace="hdb", address_map=None,
-                 fetch_size=50000):
+                 fetch_size=50000, cache_size=1e9):
         self.nodes = nodes if nodes else ["localhost"]
         if address_map:
             translator = LocalNetworkAdressTranslator(address_map)
@@ -85,7 +118,7 @@ class HDBPlusPlusConnection(object):
         else:
             self.cluster = Cluster(self.nodes)
 
-        self.session = self.cluster.connect(keyspace)
+        self.session = aiosession(self.cluster.connect(keyspace))
         self.session.default_fetch_size = fetch_size
 
         # set up the deserializer to use numpy
@@ -94,8 +127,9 @@ class HDBPlusPlusConnection(object):
 
         self.prepare_queries()
 
-        self._today = None
-        self._today_cache = LRUDict(maxduration=3600)
+        self._cache = SizeLimitedCache(
+            max_size=cache_size,
+            get_item_size=lambda df: df.memory_usage().sum())
 
     @property
     def attributes(self):
@@ -161,21 +195,15 @@ class HDBPlusPlusConnection(object):
                      " FROM att_%s"
                      " WHERE att_conf_id = ?"
                      " AND period = ?") % data_type)
-                     # "AND data_time > ? "
-                     # "AND data_time < ?") % data_type)
                 self.prepared["data_after"][data_type] = self.session.prepare(
                     ("SELECT data_time, data_time_us, value_r, error_desc"
                      " FROM att_%s"
                      " WHERE att_conf_id = ?"
                      " AND period = ?"
-                     " AND data_time >= ?"
-                     # " AND data_time_us > ?"
-                     # "AND data_time < ?") % data_type)
-                    ) % data_type)
-
+                     " AND data_time >= ?") % data_type)
             except Exception as e:
-                logging.warn("Exception creating query for %s", data_type)
-                pass
+                logging.warn("Exception creating query for %s: %r",
+                             data_type, e)
 
     @memoized_ttl(60)
     def get_attributes(self):
@@ -209,6 +237,7 @@ class HDBPlusPlusConnection(object):
 
     def get_history(self, attr, time_window=None):
         "Get the attribute event history (add/remove/start/stop/pause...)"
+
         att_conf_id = self.configs[attr]
         if time_window:
             query = self.prepared["history"]
@@ -235,31 +264,21 @@ class HDBPlusPlusConnection(object):
             params = row
         return params
 
-    def get_attribute_data(self, attr,
-                           start_time=None,
-                           end_time=None,
-                           asynchronous=False):
+    def get_attribute_data(self, attr, start_time=None, end_time=None):
 
-        """Request all data points for the given attribute between
+        """Get all data points for the given attribute between
         start_time and end_time.
 
-        Note: we'll actually query all the data or each day event
-        partially covered by the time window. Returns a list of result
-        objects, one per date. This is because the date is part of the
-        primary key of the schema, so it's more efficient to split
-        queries on date. That way each query can always be handled by
-        a single node. And since we're doing that we might as well
-        just query the whole day since that will make it easier to
-        cache (and the query should be slightly faster?). One day
-        shouldn't be too much data anyhow, e.g. <100000 points
-        at 1s interval. This should be evaluated, though.
-
-        Note: the cache ignores today's date, as we cannot assume that
-        it's static. This logic needs checking, there might be
-        timezone issues etc. Also it might be worth thinking about a
-        more fine-grained caching scheme for this case, as it will be
-        quite a common use case to periodically reload today's data
-        for updating the plot.
+        Note: we'll actually query all the data for every day even
+        partially covered by the time range. This is because the date
+        is part of the primary key of the schema, so it's more
+        efficient to split queries on date. That way each query can
+        always be handled by a single node. And since we're doing that
+        we might as well just query the whole day since that will make
+        it easier to cache. One day shouldn't be too much data anyhow,
+        e.g. <100000 points at 1s interval. In any case, this is a
+        very natural way to split larger queries so that they can
+        be run concurrently.
         """
 
         # default to the last 24 hours
@@ -268,70 +287,100 @@ class HDBPlusPlusConnection(object):
         if not end_time:
             end_time = (time.time()) * 1000
 
-        start_date = date.fromtimestamp(start_time/1000)
-        end_date = date.fromtimestamp(end_time/1000)
+        # recalculate timestamps to local time for the period names
+        utc_offset = 0  #time.localtime().tm_gmtoff
+        start_date = date.fromtimestamp(start_time/1000 + utc_offset)
+        end_date = date.fromtimestamp(end_time/1000 + utc_offset)
         periods = [(start_date + timedelta(days=d)).strftime("%Y-%m-%d")
                    for d in range((end_date - start_date).days + 1)]
         logging.debug("periods: %r", periods)
         cs, name = split_cs_and_attribute(attr)
 
-        return [self.get_attribute_period(cs, name, period)
-                for period in periods]
+        # request all periods at once
+        fut = asyncio.gather(*[self.get_attribute_period(cs, name, period)
+                               for period in periods])
+        # we'll return a "dummy" future which is resolved with all the
+        # data, once it's all arrived.
+        dummy_fut = asyncio.Future()
+        fut.add_done_callback(
+            lambda fut_: dummy_fut.set_result(pd.concat(fut_.result())))
+        return dummy_fut
 
+    @retry_future(max_retries=3)
     def get_attribute_period(self, cs, attr, period):
-        "Return the data for a given attribute and period (day)"
+        """
+        Return the data for a given attribute and period (day)
+        Checks and updates the cache.
+        Note that data in historical periods should never change,
+        and terefore it's straightforward to cache it. Today's data
+        gets special treatment since new data can still arrive.
+        """
         if period == str(date.today()):
             # OK, we're requesting today's data. This means we're
             # still writing data to this period and caching is not
             # quite as simple as with older data.
             return self._get_attribute_period_today(cs, attr)
         try:
-            return self._get_attribute_period(cs, attr, period)
+            result = self._cache[cs, attr, period]
+            # the data is found in the cache, we just need to wrap it
+            # up in a future that returns immediately. This way we don't
+            # have to care later and can handle all data the same way.
+            fut = asyncio.Future()
+            fut.set_result(result)
+            return fut
         except KeyError:
-            # TODO: Don't know why this sometimes happens?
-            return self._get_attribute_period.__wrapped__(self, cs, attr, period)
+            fut = self._get_attribute_period(cs, attr, period)
+            # make sure the cache gets updated
+            fut.add_done_callback(
+                lambda fut_: (
+                    self._cache.set((cs, attr, period), fut_.result())
+                    if not fut_.exception()
+                    else None
+                )
+            )
+            return fut
 
     def _get_attribute_period_today(self, cs, attr):
+
+        """Helper to specifically get the data for today, using the
+        cached data (if any) and only queries the db for new points."""
+
         today = str(date.today())
-        if today != self._today:
-            logging.debug("emptying today cache")
-            self._today = today
-            self._today_cache.clear()
 
-        # latest data point we know about
-        cached = self._today_cache.get((cs, attr))
-        if cached is None:
-            # This means we have no knowledge of today's data for
-            # this attribute and we'll have to fetch from the DB
-            data = self._get_attribute_period.__wrapped__(self, cs, attr, today)
-            latest = data["t"].max()
+        try:
+            cached = self._cache[cs, attr, today]
+        except KeyError:
+            # no data in the cache
+            fut = self._get_attribute_period(cs, attr, today)
         else:
-            # There is cached data, but we still need to fetch any new
-            # data points and append them. This is a little tricky
-            # since the "time" column is in seconds and then
-            # microseconds are stored in "time_us". This means that we
-            # can't query at better than second precision and have to
-            # truncate the cached data before appending the new
-            # points, or we'd risk overlapping points.
-            if len(cached) > 0:
-                latest = cached["t"].max()
-                latest_s = int(latest/1000)
-                rest = self._get_attribute_period.__wrapped__(
-                    self, cs, attr, today, datetime.fromtimestamp(latest_s))
-                truncated = cached[cached["t"] < 1000*latest_s]
-                data = pd.concat([truncated, rest], ignore_index=True)
+            if cached.empty:
+                # the cached data is empty
+                fut = self._get_attribute_period(cs, attr, period=today)
             else:
-                # cached data is empty; check if there is any now
-                data = self._get_attribute_period.__wrapped__(
-                    self, cs, attr, today)
-        # cache the result
-        self._today_cache[(cs, attr)] = data
-        return data
+                # There is cached data, but we still need to fetch any new
+                # data points and append them. This is a little tricky
+                # since the "time" column is in seconds and then
+                # microseconds are stored in "time_us". This means that we
+                # can't query at better than second precision and have to
+                # truncate the cached data before appending the new
+                # points, or we'd risk overlapping points.
+                latest = cached["data_time"].max()
+                latest_s = datetime.utcfromtimestamp(int(latest.timestamp()))
+                truncated = cached[cached["data_time"] < latest_s]
+                data_fut = self._get_attribute_period(
+                    cs, attr, period=today, after=latest_s)
+                fut = asyncio.Future()
+                data_fut.add_done_callback(
+                    lambda fut_: fut.set_result(
+                        pd.concat([truncated, fut_.result()],
+                                  ignore_index=True)))
 
-    @lru_cache(maxsize=1024)
+        return fut
+
     def _get_attribute_period(self, cs, attr, period, after=None):
-        """Cached version. Since past archived data never changes, it's
-        straightforward to cache it.
+        """
+        Get data for the given period from the database. Optionally filter
+        to only get the points after a given timestamp.
         """
         config = self.configs[cs][attr]
         if after:
@@ -340,23 +389,4 @@ class HDBPlusPlusConnection(object):
         else:
             query = self.prepared["data"][config["data_type"]]
             attr_bound = query.bind([config["id"], period])
-        res = self.session.execute(attr_bound)
-        dfs = []
-        while True:
-            rows = res.current_rows[0]
-            timestamps = rows["data_time"]
-            microseconds = rows["data_time_us"]
-
-            # Add the microseconds to the timestamp
-            # TODO: this seems very slow, as it's done per element.
-            # Find a better way!
-            t = timestampify(timestamps, microseconds)
-            df = pd.DataFrame(dict(v=rows["value_r"],
-                                   e=rows["error_desc"], t=t))
-
-            dfs.append(df)
-            if res.has_more_pages:
-                res.fetch_next_page()
-            else:
-                break
-        return pd.concat(dfs, ignore_index=True)
+        return self.session.execute_future(attr_bound)

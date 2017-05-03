@@ -4,10 +4,10 @@ from datetime import datetime
 import io
 import logging
 from math import log10
+import time
 
 import datashader
 import numpy as np
-import pandas
 
 from utils import timer
 
@@ -16,27 +16,18 @@ def make_image(data, time_range, y_range, size, scale=None, width=0):
 
     "Flatten the given range of the data into a 2d image"
 
-    # Since the data comes with UTC timestamps, we need to shift it
-    # according to the current timezone. This is a crude way, it would
-    # be nice if datashader supported a proper time datatype natively...
-    # Also note that the timestamps are milliseconds while python usually
-    # deals in seconds. I guess this comes from Cassandra's JVM roots.
-    t0, t1 = time_range
-    utc_offset = (datetime.fromtimestamp(t0/1000) -
-                  datetime.utcfromtimestamp(t0/1000)).total_seconds() * 1000
-    offset_range = [t0 - utc_offset, t1 - utc_offset]
-    cvs = datashader.Canvas(x_range=offset_range, y_range=y_range,
+    cvs = datashader.Canvas(x_range=time_range, y_range=y_range,
                             plot_width=size[0], plot_height=size[1],
                             y_axis_type=scale or "linear")
 
     # aggregate some useful measures
-    agg_line = cvs.line(source=data["data"], x="t", y="v")
-    agg_points = cvs.points(source=data["data"], x="t", y="v",
+    agg_line = cvs.line(source=data["data"], x="t", y="value_r")
+    agg_points = cvs.points(source=data["data"], x="t", y="value_r",
                             agg=datashader.summary(
-                                count=datashader.count("v"),
-                                vmean=datashader.mean("v"),
-                                vmin=datashader.min("v"),
-                                vmax=datashader.max("v")))
+                                count=datashader.count("value_r"),
+                                vmean=datashader.mean("value_r"),
+                                vmin=datashader.min("value_r"),
+                                vmax=datashader.max("value_r")))
     color = data["info"].get("color", "red")
     image = datashader.transfer_functions.shade(agg_line, cmap=[color])
 
@@ -80,33 +71,29 @@ def encode_image(image):
 def get_extrema(attributes, results, time_range, axes):
     "Get the max/min values for each attribute"
     per_axis = defaultdict(dict)
+    t0, t1 = time_range
     for info in attributes:
         name = info["name"]
-        periods = results[name]
-        data = pandas.concat(periods, ignore_index=True)
+        data = results[name]
         logging.debug("Length of %s: %d", name, len(data))
 
         # find local extrema
         y_axis = info["y_axis"]
         axis_config = axes.get(str(y_axis), {})
-
-        # TODO: since we're shifting the data in make_image, we also
-        # need to shift the window we use here, to get the extreme
-        # points right. It feels bad to do this twice...
-        t0, t1 = time_range
-        utc_offset = (datetime.fromtimestamp(t0/1000) -
-                      datetime.utcfromtimestamp(t0/1000)).total_seconds()
-        relevant = data[(data["t"] >= time_range[0] - utc_offset*1000) &
-                        (data["t"] <= time_range[1] - utc_offset*1000)]["v"]
-
-        if axis_config.get("scale") == "log":
-            # ignore zero or negative values
-            valid = relevant.where(relevant > 0)
-            value_min = valid.min()
-            value_max = valid.max()
-        else:
-            value_max = relevant.max()
-            value_min = relevant.min()
+        # we have to assume that we have more data than the time_range
+        # requested, so we'll make a slice containing only the relevant part
+        i0, = data["t"].searchsorted(t0)
+        i1, = data["t"].searchsorted(t1)
+        relevant = data[i0:i1]
+        with timer("getting max/min"):
+            if axis_config.get("scale") == "log":
+                # ignore zero or negative values b/c they make no sense
+                valid = relevant.where(relevant > 0)
+                value_min = valid["value_r"].min()
+                value_max = valid["value_r"].max()
+            else:
+                value_max = relevant["value_r"].max()
+                value_min = relevant["value_r"].min()
 
         per_axis[y_axis][name] = dict(
             data=data, info=info, points=len(relevant),
@@ -120,6 +107,7 @@ def get_axis_limits(y_axis, data):
     nodata = set()
     for name, data in data.items():
         vmin, vmax = data["y_range"]
+        print(vmin, vmax)
         if np.isnan(vmin) or np.isnan(vmax):
             # TODO: when will this actually happen?
             nodata.add(name)

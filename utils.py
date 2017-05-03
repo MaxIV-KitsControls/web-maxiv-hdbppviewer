@@ -1,3 +1,4 @@
+import asyncio
 from collections import OrderedDict
 from contextlib import contextmanager
 
@@ -33,6 +34,49 @@ class memoized_ttl(object):
                 value = f(*args)
                 self.cache = (value, now)
                 return value
+        return wrapped_f
+
+
+class retry_future:
+
+    """This is a decorator that can be used to decorate functions that
+    return a future. The decorated function returns another future that
+    checks the result of the original future. If it's OK, the outer
+    future just forwards the result. If there was an error, the inner
+    function is re-run until either there is a result, or max_retries
+    is reached, in chich case the the last exception is set on the
+    outer future.
+
+    TODO: somehow configure which exceptions to retry and which to just
+    fail immediately. E.g. invalid requests and similar are pointless
+    to retry, while timeouts and availability problems make sense.
+    """
+
+    def __init__(self, max_retries):
+        self.max_retries = 5
+
+    def __call__(self, f):
+        def wrapped_f(*args, **kwargs):
+            inner_fut = f(*args)
+            outer_fut = asyncio.Future()
+            retries = 0
+
+            def resolve_or_retry(fut_):
+                if not fut_.exception():
+                    outer_fut.set_result(fut_.result())
+                else:
+                    nonlocal retries
+                    retries += 1
+                    logging.info("Retry %d of function %s(%r, %r): %s",
+                                 retries, f, args, kwargs, fut_.exception())
+                    if retries < self.max_retries:
+                        fut = f(*args)  # new 'inner' future
+                        fut.add_done_callback(resolve_or_retry)
+                    else:
+                        outer_fut.set_exception(fut_.exception())
+
+            inner_fut.add_done_callback(resolve_or_retry)
+            return outer_fut
         return wrapped_f
 
 
@@ -112,3 +156,68 @@ class LRUDict(OrderedDict):
     def values(self):
         # remove ttl from values
         return (v for v, _ in super().values())
+
+
+class SizeLimitedCache:
+
+    """A LRU cache that always stays below the given total max size.
+    Works basically like a dict, each value is associated with a
+    unique, hashable key.
+
+    Also requres a function to calculate the memory usage of a
+    single item, in the same unit as 'max_size'.
+
+    E.g. for a pandas dataframe it might be something like:
+
+      get_item_size=lambda df: df.memory_usage(deep=True).sum()
+
+    This means 'max_size' is in bytes.
+
+    Note: possibly not a super fast cache, but almost guaranteed to be
+    way faster than fetching from the database (or processing the
+    data) so I bet optimizing it won't make any noticable difference :)
+    """
+
+    _cache = OrderedDict()
+    _sizes = {}
+
+    def __init__(self, max_size, get_item_size):
+        self.max_size = max_size
+        self.get_item_size = get_item_size
+
+    @property
+    def size(self):
+        return sum(self._sizes.values())
+
+    def __getitem__(self, name):
+        return self.get(name)
+
+    def get(self, name):
+        if name in self._cache:
+            value = self._cache.pop(name)
+            self._cache[name] = value  # mark as "most recently used"
+            return value
+        raise KeyError
+
+    def __setitem__(self, name, value):
+        self.set(name, value)
+
+    def set(self, name, value):
+        size = self.get_item_size(value)
+        if size >= self.max_size:
+            # The value is larger than the maximum cache size,
+            # no point in trying to store it.
+            return
+        # Make sure to remove any already existing data for the name
+        self._cache.pop(name, None)
+        self._sizes.pop(name, None)
+        while self.size + size > self.max_size:
+            # Evict the least recently used item until there's room for
+            # the new one.
+            # Note: This seems a little stupid; since sizes may differ a lot
+            # we may end up making more space than actually needed.
+            # OTOH, changing that means we're not a LRU cache anymore...
+            rname, _ = self._cache.popitem(last=False)
+            self._sizes.pop(rname)
+        self._cache[name] = value
+        self._sizes[name] = size

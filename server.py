@@ -1,28 +1,31 @@
 """
-Prototype of HDB++ archive data viewer.
+Backend for a HDB++ archive data viewer.
 
 Basic functionality:
 - searching for stored attributes
 - selecting which attributes to add
 - free scrolling/zooming
-- two separate Y axes (no restriction but needs UI)
+- two separate Y axes
 - Y axes autoscale
 - encodes current view in URL
 - min/max etc on mouseover
+- endpoints for getting raw data in CSV/JSON formats
 
 Missing functionality:
-- configure color, Y-axis etc for each line
-- realtime updates
+- configure color, etc for each line
+- realtime updates (just a periodic reload should be fine)
 - show units, labels, ...
 - ability to identify lines e.g. by hover
 - display errors?
+- manual Y axis scaling
+- showing write values
+- showing archiving history like add/remove/start/stop...
 
 Improvements needed:
-- data readout and packaging is hacky
 - Re-loads the view each time anything changes, maybe possible
   to be smarter here? We're caching db results at least.
 - UI is very basic
-- Plotting is a mess
+- Plotting is a mess, maybe use canvas instead
 - mouseover stuff messy
 - Probably using pandas etc inefficiently
 
@@ -58,6 +61,7 @@ from data import get_data, render_data_csv, render_data_json
 
 
 async def get_controlsystems(hdbpp, request):
+    "Handle queries for the list of TANGO hosts we have data for"
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, hdbpp.get_att_configs)
     controlsystems = sorted(result.keys())
@@ -67,6 +71,7 @@ async def get_controlsystems(hdbpp, request):
 
 
 async def get_attributes(hdbpp, request):
+    "Handle queries for attribute names"
     cs = request.GET["cs"]
     search = request.GET["search"]
     max_n = request.GET.get("max", 100)
@@ -105,12 +110,17 @@ async def get_images(hdbpp, request):
     logging.debug("Image size: %r", size)
     logging.debug("Axis config: %r", axes)
 
-    # Note: the following should be done in a more pipeline:y way, since many
-    # parts can be done in parallel.
+    # Note: unfortunately, the way things work right now it's not
+    # possible to run these steps in parallel. E.g. in order to create
+    # the final image, we need all the data since we must know the
+    # global max and min values. Luckily, usually the dominating
+    # factor will be the database calls, and these can be
+    # parallelized.
 
     # get archived data from cassandra
     with timer("Fetching from database"):
-        data = await get_data(hdbpp, [a["name"] for a in attributes], time_range)
+        data = await get_data(hdbpp, [a["name"]
+                                      for a in attributes], time_range)
 
     # calculate the max/min for each y-axis
     with timer("Calculating extrema"):
@@ -118,10 +128,15 @@ async def get_images(hdbpp, request):
 
     # Now generate one image for each y-axis.
     loop = asyncio.get_event_loop()
-    with timer("Processing"):
+    with timer("Making images"):
+        # TODO: for now, we're running this in the default thread pool.
+        # I haven't benchmarked this, but I'm hoping that this will speed
+        # things up (apart from not blocking) since numpy etc can release
+        # the GIL. Maybe look into using a process pool?
         images, descs = await loop.run_in_executor(
             None, partial(make_axis_images, per_axis, time_range, size, axes))
 
+    # Now wrap all the results up in a JSON response.
     data = json.dumps({"images": images, "descs": descs})
     response = web.Response(body=data.encode("utf-8"),
                             content_type="application/json")
@@ -133,27 +148,32 @@ async def get_images(hdbpp, request):
 
 
 async def post_raw_query(hdbpp, request):
+
+    "Handle queries for data in 'raw' (csv or json) form"
+
     params = await request.json()
     attributes = ["{cs}/{target}".format(**t) for t in params["targets"]]
     time_range = [parse_time(params["range"]["from"]).timestamp()*1000,
                   parse_time(params["range"]["to"]).timestamp()*1000]
     interval = params.get("interval")
 
-    if interval:
-        if interval.endswith("ms"):
-            interval = interval.replace("ms", "L")
-        elif interval.endswith("s"):
-            interval = interval.replace("s", "S")
-        elif interval.endswith("m"):
-            interval = interval.replace("m", "T")
-
     data = await get_data(hdbpp, attributes, time_range, interval,
                           restrict_time=True)
 
-    return negotiation.Response(data=data)
+    respons = negotiation.Response(data=data)
+    response.enable_compression()
+    return response
 
 
 async def post_raw_search(hdbpp, request):
+
+    "Handle queries to search for attributes by name"
+
+    # Note: follows the Grafana JSON API
+
+    # TODO: probably makes sense to merge this with the other
+    # attribute search endpoint "get_attributes" above?
+
     params = await request.json()
     term = params["target"]
     cs = params["cs"]
@@ -207,6 +227,7 @@ if __name__ == "__main__":
             config.items("hdbpp:cassandra_address_translation"))
     else:
         CASSANDRA_ADDRESS_TRANSLATION = {}
+    DATA_CACHE_SIZE = config.getint("server", "data_cache_size")
 
     # start web server
     app = aiohttp.web.Application(debug=args.debug,
@@ -216,7 +237,8 @@ if __name__ == "__main__":
 
     hdbpp = HDBPlusPlusConnection(nodes=CASSANDRA_NODES,
                                   keyspace=CASSANDRA_KEYSPACE,
-                                  address_map=CASSANDRA_ADDRESS_TRANSLATION)
+                                  address_map=CASSANDRA_ADDRESS_TRANSLATION,
+                                  cache_size=DATA_CACHE_SIZE)
 
     app.router.add_route('GET', '/controlsystems',
                          partial(get_controlsystems, hdbpp))
