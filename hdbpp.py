@@ -40,6 +40,7 @@ from datetime import date, timedelta, datetime
 from cassandra.cluster import Cluster
 from cassandra.protocol import NumpyProtocolHandler
 from cassandra.policies import AddressTranslator
+from cassandra import ConsistencyLevel
 from cassandra.query import tuple_factory
 from cassandra.connection import InvalidRequestException
 
@@ -118,7 +119,9 @@ class HDBPlusPlusConnection(object):
         else:
             self.cluster = Cluster(self.nodes)
 
-        self.session = aiosession(self.cluster.connect(keyspace))
+        s = self.cluster.connect(keyspace)
+        s.default_consistency_level = ConsistencyLevel.ONE
+        self.session = aiosession(s)  # asyncio wrapper
         self.session.default_fetch_size = fetch_size
 
         # set up the deserializer to use numpy
