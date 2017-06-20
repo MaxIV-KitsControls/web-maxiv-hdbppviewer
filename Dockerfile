@@ -25,11 +25,13 @@ RUN dpkg-reconfigure -f noninteractive tzdata
 
 RUN conda install datashader
 
+RUN apt-get update
+
 # Need compiler for building the cassandra driver
 # (TODO: make a conda package for the driver!)
 RUN apt-get -y install build-essential
 
-RUN pip install cassandra-driver aiohttp
+RUN pip install cassandra-driver aiohttp aiohttp_cors aiohttp_utils
 
 # check out the code
 # (TODO: should get a specific version!)
