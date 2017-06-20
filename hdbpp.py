@@ -318,7 +318,7 @@ class HDBPlusPlusConnection(object):
         if period == str(date.today()):
             # OK, we're requesting today's data. This means we're
             # still writing data to this period and caching is not
-            # quite as simple as with older data.
+            # quite as simple as with older data, which can't change.
             return self._get_attribute_period_today(cs, attr)
         try:
             result = self._cache[cs, attr, period]
@@ -330,14 +330,15 @@ class HDBPlusPlusConnection(object):
             return fut
         except KeyError:
             fut = self._get_attribute_period(cs, attr, period)
-            # make sure the cache gets updated
-            fut.add_done_callback(
-                lambda fut_: (
-                    self._cache.set((cs, attr, period), fut_.result())
-                    if not fut_.exception()
-                    else None
-                )
-            )
+            # make sure the cache gets updated, unless the date is in the
+            # future; we don't want to cache nonexistent data!
+            if datetime.strptime(period, "%Y-%m-%d").date() < date.today():
+                fut.add_done_callback(
+                    lambda fut_: (
+                        self._cache.set((cs, attr, period), fut_.result())
+                        if not fut_.exception()
+                        else None
+                    ))
             return fut
 
     def _get_attribute_period_today(self, cs, attr):
