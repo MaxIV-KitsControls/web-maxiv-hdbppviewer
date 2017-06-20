@@ -56,6 +56,8 @@ Note: the repo includes a Dockerfile, that can be used to build a docker contain
 
  * python >= 3.5
  * aiohttp
+ * aiohttp_cors
+ * aiohttp_utils
  * cassandra-driver >= 3.6 (needs to be built with numpy support!)
  * datashader
 
