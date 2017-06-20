@@ -154,7 +154,6 @@ export class ImagePlot {
             .append("svg:text")
             .attr("y", this.innerHeight)
             .attr("dy", "-0.2em")
-            .text("hej")
         
         this.crosshairLineY = this.crosshair
             .append("svg:line")
