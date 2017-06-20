@@ -19,6 +19,7 @@ import {debounce} from "./utils";
 
 // action types
 export const RECEIVE_CONTROLSYSTEMS = "RECEIVE_CONTROLSYSTEMS";
+export const SET_CONTROLSYSTEM = "SET_CONTROLSYSTEM";
 export const RECEIVE_SUGGESTIONS = "RECEIVE_SUGGESTIONS";
 export const FETCH_ARCHIVE_DATA = "FETCH_ARCHIVE_DATA";
 export const FETCH_FAILED = "FETCH_FAILED";
@@ -44,10 +45,16 @@ export function getControlsystems() {
 }
 
 
+export function setControlsystem(controlsystem) {
+    return {type: SET_CONTROLSYSTEM, controlsystem};
+}
+
+
 export function getSuggestions(controlsystem, pattern) {
     // ask the server for attributes matching the given pattern
-    return debounce(function (dispatch) {
-        fetch(`/attributes?cs=${controlsystem}&search=${pattern}`)
+    return debounce(function (dispatch, getState) {
+        const state = getState();
+        fetch(`/attributes?cs=${state.controlsystem}&search=${pattern}`)
             .then(response => response.json())
             .then(data => dispatch({type: RECEIVE_SUGGESTIONS,
                                     suggestions: data.attributes}));
@@ -143,9 +150,9 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                 });
                 throw new Error("Did not receive archive data!");
             } else if (latestFetchTime > fetchTime) {
-                // Trying to cancel because there's been a new request
-                // response.body && response.body.cancel();
-                p.reject("Moving on");
+                // Trying to cancel because there's been a new request.
+                // neither fetch nor js Promises support this ATM, but
+                // maybe there will be a nice way at some point...
             } else {
                 return response.json();
             }

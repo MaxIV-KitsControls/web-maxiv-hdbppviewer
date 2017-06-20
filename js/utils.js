@@ -27,6 +27,7 @@ export function loadStateFromHash() {
 
 export function setHashFromState(state) {
     let hash = JSON.stringify({
+        controlsystem: state.controlsystem,
         timeRange: state.timeRange,
         attributes: state.attributes,
         config: state.attributeConfig,

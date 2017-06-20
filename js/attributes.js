@@ -2,13 +2,11 @@ import React from "react";
 import {findDOMNode} from "react-dom";
 import {connect} from "react-redux";
 import { bindActionCreators } from 'redux'
-// import AutoSuggest from 'react-autosuggest';
-import fetch from "isomorphic-fetch";
 import { Input, Button, DropdownButton, MenuItem, Col, Panel, Popover,
          OverlayTrigger, FormGroup, FormControl, Modal, Accordion, Table, Well,
          Checkbox } from 'react-bootstrap';
 
-import { getControlsystems, getSuggestions,
+import { getControlsystems, setControlsystem, getSuggestions,
          addAttributes, removeAttributes,
          setAxisScale } from "./actions";
 import { parseAttribute } from "./utils";
@@ -163,24 +161,12 @@ class Attributes extends React.Component {
 
     constructor(props) {
         super();
-        // if the controlsystems list is already populated, default to
-        // the first one
-        const cs = props.controlsystems.length > 0? props.controlsystems[0] : null;
         this.state = {
             pattern: '',
             selectedSuggestions: [],
             selectedAttributes: [],
-            controlsystem: cs,
             showSuggestions: false
         };
-    }
-
-    componentWillReceiveProps (props) {
-        // if we receive a new list of control systems, again default
-        // to the first one.
-        if (props.controlsystems.length > 0 && !this.state.controlsystem) {
-            this.setState({controlsystem: props.controlsystems[0]});
-        }
     }
 
     // the user has typed something in the search field
@@ -205,7 +191,7 @@ class Attributes extends React.Component {
 
     // the user is adding attributes to the plot
     onAddAttributes (axis, event) {
-        const cs = this.state.controlsystem;
+        const cs = this.props.controlsystem;
         const attributes = this.state.selectedSuggestions.map(attr => `${cs}/${attr}`);
         this.props.addAttributes(attributes, axis);
     }
@@ -217,8 +203,9 @@ class Attributes extends React.Component {
     
     onSelectControlsystem (event) {
         const controlsystem = event.target.value;
-        this.setState({controlsystem, selectedAttributes: []});
-        this.props.getSuggestions(controlsystem, this.state.pattern);        
+        /*         this.setState({controlsystem, selectedAttributes: []});*/
+        this.props.setControlsystem(controlsystem);
+        this.props.getSuggestions(controlsystem, this.state.pattern);
     }
     
     renderAttributeInfo() {
@@ -250,14 +237,19 @@ class Attributes extends React.Component {
     render () {
         
         // the list of available control systems
-        const controlsystemOptions = this.props.controlsystems.map(
-            (cs, i) => <option key={i} value={cs}>{cs}</option>);
+        const controlsystemOptions = (
+            [<option key={-1} selected disabled hidden style={{'display':'none'}} value={null}>Pick a controlsystem</option>]
+                .concat(
+                    this.props.controlsystems.map(
+                        (cs, i) => <option key={i} value={cs}>{cs}</option>)
+            )
+        );
         
 
         // the list of attribute matches
         const suggestOptions = this.props.suggestions.map(sugg => {
             return <option key={sugg} value={sugg} title={sugg}
-                         disabled={this.props.attributes.indexOf(`${this.state.controlsystem}/${sugg}`) != -1}>
+                         disabled={this.props.attributes.indexOf(`${this.props.controlsystem}/${sugg}`) != -1}>
                        {sugg}
                    </option>;
         });
@@ -285,7 +277,7 @@ class Attributes extends React.Component {
                         <FormGroup>
                             <FormControl componentClass="select" ref="cs"
                                          title="Pick your control system"
-                                         value={this.state.controlsystem}
+                                         value={this.props.controlsystem}
                                          onChange={this.onSelectControlsystem.bind(this)}> 
                                 {controlsystemOptions}
                             </FormControl>
@@ -315,6 +307,7 @@ class Attributes extends React.Component {
 function mapStateToProps (state) {
     return {
         controlsystems: state.controlsystems,
+        controlsystem: state.controlsystem,
         attributes: state.attributes,
         config: state.attributeConfig,
         desc: state.descriptions,
@@ -327,6 +320,7 @@ function mapStateToProps (state) {
 function mapDispatchToProps(dispatch) {
     return {
         getControlsystems: () => dispatch(getControlsystems()),
+        setControlsystem: (controlsystem) => dispatch(setControlsystem(controlsystem)),
         getSuggestions: (controlsystem, pattern) => dispatch(getSuggestions(controlsystem, pattern)),
         addAttributes: (attributes, axis) => dispatch(addAttributes(attributes, axis)),
         removeAttributes: attributes => dispatch(removeAttributes(attributes)),

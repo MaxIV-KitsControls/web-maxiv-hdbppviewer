@@ -10,7 +10,8 @@ a new state, via reducers, whenever an action is dispatched.
 import R from "ramda";
 
 import {
-    RECEIVE_SUGGESTIONS, RECEIVE_CONTROLSYSTEMS,
+    RECEIVE_SUGGESTIONS,
+    RECEIVE_CONTROLSYSTEMS, SET_CONTROLSYSTEM,
     FETCH_ARCHIVE_DATA, RECEIVE_ARCHIVE_DATA, RECEIVE_DETAILS,
     RECEIVE_ARCHIVE_DESCS, FETCH_FAILED,
     ADD_ATTRIBUTES, REMOVE_ATTRIBUTES, SET_ATTRIBUTES_AXIS,
@@ -22,11 +23,21 @@ import {
 
 export function controlsystems(state=[], action) {
     switch (action.type) {
-    case RECEIVE_CONTROLSYSTEMS:
-        return action.controlsystems;
+        case RECEIVE_CONTROLSYSTEMS:
+            return action.controlsystems;
     }
     return state;
 }
+
+
+export function controlsystem(state=null, action) {
+    switch (action.type) {
+        case SET_CONTROLSYSTEM:
+            return action.controlsystem;
+    }
+    return state;
+}
+
 
 export function attributeSuggestions(state=[], action) {
     switch (action.type) {

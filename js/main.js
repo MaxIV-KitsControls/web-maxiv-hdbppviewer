@@ -8,7 +8,8 @@ import createLogger from 'redux-logger';
 import { Nav, Navbar, NavItem, NavDropdown, MenuItem, Grid, Col, Row } from 'react-bootstrap';
 
 import * as reducers from "./reducers";
-import {getControlsystems, addAttributes, setTimeRange, setAxisScale } from "./actions";
+import {getControlsystems, setControlsystem,
+        addAttributes, setTimeRange, setAxisScale } from "./actions";
 import PlotWrapper from "./plotwrapper";
 import TimeRange from "./timerange";
 import AttributeSearch from "./attributes";
@@ -99,10 +100,19 @@ function dispatchFromHash() {
     else
         currentHash = document.location.hash
     const hashData = loadStateFromHash()
-    store.dispatch(setTimeRange(new Date(hashData.timeRange.start),
-                                new Date(hashData.timeRange.end)))
+    store.dispatch(setControlsystem(hashData.controlsystem));
+    if (hashData.timeRange) {
+        store.dispatch(setTimeRange(new Date(hashData.timeRange.start),
+                                    new Date(hashData.timeRange.end)))
+    } else {
+        // default to the last hour
+        const now = new Date(),
+              anHourAgo = new Date();
+        anHourAgo.setTime(now.getTime() - 3600000);
+        store.dispatch(setTimeRange(anHourAgo, now));
+    }
     const axes = {};
-    hashData.attributes.forEach(
+    (hashData.attributes || []).forEach(
         attr => {
             const config = hashData.config[attr],
                   axis = config.axis || 0;
@@ -115,7 +125,6 @@ function dispatchFromHash() {
     )
     let axisNames = Object.keys(axes)
     axisNames.sort()
-    console.log("axes", axes);
     axisNames.forEach(axis => {
         let attrs = axes[axis];
         store.dispatch(addAttributes(attrs, parseInt(axis)))
