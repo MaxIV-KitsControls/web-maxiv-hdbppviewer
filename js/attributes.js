@@ -281,33 +281,31 @@ class Attributes extends React.Component {
       
         return (
                 <div>
-                  <form>               
                     <Panel footer={addButton}>
-                      <FormGroup>
-                        <FormControl componentClass="select" ref="cs"
-                                     title="Pick your control system"
-                                     value={this.state.controlsystem}
-                                     onChange={this.onSelectControlsystem.bind(this)}> 
-                          {controlsystemOptions}
-                        </FormControl>
-                      </FormGroup>
-                      <FormGroup>                
-                        <FormControl type="search" ref="search"
-                                     title="Search for some attribute(s)"
-                                     value={this.state.pattern}
-                                     onChange={this.onPatternChange.bind(this)}
-                                     placeholder="e.g */vac/*/pressure"/>
+                        <FormGroup>
+                            <FormControl componentClass="select" ref="cs"
+                                         title="Pick your control system"
+                                         value={this.state.controlsystem}
+                                         onChange={this.onSelectControlsystem.bind(this)}> 
+                                {controlsystemOptions}
+                            </FormControl>
+                        </FormGroup>
+                        <FormGroup>                
+                            <FormControl type="search" ref="search"
+                                         title="Search for some attribute(s)"
+                                         value={this.state.pattern}
+                                         onChange={this.onPatternChange.bind(this)}
+                                         placeholder="e.g */vac/*/pressure"/>
                         </FormGroup>
                         <FormControl componentClass="select" ref="attributes"
                                      title="Select the interesting ones from the matching list of attributes"
                                      multiple value={this.state.selectedSuggestions}
                                      style={{width: "100%"}} size="10"
                                      onChange={this.onSelectSuggestions.bind(this)}>
-                          {suggestOptions}
+                            {suggestOptions}
                         </FormControl>
                     </Panel>
                     {plottedAttributes}
-                  </form>            
                 </div>
         );
     }

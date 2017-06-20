@@ -68875,7 +68875,7 @@
 	            var plottedAttributes = _react2.default.createElement(PlottedAttributes, _extends({}, this.props, {
 	                removeAttributes: this.onRemoveAttributes.bind(this) }));
 
-	            var addButtons = _react2.default.createElement(
+	            var addButton = _react2.default.createElement(
 	                _reactBootstrap.DropdownButton,
 	                { id: "add-attribute", bsStyle: "success", title: "Add",
 	                    disabled: this.state.selectedSuggestions.length == 0 },
@@ -68883,13 +68883,13 @@
 	                    _reactBootstrap.MenuItem,
 	                    { eventKey: 0,
 	                        onSelect: this.onAddAttributes.bind(this) },
-	                    "Left Y axis"
+	                    "Left Y"
 	                ),
 	                _react2.default.createElement(
 	                    _reactBootstrap.MenuItem,
 	                    { eventKey: 1,
 	                        onSelect: this.onAddAttributes.bind(this) },
-	                    "Right Y axis"
+	                    "Right Y"
 	                )
 	            );
 
@@ -68897,45 +68897,40 @@
 	                "div",
 	                null,
 	                _react2.default.createElement(
-	                    _reactBootstrap.Form,
-	                    null,
+	                    _reactBootstrap.Panel,
+	                    { footer: addButton },
 	                    _react2.default.createElement(
-	                        _reactBootstrap.Panel,
-	                        { footer: addButtons },
-	                        _react2.default.createElement(
-	                            _reactBootstrap.FormGroup,
-	                            null,
-	                            _react2.default.createElement(
-	                                _reactBootstrap.FormControl,
-	                                { componentClass: "select", ref: "cs",
-	                                    title: "Pick your control system",
-	                                    value: this.state.controlsystem,
-	                                    onChange: this.onSelectControlsystem.bind(this) },
-	                                controlsystemOptions
-	                            )
-	                        ),
-	                        _react2.default.createElement(
-	                            _reactBootstrap.FormGroup,
-	                            null,
-	                            _react2.default.createElement(_reactBootstrap.FormControl, { ref: "search",
-	                                name: "attribute-search",
-	                                title: "Search for some attribute(s)",
-	                                value: this.state.pattern,
-	                                onChange: this.onPatternChange.bind(this),
-	                                placeholder: "e.g. */vac/*/pressure" })
-	                        ),
+	                        _reactBootstrap.FormGroup,
+	                        null,
 	                        _react2.default.createElement(
 	                            _reactBootstrap.FormControl,
-	                            { componentClass: "select", ref: "attributes",
-	                                title: "Select the interesting ones from the matching list of attributes",
-	                                multiple: true, value: this.state.selectedSuggestions,
-	                                style: { width: "100%" }, size: "10",
-	                                onChange: this.onSelectSuggestions.bind(this) },
-	                            suggestOptions
+	                            { componentClass: "select", ref: "cs",
+	                                title: "Pick your control system",
+	                                value: this.state.controlsystem,
+	                                onChange: this.onSelectControlsystem.bind(this) },
+	                            controlsystemOptions
 	                        )
 	                    ),
-	                    plottedAttributes
-	                )
+	                    _react2.default.createElement(
+	                        _reactBootstrap.FormGroup,
+	                        null,
+	                        _react2.default.createElement(_reactBootstrap.FormControl, { type: "search", ref: "search",
+	                            title: "Search for some attribute(s)",
+	                            value: this.state.pattern,
+	                            onChange: this.onPatternChange.bind(this),
+	                            placeholder: "e.g */vac/*/pressure" })
+	                    ),
+	                    _react2.default.createElement(
+	                        _reactBootstrap.FormControl,
+	                        { componentClass: "select", ref: "attributes",
+	                            title: "Select the interesting ones from the matching list of attributes",
+	                            multiple: true, value: this.state.selectedSuggestions,
+	                            style: { width: "100%" }, size: "10",
+	                            onChange: this.onSelectSuggestions.bind(this) },
+	                        suggestOptions
+	                    )
+	                ),
+	                plottedAttributes
 	            );
 	        }
 	    }]);
