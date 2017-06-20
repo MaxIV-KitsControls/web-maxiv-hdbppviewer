@@ -223,9 +223,18 @@
 	    // a very hacky way to load state from JSON 
 	    if (document.location.hash == currentHash) return;else currentHash = document.location.hash;
 	    var hashData = (0, _utils.loadStateFromHash)();
-	    store.dispatch((0, _actions.setTimeRange)(new Date(hashData.timeRange.start), new Date(hashData.timeRange.end)));
+	    store.dispatch((0, _actions.setControlsystem)(hashData.controlsystem));
+	    if (hashData.timeRange) {
+	        store.dispatch((0, _actions.setTimeRange)(new Date(hashData.timeRange.start), new Date(hashData.timeRange.end)));
+	    } else {
+	        // default to the last hour
+	        var now = new Date(),
+	            anHourAgo = new Date();
+	        anHourAgo.setTime(now.getTime() - 3600000);
+	        store.dispatch((0, _actions.setTimeRange)(anHourAgo, now));
+	    }
 	    var axes = {};
-	    hashData.attributes.forEach(function (attr) {
+	    (hashData.attributes || []).forEach(function (attr) {
 	        var config = hashData.config[attr],
 	            axis = config.axis || 0;
 	        console.log(attr, config, axis);
@@ -233,7 +242,6 @@
 	    });
 	    var axisNames = Object.keys(axes);
 	    axisNames.sort();
-	    console.log("axes", axes);
 	    axisNames.forEach(function (axis) {
 	        var attrs = axes[axis];
 	        store.dispatch((0, _actions.addAttributes)(attrs, parseInt(axis)));
@@ -42505,6 +42513,7 @@
 	                                                                                                                                                                                                                                                                  */
 
 	exports.controlsystems = controlsystems;
+	exports.controlsystem = controlsystem;
 	exports.attributeSuggestions = attributeSuggestions;
 	exports.archiveData = archiveData;
 	exports.details = details;
@@ -42530,6 +42539,17 @@
 	    switch (action.type) {
 	        case _actions.RECEIVE_CONTROLSYSTEMS:
 	            return action.controlsystems;
+	    }
+	    return state;
+	}
+
+	function controlsystem() {
+	    var state = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+	    var action = arguments[1];
+
+	    switch (action.type) {
+	        case _actions.SET_CONTROLSYSTEM:
+	            return action.controlsystem;
 	    }
 	    return state;
 	}
@@ -51510,7 +51530,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.SET_AXIS_SCALE = exports.SET_ATTRIBUTE_COLOR = exports.SET_ATTRIBUTES_AXIS = exports.REMOVE_ATTRIBUTES = exports.ADD_ATTRIBUTES = exports.SET_TIME_RANGE = exports.RECEIVE_DETAILS = exports.RECEIVE_ARCHIVE_DESCS = exports.RECEIVE_ARCHIVE_DATA = exports.FETCH_FAILED = exports.FETCH_ARCHIVE_DATA = exports.RECEIVE_SUGGESTIONS = exports.RECEIVE_CONTROLSYSTEMS = undefined;
+	exports.SET_AXIS_SCALE = exports.SET_ATTRIBUTE_COLOR = exports.SET_ATTRIBUTES_AXIS = exports.REMOVE_ATTRIBUTES = exports.ADD_ATTRIBUTES = exports.SET_TIME_RANGE = exports.RECEIVE_DETAILS = exports.RECEIVE_ARCHIVE_DESCS = exports.RECEIVE_ARCHIVE_DATA = exports.FETCH_FAILED = exports.FETCH_ARCHIVE_DATA = exports.RECEIVE_SUGGESTIONS = exports.SET_CONTROLSYSTEM = exports.RECEIVE_CONTROLSYSTEMS = undefined;
 
 	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }(); /*
 	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
@@ -51527,6 +51547,7 @@
 	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         */
 
 	exports.getControlsystems = getControlsystems;
+	exports.setControlsystem = setControlsystem;
 	exports.getSuggestions = getSuggestions;
 	exports.addAttributes = addAttributes;
 	exports.removeAttributes = removeAttributes;
@@ -51544,6 +51565,7 @@
 
 	// action types
 	var RECEIVE_CONTROLSYSTEMS = exports.RECEIVE_CONTROLSYSTEMS = "RECEIVE_CONTROLSYSTEMS";
+	var SET_CONTROLSYSTEM = exports.SET_CONTROLSYSTEM = "SET_CONTROLSYSTEM";
 	var RECEIVE_SUGGESTIONS = exports.RECEIVE_SUGGESTIONS = "RECEIVE_SUGGESTIONS";
 	var FETCH_ARCHIVE_DATA = exports.FETCH_ARCHIVE_DATA = "FETCH_ARCHIVE_DATA";
 	var FETCH_FAILED = exports.FETCH_FAILED = "FETCH_FAILED";
@@ -51569,10 +51591,15 @@
 	    }, 500); // no point in asking too often
 	}
 
+	function setControlsystem(controlsystem) {
+	    return { type: SET_CONTROLSYSTEM, controlsystem: controlsystem };
+	}
+
 	function getSuggestions(controlsystem, pattern) {
 	    // ask the server for attributes matching the given pattern
-	    return (0, _utils.debounce)(function (dispatch) {
-	        (0, _isomorphicFetch2.default)("/attributes?cs=" + controlsystem + "&search=" + pattern).then(function (response) {
+	    return (0, _utils.debounce)(function (dispatch, getState) {
+	        var state = getState();
+	        (0, _isomorphicFetch2.default)("/attributes?cs=" + state.controlsystem + "&search=" + pattern).then(function (response) {
 	            return response.json();
 	        }).then(function (data) {
 	            return dispatch({ type: RECEIVE_SUGGESTIONS,
@@ -51667,9 +51694,9 @@
 	                });
 	                throw new Error("Did not receive archive data!");
 	            } else if (latestFetchTime > fetchTime) {
-	                // Trying to cancel because there's been a new request
-	                // response.body && response.body.cancel();
-	                p.reject("Moving on");
+	                // Trying to cancel because there's been a new request.
+	                // neither fetch nor js Promises support this ATM, but
+	                // maybe there will be a nice way at some point...
 	            } else {
 	                return response.json();
 	            }
@@ -52177,6 +52204,7 @@
 
 	function setHashFromState(state) {
 					var hash = JSON.stringify({
+									controlsystem: state.controlsystem,
 									timeRange: state.timeRange,
 									attributes: state.attributes,
 									config: state.attributeConfig,
@@ -52469,7 +52497,7 @@
 
 	            this.crosshairLineX = this.crosshair.append("svg:line").classed({ cursor: true, x: true }).attr("y1", 0).attr("y2", this.innerHeight);
 
-	            this.crosshairLabelX = this.crosshair.append("svg:text").attr("y", this.innerHeight).attr("dy", "-0.2em").text("hej");
+	            this.crosshairLabelX = this.crosshair.append("svg:text").attr("y", this.innerHeight).attr("dy", "-0.2em");
 
 	            this.crosshairLineY = this.crosshair.append("svg:line").classed({ cursor: true, x: true }).attr("x1", 0).attr("x2", this.innerWidth);
 
@@ -68398,10 +68426,6 @@
 
 	var _redux = __webpack_require__(179);
 
-	var _isomorphicFetch = __webpack_require__(459);
-
-	var _isomorphicFetch2 = _interopRequireDefault(_isomorphicFetch);
-
 	var _reactBootstrap = __webpack_require__(203);
 
 	var _actions = __webpack_require__(458);
@@ -68417,8 +68441,6 @@
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	// import AutoSuggest from 'react-autosuggest';
-
 
 	var PlottedAttributes = function (_React$Component) {
 	    _inherits(PlottedAttributes, _React$Component);
@@ -68686,34 +68708,21 @@
 	    function Attributes(props) {
 	        _classCallCheck(this, Attributes);
 
-	        // if the controlsystems list is already populated, default to
-	        // the first one
 	        var _this4 = _possibleConstructorReturn(this, (Attributes.__proto__ || Object.getPrototypeOf(Attributes)).call(this));
 
-	        var cs = props.controlsystems.length > 0 ? props.controlsystems[0] : null;
 	        _this4.state = {
 	            pattern: '',
 	            selectedSuggestions: [],
 	            selectedAttributes: [],
-	            controlsystem: cs,
 	            showSuggestions: false
 	        };
 	        return _this4;
 	    }
 
+	    // the user has typed something in the search field
+
+
 	    _createClass(Attributes, [{
-	        key: "componentWillReceiveProps",
-	        value: function componentWillReceiveProps(props) {
-	            // if we receive a new list of control systems, again default
-	            // to the first one.
-	            if (props.controlsystems.length > 0 && !this.state.controlsystem) {
-	                this.setState({ controlsystem: props.controlsystems[0] });
-	            }
-	        }
-
-	        // the user has typed something in the search field
-
-	    }, {
 	        key: "onPatternChange",
 	        value: function onPatternChange(event) {
 	            var pattern = event.target.value;
@@ -68745,7 +68754,7 @@
 	    }, {
 	        key: "onAddAttributes",
 	        value: function onAddAttributes(axis, event) {
-	            var cs = this.state.controlsystem;
+	            var cs = this.props.controlsystem;
 	            var attributes = this.state.selectedSuggestions.map(function (attr) {
 	                return cs + "/" + attr;
 	            });
@@ -68763,7 +68772,8 @@
 	        key: "onSelectControlsystem",
 	        value: function onSelectControlsystem(event) {
 	            var controlsystem = event.target.value;
-	            this.setState({ controlsystem: controlsystem, selectedAttributes: [] });
+	            /*         this.setState({controlsystem, selectedAttributes: []});*/
+	            this.props.setControlsystem(controlsystem);
 	            this.props.getSuggestions(controlsystem, this.state.pattern);
 	        }
 	    }, {
@@ -68853,20 +68863,24 @@
 	            var _this5 = this;
 
 	            // the list of available control systems
-	            var controlsystemOptions = this.props.controlsystems.map(function (cs, i) {
+	            var controlsystemOptions = [_react2.default.createElement(
+	                "option",
+	                { key: -1, selected: true, disabled: true, hidden: true, style: { 'display': 'none' }, value: null },
+	                "Pick a controlsystem"
+	            )].concat(this.props.controlsystems.map(function (cs, i) {
 	                return _react2.default.createElement(
 	                    "option",
 	                    { key: i, value: cs },
 	                    cs
 	                );
-	            });
+	            }));
 
 	            // the list of attribute matches
 	            var suggestOptions = this.props.suggestions.map(function (sugg) {
 	                return _react2.default.createElement(
 	                    "option",
 	                    { key: sugg, value: sugg, title: sugg,
-	                        disabled: _this5.props.attributes.indexOf(_this5.state.controlsystem + "/" + sugg) != -1 },
+	                        disabled: _this5.props.attributes.indexOf(_this5.props.controlsystem + "/" + sugg) != -1 },
 	                    sugg
 	                );
 	            });
@@ -68906,7 +68920,7 @@
 	                            _reactBootstrap.FormControl,
 	                            { componentClass: "select", ref: "cs",
 	                                title: "Pick your control system",
-	                                value: this.state.controlsystem,
+	                                value: this.props.controlsystem,
 	                                onChange: this.onSelectControlsystem.bind(this) },
 	                            controlsystemOptions
 	                        )
@@ -68941,6 +68955,7 @@
 	function mapStateToProps(state) {
 	    return {
 	        controlsystems: state.controlsystems,
+	        controlsystem: state.controlsystem,
 	        attributes: state.attributes,
 	        config: state.attributeConfig,
 	        desc: state.descriptions,
@@ -68953,6 +68968,9 @@
 	    return {
 	        getControlsystems: function getControlsystems() {
 	            return dispatch((0, _actions.getControlsystems)());
+	        },
+	        setControlsystem: function setControlsystem(controlsystem) {
+	            return dispatch((0, _actions.setControlsystem)(controlsystem));
 	        },
 	        getSuggestions: function getSuggestions(controlsystem, pattern) {
 	            return dispatch((0, _actions.getSuggestions)(controlsystem, pattern));
