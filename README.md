@@ -93,3 +93,16 @@ By default, the server will load the config file "hdbppviewer.conf". It contains
 $ python server.py
 
 Then point a web browser at http://localhost:5005/index.html
+
+
+# Querying
+
+It's also possible to access data from the server in JSON or CSV format, e.g. using `httpie` from the commandline. Searching for attributes matching a given string (may be a regex):
+
+    $ http --json POST localhost:5005/search target=mag cs='my.control.system:10000'
+
+Get data for a given period of time for one or more attributes, resampled to 5m intervals, in CSV format:
+
+    $ http --json POST localhost:5005/query targets:='[{"target": "r3/mag/dia-01/current", "cs": "my.control.system:10000"}]' range:='{"from": "2017-06-16T15:00:00", "to": "2017-06-16T15:30:00"}' interval=5m Accept:text/csv
+
+This API is intentionally compatible with Grafana, making it easy to create a Grafana plugin for HDB++ data (in progress).
