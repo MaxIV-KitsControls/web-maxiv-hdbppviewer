@@ -131,8 +131,8 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                         y_axis: state.attributeConfig[attr].axis
                     };
                 }),
-                time_range: [state.timeRange.start.getTime(),
-                             state.timeRange.end.getTime()],
+                time_range: [state.timeRange.start.toUTCString(),
+                             state.timeRange.end.toUTCString()],
                 size: [imageWidth, imageHeight],
                 axes: state.axisConfiguration
             }),

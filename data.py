@@ -21,11 +21,12 @@ def resample(df, freq=None):
     "freq" should be a string on the form 30s, 15m etc
     """
 
-    # Here we also calculate a new column which is the microsecond timestamp.
+    # Here we calculate a new column which is the microsecond timestamp.
     # Datashader does not (yet) support datetime axes.
-    df["t"] = pd.Series(df["data_time"].astype("int64") // 1e6
-                        + df["data_time_us"] // 1000,
-                        index=df.index)
+    df.loc[:, "t"] = pd.Series(
+        (df["data_time"].astype("int64") // 1000  # datetime64[ns]
+         + df["data_time_us"]),
+        index=df.index)
 
     if not freq:
         return df
@@ -41,34 +42,34 @@ def resample(df, freq=None):
 
     # TODO: perhaps this is not really necessary, downsampling on ms frequence
     # seems pretty useless... can we get away without creating a new index?
-    df.index = pd.to_datetime(df["t"], unit="ms")
+    df.index = pd.to_datetime(df["t"], unit="us")
     return df.groupby(partial(round_timestamp, freq=to_offset(freq))).mean()
 
 
 def render_data_csv(request, data):
-    "render data when the client requests text format"
+    "Render data when the client requests text format, e.g. Accept:text/csv"
     return "\n".join("{}\n{}".format(
         name, "".join(df.to_csv(columns=["t", "value_r"], index=False,
-                                sep="\t", header=False)
-                      for df in dfs))
-                     for name, dfs in data.items())
+                                sep="\t", header=["t[us]", "value_r"])))
+                     for name, df in data.items()).encode()
 
 
 def render_data_json(request, data):
-    "renderer for when the client wants json, i.e. 'Accept:application/json'"
-    # the output follows the Grafana data source format, see
+    "Renderer for when the client wants json, i.e. 'Accept:application/json'"
+    # The output follows the Grafana data source format, see
     # http://docs.grafana.org/plugins/developing/datasources/
 
+    # Note: this implementation will potentially use a lot of memory
+    # as it will create two new representations of the data in
+    # memory...
     return json.dumps([
         {
             "target": name,
-            "datapoints": [
-                (s["value_r"], s["t"])
-                for (_, s) in chain(*[df.iterrows() for df in dfs])
-            ]
+            "datapoints": list(zip(df["value_r"],
+                                   df["t"].astype("float") / 1000))
         }
-        for name, dfs in data.items()
-    ])
+        for name, df in data.items()
+    ]).encode()
 
 
 async def get_data(hdbpp, attributes, time_range, interval=None,
@@ -85,13 +86,21 @@ async def get_data(hdbpp, attributes, time_range, interval=None,
 
     t0, t1 = time_range
 
-    futures = [hdbpp.get_attribute_data(attribute.lower(), t0, t1)
+    futures = [hdbpp.get_attribute_data(attribute.lower(),
+                                        t0,
+                                        t1)
                for attribute in attributes]
 
     results = await asyncio.gather(*futures)
 
     if restrict_time:
-        return {a: resample(r[(t0 <= df["t"]) & (df["t"] <= t1)], interval)
-                for a, r in zip(attributes, results)}
-    return {a: resample(r, interval)
-            for a, r in zip(attributes, results)}
+        return {
+            attr: resample(res[(t0 <= res["data_time"])
+                               & (res["data_time"] <= t1)], interval)
+            for attr, res in zip(attributes, results)
+        }
+
+    return {
+        attr: resample(res, interval)
+        for attr, res in zip(attributes, results)
+    }

@@ -15,7 +15,10 @@ from utils import timer
 def make_image(data, time_range, y_range, size, scale=None, width=0):
 
     "Flatten the given range of the data into a 2d image"
-
+    time_range = (
+        time_range[0].timestamp()*1e6,
+        time_range[1].timestamp()*1e6
+    )
     cvs = datashader.Canvas(x_range=time_range, y_range=y_range,
                             plot_width=size[0], plot_height=size[1],
                             y_axis_type=scale or "linear")
@@ -82,8 +85,8 @@ def get_extrema(attributes, results, time_range, axes):
         axis_config = axes.get(str(y_axis), {})
         # we have to assume that we have more data than the time_range
         # requested, so we'll make a slice containing only the relevant part
-        i0, = data["t"].searchsorted(t0)
-        i1, = data["t"].searchsorted(t1)
+        i0, = data["t"].searchsorted(t0.timestamp() * 1e6)  # t is in µs!
+        i1, = data["t"].searchsorted(t1.timestamp() * 1e6)
         relevant = data[i0:i1]
         with timer("getting max/min"):
             if axis_config.get("scale") == "log":
@@ -107,7 +110,6 @@ def get_axis_limits(y_axis, data):
     nodata = set()
     for name, data in data.items():
         vmin, vmax = data["y_range"]
-        print(vmin, vmax)
         if np.isnan(vmin) or np.isnan(vmax):
             # TODO: when will this actually happen?
             nodata.add(name)
@@ -204,7 +206,8 @@ def make_axis_images(per_axis, time_range, size, axes):
         images[str(y_axis)] = {
             "image": encoded_data.decode("utf-8"),
             "y_range": y_range,
-            "x_range": time_range
+            "x_range": [time_range[0].timestamp()*1000,
+                        time_range[1].timestamp()*1000]
         }
         # TODO: also grab configuration, e.g. label, unit, ...
         # Note that this can also change over time!

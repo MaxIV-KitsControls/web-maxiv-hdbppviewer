@@ -33,6 +33,7 @@ dataframe containing the data.
 
 import asyncio
 from collections import defaultdict
+from dateutil import tz
 import logging
 import time
 from datetime import date, timedelta, datetime
@@ -286,17 +287,25 @@ class HDBPlusPlusConnection(object):
 
         # default to the last 24 hours
         if not start_time:
-            start_time = (time.time() - 3600 * 24) * 1000
+            start_time = datetime.now() - timedelta(days=1)
         if not end_time:
-            end_time = (time.time()) * 1000
+            end_time = datetime.now()
 
-        # recalculate timestamps to local time for the period names
-        utc_offset = 0  #time.localtime().tm_gmtoff
-        start_date = date.fromtimestamp(start_time/1000 + utc_offset)
-        end_date = date.fromtimestamp(end_time/1000 + utc_offset)
+        # fix naive timestamps (assume they are UTC!)
+        local_zone = tz.tzlocal()
+        print(start_time.tzinfo)
+        if not start_time.tzinfo:
+            start_time = start_time.replace(tzinfo=local_zone)
+        if not end_time.tzinfo:
+            end_time = end_time.replace(tzinfo=local_zone)
+
+        # figure out which periods we need to search
+        # Note: periods are in local time, timestamps in UTC!
+        start_date = start_time.astimezone(local_zone).date()
+        end_date = end_time.astimezone(local_zone).date()
         periods = [(start_date + timedelta(days=d)).strftime("%Y-%m-%d")
                    for d in range((end_date - start_date).days + 1)]
-        logging.debug("periods: %r", periods)
+        logging.debug("fetching periods: %r", periods)
         cs, name = split_cs_and_attribute(attr)
 
         # request all periods at once

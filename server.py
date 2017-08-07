@@ -101,7 +101,8 @@ async def get_images(hdbpp, request):
     params = await request.json()
 
     attributes = params["attributes"]
-    time_range = params["time_range"]
+    time_range = [parse_time(params["time_range"][0]),
+                  parse_time(params["time_range"][1])]
     size = params["size"]
     axes = params.get("axes")
 
@@ -119,8 +120,8 @@ async def get_images(hdbpp, request):
 
     # get archived data from cassandra
     with timer("Fetching from database"):
-        data = await get_data(hdbpp, [a["name"]
-                                      for a in attributes], time_range)
+        attr_names = [a["name"] for a in attributes]
+        data = await get_data(hdbpp, attr_names, time_range)
 
     # calculate the max/min for each y-axis
     with timer("Calculating extrema"):
@@ -153,14 +154,13 @@ async def post_raw_query(hdbpp, request):
 
     params = await request.json()
     attributes = ["{cs}/{target}".format(**t) for t in params["targets"]]
-    time_range = [parse_time(params["range"]["from"]).timestamp()*1000,
-                  parse_time(params["range"]["to"]).timestamp()*1000]
+    time_range = [parse_time(params["range"]["from"]),
+                  parse_time(params["range"]["to"])]
     interval = params.get("interval")
-
     data = await get_data(hdbpp, attributes, time_range, interval,
                           restrict_time=True)
 
-    respons = negotiation.Response(data=data)
+    response = negotiation.Response(data=data)
     response.enable_compression()
     return response
 
