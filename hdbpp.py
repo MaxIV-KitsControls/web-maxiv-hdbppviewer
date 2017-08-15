@@ -315,7 +315,8 @@ class HDBPlusPlusConnection(object):
         # data, once it's all arrived.
         dummy_fut = asyncio.Future()
         fut.add_done_callback(
-            lambda fut_: dummy_fut.set_result(pd.concat(fut_.result())))
+            lambda fut_: dummy_fut.set_result(pd.concat(fut_.result(),
+                                                        ignore_index=True)))
         return dummy_fut
 
     @retry_future(max_retries=3)
