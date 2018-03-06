@@ -29,13 +29,13 @@ RUN apt-get update
 
 # Need compiler for building the cassandra driver
 # (TODO: make a conda package for the driver!)
-RUN apt-get -y install build-essential
+RUN apt-get -y install build-essential 
 
-RUN pip install cassandra-driver aiohttp aiohttp_cors aiohttp_utils
-
+RUN pip install aiohttp aiohttp_cors aiohttp_utils
+RUN pip install cassandra-driver --install-option="--no-cython"
 # check out the code
 # (TODO: should get a specific version!)
-RUN git clone https://gitlab.maxiv.lu.se/kits-maxiv/web-maxiv-hdbppviewer.git
+RUN git clone https://github.com/MaxIV-KitsControls/web-maxiv-hdbppviewer.git 
 
 # Copy the local config file into the checkout
 # This allows customization of e.g. cluster setup
