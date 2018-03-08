@@ -79,8 +79,11 @@ You also, obviously, need to have access to a Cassandra installation somewhere, 
 
 The frontend is written using babel, react and redux and managed with webpack. To build it, the following steps should work:
 
+```
 $ npm install
 $ webpack
+```
+
 
 
 ## Configuration
