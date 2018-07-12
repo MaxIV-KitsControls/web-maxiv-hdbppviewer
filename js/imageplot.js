@@ -49,7 +49,7 @@ export class ImagePlot {
       browser to be plotted using JS does not scale indefinitely. The
       the data can easily go into millions of points for some months
       of data.
-      
+
       Instead, loading the data as encoded PNG images uses reasonable
       bandwidth, typically less than 100k per request, and does not depend
       on the time window size or number of attributes. It does depend
@@ -62,7 +62,7 @@ export class ImagePlot {
       ATM. Perhaps the hover info could be loaded more asynchronously.
      */
 
-    
+
     constructor(containerElement, timeRange, onChange) {
         this.containerElement = containerElement;
         this.onChange = onChange
@@ -70,7 +70,7 @@ export class ImagePlot {
         this.setSize();
         this.setUp(timeRange);
     }
-    
+
 
     setUp(timeRange) {
 
@@ -81,11 +81,11 @@ export class ImagePlot {
         this.indicators = {};
 
         // Create the plot SVG element, using D3
-        const svg = d3.select(this.containerElement)
+        this.svg = d3.select(this.containerElement)
               .append("svg")
               .attr("height", this.height)
               .attr("width", this.width)
-        
+
         // scales
         this.x = d3.time.scale()
             .range([Y_AXIS_WIDTH, this.innerWidth])
@@ -96,10 +96,10 @@ export class ImagePlot {
             .size([this.innerWidth, this.innerHeight])
             .on("zoom", this.zoomed.bind(this));
 
-        this.container = svg.append("g")
+        this.container = this.svg.append("g")
             .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")")
             .call(this.zoom)
-        
+
         this.overlay = this.container.append("rect")
             .attr("class", "overlay")
             .attr("y", this.margin.top)
@@ -113,14 +113,14 @@ export class ImagePlot {
             .orient("bottom")
             .tickSize(-this.innerHeight)
             .tickFormat(customTimeFormat);
-        
+
         this.xAxisElement = this.container.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + (this.innerHeight + this.margin.top) + ")")
             .call(this.xAxis);
 
         // clip the plot elements to the area within the axes
-        this.clipRect = svg.append("defs")
+        this.clipRect = this.svg.append("defs")
             .append("svg:clipPath")
             .attr("id", "clip")
             .append("svg:rect")
@@ -131,20 +131,20 @@ export class ImagePlot {
         this.clipBox = this.container.append("g")
             .attr("transform", `translate(${Y_AXIS_WIDTH},${this.margin.top})`)
             .attr("clip-path", "url(#clip)")
-        
+
         this.inner = this.clipBox.append("g");
 
         // Y axes
         // TODO: should be pretty easy to support arbitrary numbers of
         // Y axes, mostly it's a matter of making room for them...
-        
-        this.addYAxis("linear")
-        this.addYAxis("linear")                
 
-        // vertical and horizontal lines showing the mouse position        
+        this.addYAxis("linear")
+        this.addYAxis("linear")
+
+        // vertical and horizontal lines showing the mouse position
         this.crosshair = this.inner.append("svg:g")
             .classed("crosshair", true)
-        
+
         this.crosshairLineX = this.crosshair.append("svg:line")
             .classed({cursor: true, x: true})
             .attr("y1", 0)
@@ -154,7 +154,7 @@ export class ImagePlot {
             .append("svg:text")
             .attr("y", this.innerHeight)
             .attr("dy", "-0.2em")
-        
+
         this.crosshairLineY = this.crosshair
             .append("svg:line")
             .classed({cursor: true, x: true})
@@ -168,7 +168,7 @@ export class ImagePlot {
             .attr("dy", "-.2em")
             .style("text-anchor", "start")
             .text("hej")
-        
+
         this.crosshairLabelY2 = this.crosshair
             .append("svg:text")
             .attr("x", this.innerWidth - Y_AXIS_WIDTH)
@@ -176,7 +176,7 @@ export class ImagePlot {
             .attr("dx", -2)
             .style("text-anchor", "end")
             .text("hej")
-                
+
         let [startTime, endTime] = this.x.domain()
         this.currentImage = 0
         this.imageTimeRanges = [this.x.domain(), this.x.domain()];
@@ -188,7 +188,7 @@ export class ImagePlot {
             .classed("description", true)
             .style("display", "none")
             .text("hello");
-        
+
     }
 
     addYAxis(scaleType) {
@@ -208,7 +208,7 @@ export class ImagePlot {
               .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
 
         this.yAxes[name] = axis;
-            
+
         const element = this.container.append("g")
               .attr("class", "y axis")
               .attr("transform", "translate(" + (number % 2 === 0? 0 :
@@ -236,9 +236,9 @@ export class ImagePlot {
             .on("mouseleave", this.hideCrosshair.bind(this))
 
         return name;
-        
+
     }
-    
+
     removeYAxis(name) {
         delete this.yScales[name];
         delete this.yAxes[name];
@@ -259,17 +259,17 @@ export class ImagePlot {
         // this.yAxisElements[yAxis].call(axis)
         this.runChangeCallback();
     }
-    
+
     setTimeRange(range) {
         this.x.domain(range);
         this.zoom.x(this.x)  // reset the zoom behavior
         this.zoomed()
-    } 
+    }
 
     setConfig(config) {
         this.config = config;
     }
-    
+
     setDescriptions(descriptions) {
         this.descriptions = descriptions;
     }
@@ -305,13 +305,13 @@ export class ImagePlot {
 
     hideCrosshair() {
         this.crosshairLineX.style("display", "none")
-        this.crosshairLineY.style("display", "none")        
+        this.crosshairLineY.style("display", "none")
         this.crosshairLabelX.style("display", "none")
         this.crosshairLabelY1.style("display", "none")
-        this.crosshairLabelY2.style("display", "none")        
-        
+        this.crosshairLabelY2.style("display", "none")
+
     }
-    
+
     setData(data) {
 
         const axes = Object.keys(data);
@@ -334,7 +334,7 @@ export class ImagePlot {
             const [yMin, yMax] = y_range;
             const yScale = (Math.abs(yMax - yMin) /
                             Math.abs(currentYMax - currentYMin));
-            this.imageTimeRanges[(this.currentImage + 1) % 2] = x_range;            
+            this.imageTimeRanges[(this.currentImage + 1) % 2] = x_range;
             // Set the data of the "offscreen" image, and reset the
             // transform Is there a way to do this "atomically"? Maybe
             // use a canvas instead...
@@ -353,7 +353,7 @@ export class ImagePlot {
                 .transition()
                 .call(this.yAxes[axis])
             // TODO: the transitions should be synchronized
-            
+
         }
         // Below is a hack; if we swap the images immediately, for
         // some reason the above changes have not always taken
@@ -361,7 +361,7 @@ export class ImagePlot {
         // update happens asynchronously and there seems to be no
         // way to hook into it. "onload" does not help.  One issue
         // is that the timeout is basically determined by manual
-        // testing, ans may not always be enough.        
+        // testing, ans may not always be enough.
         if (this._swapTimeout) {
             // remove any previously set timeout.
             clearTimeout(this._swapTimeout);
@@ -372,9 +372,9 @@ export class ImagePlot {
             this.swapImage(),
             this._swapTimeout = null;
         }, 100)
-        
+
     }
-    
+
     setSize() {
         // calculate element dimensions
         let containerWidth = this.containerElement.offsetWidth;
@@ -399,9 +399,9 @@ export class ImagePlot {
                 .attr("transform", "translate(" + (this.x(startTime) -
                                                    Y_AXIS_WIDTH) +
                       ",0)scale("+ scale + ",1)");
-        }        
+        }
     }
-    
+
     zoomed() {
         // this.hideDescription();
         this.updateTimeRange();
@@ -431,7 +431,7 @@ export class ImagePlot {
         // get the currently hidden image for the axis
         return this.images[yAxis][(this.currentImage + 1) % 2]
     }
-    
+
     _runChangeCallback () {
         const [xStart, xEnd] = this.x.domain(),
               [xMin, xMax] = this.x.range(),
