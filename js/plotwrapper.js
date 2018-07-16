@@ -3,8 +3,11 @@ import {findDOMNode} from "react-dom";
 import {connect} from "react-redux";
 
 import {ImagePlot} from "./imageplot";
-import {setTimeRange, fetchArchiveData} from "./actions";
+import {setTimeRange, fetchArchiveData, setYRange, setAxisScale} from "./actions";
 
+import {saveSvgAsPng} from 'save-svg-as-png';
+import { Button } from 'react-bootstrap';
+import ActionBar from './actionbar';
 
 class PlotWrapper extends React.Component {
 
@@ -19,12 +22,14 @@ class PlotWrapper extends React.Component {
                         new Date(Date.now())]
         }
     }
-    
+
     componentDidMount () {
         // create the SVG plot immediately, once
-        let container = findDOMNode(this.refs.plot);
+        let container = findDOMNode(this.svgWrapper);
         this.plot = new ImagePlot(container, this.state.timeRange,
                                   this.onChange.bind(this));
+        this.props.dispatch(setAxisScale(0, "linear"));
+        this.props.dispatch(setAxisScale(1, "linear"));
     }
 
     componentWillReceiveProps (props) {
@@ -45,7 +50,7 @@ class PlotWrapper extends React.Component {
               {start, end} = props.timeRange;
         // to avoid double updates, we check if the time scale has actually changed
         if (oldStart != start || oldEnd != end) {
-            this.setState({timeRange: [start, end]})            
+            this.setState({timeRange: [start, end]})
             this.plot.setTimeRange([start, end]);
         }
         if (props.axes != this.props.axes) {
@@ -60,9 +65,26 @@ class PlotWrapper extends React.Component {
         // happen in the plot
         return false
     }
-    
+
     render() {
-        return <div className="plot-wrapper" ref="plot"></div>
+        return (
+            <div>
+              <ActionBar
+                  onChangeRangeElement={this.onChangeRangeElement.bind(this)}
+              />
+              <div className="plot-wrapper">
+                <div ref={div => this.svgWrapper = div}/>
+                <Button bsStyle="success" onClick={() => saveSvgAsPng(this.plot.svg[0][0], 'plot.png')}
+                        title="Download the plot image">
+                  Download
+                </Button>
+              </div>
+            </div>
+        );
+    }
+
+    onChangeRangeElement(id, value) {
+        this.props.dispatch(setYRange(id, value));
     }
 
     onChange (start, end, width, height) {
@@ -71,7 +93,7 @@ class PlotWrapper extends React.Component {
         this.props.dispatch(setTimeRange(start, end));
         this.props.dispatch(fetchArchiveData(start, end, width, height));
     }
-    
+
 }
 
 const mapStateToProps = (state) => {

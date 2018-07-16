@@ -10,6 +10,7 @@ import { getControlsystems, setControlsystem, getSuggestions,
          addAttributes, removeAttributes,
          setAxisScale } from "./actions";
 import { parseAttribute } from "./utils";
+import ColorPicker from "./colorpicker"
 
 
 class PlottedAttributes extends React.Component {
@@ -41,7 +42,7 @@ class PlottedAttributes extends React.Component {
     onYAxisClick(axis) {
         const attributes = this.getAttributesOnYAxis(axis);
     }
-    
+
     onRemove() {
         this.props.removeAttributes(this.state.selected)
     }
@@ -73,15 +74,15 @@ class PlottedAttributes extends React.Component {
         console.log("axisScale change", axis, isLog)
         this.props.setAxisScale(axis, isLog? "log" : "linear");
     }
-    
-    
+
+
     // makeAxisPopover (axis) {
     //     const config = this.props.axes[axis];
     //     return (<Popover id={`attribute-${attr}`} title={axis}>
     //               <div>Scale: {config.scale || "linear"}</div>
     //             </Popover>);
     // }
-    
+
     makeAttribute(a) {
         const [cs, name] = parseAttribute(a)
         return (<li key={a} onClick={this.onAttributeClick.bind(this, a)}
@@ -92,13 +93,13 @@ class PlottedAttributes extends React.Component {
                                   overlay={this.makeAttributePopover(a, cs, name)}>
                     <div>
                       <span style={{color: this.props.config[a].color}}>■</span>
-                        &nbsp;                         
+                        &nbsp;
                       <span>{name}</span>
                     </div>
                   </OverlayTrigger>
                 </li>)
     }
-    
+
     render () {
         const leftYAxis = this.getAttributesOnYAxis(0)
                   .map(a => this.makeAttribute(a)),
@@ -115,7 +116,7 @@ class PlottedAttributes extends React.Component {
                   Remove
                 </Button>
               }>
-                
+
                 <div>
                   <strong onClick={this.onYAxisClick.bind(this, 0)}>
                     Left Y axis
@@ -130,12 +131,12 @@ class PlottedAttributes extends React.Component {
                     style={{listStyle: "none", paddingLeft: "10px"}}>
                     {leftYAxis}
                 </ul>
-                
+
                 <div>
                   <strong onClick={this.onYAxisClick.bind(this, 1)}>
                     Right Y axis
                   </strong>
-                
+
                   <Checkbox checked={this.props.axes[1] && this.props.axes[1].scale == "log"}
                             onChange={this.onAxisScaleChange.bind(this, 1)}
                             inline style={{"float": "right"}}>
@@ -146,17 +147,17 @@ class PlottedAttributes extends React.Component {
                     style={{listStyle: "none", paddingLeft: "10px"}}>
                   {rightYAxis}
                 </ul>
-                
+
               </Panel>
-                
+
 
             </FormGroup>
         );
     }
-    
+
 }
 
-    
+
 class Attributes extends React.Component {
 
     constructor(props) {
@@ -165,9 +166,11 @@ class Attributes extends React.Component {
             pattern: '',
             selectedSuggestions: [],
             selectedAttributes: [],
+            selectedColor : '',
             showSuggestions: false
         };
     }
+
 
     // the user has typed something in the search field
     onPatternChange (event) {
@@ -183,6 +186,11 @@ class Attributes extends React.Component {
         this.setState({selectedSuggestions: selected});
     }
 
+    //the user has selected the color
+    onSelectColor (color) {
+      this.setState({selectedColor: color.hex});
+    }
+
     // the user has marked/unmarked some of the plotted attributes
     onSelectAttributes (event) {
         let selected = getSelectedOptions(event.target);
@@ -192,7 +200,9 @@ class Attributes extends React.Component {
     // the user is adding attributes to the plot
     onAddAttributes (axis, event) {
         const cs = this.props.controlsystem;
-        const attributes = this.state.selectedSuggestions.map(attr => `${cs}/${attr}`);
+        const color = this.state.selectedColor;
+        const attributes = this.state.selectedSuggestions.map(attr => [`${cs}/${attr}`, color]);
+        this.setState({selectedColor : ''});
         this.props.addAttributes(attributes, axis);
     }
 
@@ -200,14 +210,14 @@ class Attributes extends React.Component {
     onRemoveAttributes (attributes) {
         this.props.removeAttributes(attributes);
     }
-    
+
     onSelectControlsystem (event) {
         const controlsystem = event.target.value;
         /*         this.setState({controlsystem, selectedAttributes: []});*/
         this.props.setControlsystem(controlsystem);
         this.props.getSuggestions(controlsystem, this.state.pattern);
     }
-    
+
     renderAttributeInfo() {
         if (this.state.selectedAttributes.length > 0) {
             const attr = this.state.selectedAttributes[0];
@@ -233,9 +243,8 @@ class Attributes extends React.Component {
                     </Table>);
         }
     }
-    
+
     render () {
-        
         // the list of available control systems
         const controlsystemOptions = (
             [<option key={-1} selected disabled hidden style={{'display':'none'}} value={null}>Pick a controlsystem</option>]
@@ -244,7 +253,7 @@ class Attributes extends React.Component {
                         (cs, i) => <option key={i} value={cs}>{cs}</option>)
             )
         );
-        
+
 
         // the list of attribute matches
         const suggestOptions = this.props.suggestions.map(sugg => {
@@ -269,8 +278,10 @@ class Attributes extends React.Component {
                             onSelect={this.onAddAttributes.bind(this)}>
                     Right Y
                   </MenuItem>
-                </DropdownButton>);
-      
+                </DropdownButton>
+              );
+
+
         return (
                 <div>
                     <Panel footer={addButton}>
@@ -278,11 +289,11 @@ class Attributes extends React.Component {
                             <FormControl componentClass="select" ref="cs"
                                          title="Pick your control system"
                                          value={this.props.controlsystem}
-                                         onChange={this.onSelectControlsystem.bind(this)}> 
+                                         onChange={this.onSelectControlsystem.bind(this)}>
                                 {controlsystemOptions}
                             </FormControl>
                         </FormGroup>
-                        <FormGroup>                
+                        <FormGroup>
                             <FormControl type="search" ref="search"
                                          title="Search for some attribute(s)"
                                          value={this.state.pattern}
@@ -296,13 +307,17 @@ class Attributes extends React.Component {
                                      onChange={this.onSelectSuggestions.bind(this)}>
                             {suggestOptions}
                         </FormControl>
+                        <ColorPicker
+                          color={this.state.selectedColor}
+                          onSelectColor={this.onSelectColor.bind(this)}
+                        />
                     </Panel>
                     {plottedAttributes}
                 </div>
         );
     }
 }
-    
+
 
 function mapStateToProps (state) {
     return {

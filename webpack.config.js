@@ -1,28 +1,45 @@
+const path = require('path');
+
 module.exports = {
     entry: "./js/main.js",
     output: {
-        path: __dirname + "/static/js",
+        path: path.resolve(__dirname, 'static'),
+        publicPath: '/static/',
         filename: "bundle.js"
     },
     module: {
-        loaders: [
-            {
-                test: /\.js$/,
-                exclude: /node_modules/,
+        rules: [
+          {
+            test: /\.js$/,
+            exclude: /node_modules/,
+            use: [{
                 loader: "babel-loader",
-                query: {
-                    presets: [
-                        "es2015",
-                        "stage-0", "stage-1", "stage-2", "stage-3",
-                        "react"] 
+                options: {
+                  presets: [
+                    "es2015",
+                    "stage-0", "stage-1", "stage-2", "stage-3",
+                    "react"
+                  ]
                 }
+              }]
+            },
+            {
+              test: /\.css$/,
+              use: ["style-loader", "css-loader"]
             }
-        ]
+          ]
     },
     resolve: {
-        extensions: [ "", ".js" ]
+        extensions: [ ".js" ]
     },
     externals: {
         "d3": "d3"
+    },
+    devServer: {
+      contentBase: './static',
+      proxy: {
+        '/': 'http://localhost:5005'
+      },
+      watchContentBase: true
     }
 };
