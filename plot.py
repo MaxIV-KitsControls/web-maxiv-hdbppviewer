@@ -88,6 +88,7 @@ def get_extrema(attributes, results, time_range, axes):
         i0, = data["t"].searchsorted(t0.timestamp() * 1e6)  # t is in µs!
         i1, = data["t"].searchsorted(t1.timestamp() * 1e6)
         relevant = data[i0:i1]
+        
         with timer("getting max/min"):
             if axis_config.get("scale") == "log":
                 # ignore zero or negative values b/c they make no sense
@@ -97,10 +98,14 @@ def get_extrema(attributes, results, time_range, axes):
             else:
                 value_max = relevant["value_r"].max()
                 value_min = relevant["value_r"].min()
+        #check if the axis contain range values; if it does set those and if not use the default
+        if len(axes.keys()):
+            value_min = float(axes[str(y_axis)].get("min", value_min))
+            value_max = float(axes[str(y_axis)].get("max", value_max))
 
         per_axis[y_axis][name] = dict(
             data=data, info=info, points=len(relevant),
-            y_range=(value_min, value_max))
+            y_range=(value_min,value_max))
     return per_axis
 
 
