@@ -3,10 +3,11 @@ import {findDOMNode} from "react-dom";
 import {connect} from "react-redux";
 
 import {ImagePlot} from "./imageplot";
-import {setTimeRange, fetchArchiveData} from "./actions";
+import {setTimeRange, fetchArchiveData, setYRange, setAxisScale} from "./actions";
 
 import {saveSvgAsPng} from 'save-svg-as-png';
 import { Button } from 'react-bootstrap';
+import ActionBar from './actionbar';
 
 class PlotWrapper extends React.Component {
 
@@ -27,6 +28,8 @@ class PlotWrapper extends React.Component {
         let container = findDOMNode(this.svgWrapper);
         this.plot = new ImagePlot(container, this.state.timeRange,
                                   this.onChange.bind(this));
+        this.props.dispatch(setAxisScale(0, "linear"));
+        this.props.dispatch(setAxisScale(1, "linear"));
     }
 
     componentWillReceiveProps (props) {
@@ -65,14 +68,23 @@ class PlotWrapper extends React.Component {
 
     render() {
         return (
-            <div className="plot-wrapper">
-              <div ref={div => this.svgWrapper = div}/>
-              <Button bsStyle="success" onClick={() => saveSvgAsPng(this.plot.svg[0][0], 'plot.png')}
-                      title="Download the plot image">
-                Download
-              </Button>
+            <div>
+              <ActionBar
+                  onChangeRangeElement={this.onChangeRangeElement.bind(this)}
+              />
+              <div className="plot-wrapper">
+                <div ref={div => this.svgWrapper = div}/>
+                <Button bsStyle="success" onClick={() => saveSvgAsPng(this.plot.svg[0][0], 'plot.png')}
+                        title="Download the plot image">
+                  Download
+                </Button>
+              </div>
             </div>
         );
+    }
+
+    onChangeRangeElement(id, value) {
+        this.props.dispatch(setYRange(id, value));
     }
 
     onChange (start, end, width, height) {

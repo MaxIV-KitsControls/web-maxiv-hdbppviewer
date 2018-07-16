@@ -27,6 +27,7 @@ export const RECEIVE_ARCHIVE_DATA = "RECEIVE_ARCHIVE_DATA";
 export const RECEIVE_ARCHIVE_DESCS = "RECEIVE_ARCHIVE_DESCS";
 export const RECEIVE_DETAILS = "RECEIVE_DETAILS";
 export const SET_TIME_RANGE = "SET_TIME_RANGE";
+export const SET_Y_RANGE = "SET_Y_RANGE";
 export const ADD_ATTRIBUTES = "ADD_ATTRIBUTE";
 export const REMOVE_ATTRIBUTES = "REMOVE_ATTRIBUTE";
 export const SET_ATTRIBUTES_AXIS = "SET_ATTRIBUTES_AXIS";
@@ -72,7 +73,7 @@ export function addAttributes(attributes, axis) {
                 const [name, color] = attr;
                 attrs.push(name);
                 dispatch({type: SET_ATTRIBUTE_COLOR, attribute: name, color});
-                
+
             } else {
                 attrs.push(attr);
                 dispatch({type: SET_ATTRIBUTE_COLOR, attribute: attr});
@@ -95,6 +96,11 @@ export function setTimeRange(startTime, endTime) {
     return {type: SET_TIME_RANGE, startTime, endTime};
 }
 
+export function setYRange(id, value) {
+    // set the y range in plot
+    return {type: SET_Y_RANGE, id, value};
+}
+
 
 export function setAxisScale(axis, scale) {
     return {type: SET_AXIS_SCALE, axis, scale};
@@ -108,7 +114,7 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
     return function (dispatch, getState) {
 
         dispatch({type: FETCH_ARCHIVE_DATA});
-        
+
         let state = getState();
 
         if (state.attributes.length == 0) {
@@ -117,10 +123,10 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
             dispatch({type: RECEIVE_ARCHIVE_DATA, data: {}});
             return;
         }
-            
+
         let fetchTime = (new Date()).getTime();
         latestFetchTime = fetchTime;
-        
+
         let p = fetch("/image", {
             method: "POST",
             body: JSON.stringify({
@@ -134,7 +140,7 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                 time_range: [state.timeRange.start.toUTCString(),
                              state.timeRange.end.toUTCString()],
                 size: [imageWidth, imageHeight],
-                axes: state.axisConfiguration
+                axes: state.axisConfiguration,
             }),
             headers: {
                 "Content-Type": "application/json"
@@ -162,12 +168,9 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
             throw new Error("Could not fetch archive data!");
         }).then(data => {
             if (latestFetchTime > fetchTime)
-                return;                                          
+                return;
             dispatch({type: RECEIVE_ARCHIVE_DESCS, descs: data.descs});
             dispatch({type: RECEIVE_ARCHIVE_DATA, data: data.images});
         });
     };
 }
-
-
-

@@ -1,6 +1,6 @@
 /*
 A "reducer" is a function that takes a (partial) redux state and an
-action, and returns a new state with the updates corresponding to the 
+action, and returns a new state with the updates corresponding to the
 action.
 
 The global state is never changed in-place, it is just replaced with
@@ -17,6 +17,7 @@ import {
     ADD_ATTRIBUTES, REMOVE_ATTRIBUTES, SET_ATTRIBUTES_AXIS,
     SET_ATTRIBUTE_COLOR,
     SET_TIME_RANGE,
+    SET_Y_RANGE,
     SET_AXIS_SCALE
 } from "./actions";
 
@@ -112,7 +113,7 @@ export function attributeConfig(state={}, action) {
                 // the least and pick the first one of those.
                 let colorUsage = {};
                 Object.keys(state).forEach(k => {
-                    const line = state[k];                
+                    const line = state[k];
                     if (line.attribute == action.attribute) {return;}
                     colorUsage[line.color] = colorUsage[line.color] && colorUsage[line.color] + 1 || 1;
                 });
@@ -124,7 +125,7 @@ export function attributeConfig(state={}, action) {
                 });
                 color = leastUsed;
             }
-        }        
+        }
         updates[action.attribute] = {...state[action.attribute], color};
         return {...state, ...updates};
     case SET_ATTRIBUTES_AXIS:
@@ -151,6 +152,21 @@ export function axisConfiguration(state={}, action) {
         let config = state[action.axis] || {};
         let newConfig = R.assoc("scale", action.scale, config);
         return R.assoc(action.axis, newConfig, state);
+    case SET_Y_RANGE:
+        let type = action.id;
+        console.log(state);
+        switch (action.id) {
+            case 'y1Min':
+                return {...state, 0: {...state[0], min: action.value}};
+            case 'y1Max':
+                return {...state, 0: {...state[0], max: action.value}};
+            case 'y2Min':
+                return {...state, 1: {...state[1], min: action.value}};
+            case 'y2Max':
+                return {...state, 1: {...state[1], max: action.value}};
+            default:
+                break;
+        }
     }
     return state;
 }
@@ -173,7 +189,7 @@ export function communicationInfo(state={}, action) {
                 waitingForData: false,
                 receiveTime: new Date()};
     }
-    
+
     return state;
 }
 
@@ -188,5 +204,3 @@ export function timeRange(state=defaultTimeRange, action) {
         return state;
     }
 }
-
-
