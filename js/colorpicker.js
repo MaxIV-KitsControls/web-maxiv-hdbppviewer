@@ -1,7 +1,6 @@
-'use strict'
-
-import React from 'react'
-import { ChromePicker } from 'react-color'
+import React from 'react';
+import { ChromePicker } from 'react-color';
+import { Button } from 'react-bootstrap';
 
 class ColorPicker extends React.Component {
   state = {
@@ -30,7 +29,7 @@ class ColorPicker extends React.Component {
     }
     return (
       <div>
-        <button onClick={ this.handleClick }>Pick Color</button>
+        <Button onClick={ this.handleClick }>Pick Color</Button>
         { this.state.displayColorPicker ? <div style={ popover }>
           <div style={ cover } onClick={ this.handleClose }/>
           <ChromePicker
