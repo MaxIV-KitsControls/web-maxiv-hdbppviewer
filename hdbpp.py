@@ -123,7 +123,7 @@ class HDBPlusPlusConnection(object):
         s = self.cluster.connect(keyspace)
         # TODO: Might be useful to be able to set the consistency
         # level in the configuration
-        s.default_consistency_level = ConsistencyLevel.QUORUM
+        s.default_consistency_level = ConsistencyLevel.ONE
         self.session = aiosession(s)  # asyncio wrapper
         self.session.default_fetch_size = fetch_size
 
