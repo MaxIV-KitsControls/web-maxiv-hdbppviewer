@@ -75,7 +75,7 @@ class ActionBar extends React.Component {
                     type="text"
                     id="y1Min"
                     value={this.state.y1Min}
-                    placeholder="Y1 Min"
+                    placeholder="Left Y Min"
                     onChange={this.handleInputChange}
                     onKeyDown={this.handleKeyPress}
                   />
@@ -83,7 +83,7 @@ class ActionBar extends React.Component {
                     type="text"
                     id="y1Max"
                     value={this.state.y1Max}
-                    placeholder="Y1 Max"
+                    placeholder="Left Y Max"
                     onChange={this.handleInputChange}
                     onKeyDown={this.handleKeyPress}
                   />
@@ -91,7 +91,7 @@ class ActionBar extends React.Component {
                     type="text"
                     id="y2Min"
                     value={this.state.y2Min}
-                    placeholder="Y2 Min"
+                    placeholder="Right Y Min"
                     onChange={this.handleInputChange}
                     onKeyDown={this.handleKeyPress}
                   />
@@ -99,7 +99,7 @@ class ActionBar extends React.Component {
                     type="text"
                     id="y2Max"
                     value={this.state.y2Max}
-                    placeholder="Y2 Max"
+                    placeholder="Right Y Max"
                     onChange={this.handleInputChange}
                     onKeyDown={this.handleKeyPress}
                   />
