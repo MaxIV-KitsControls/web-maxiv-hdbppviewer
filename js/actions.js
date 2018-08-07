@@ -38,7 +38,7 @@ export const SET_AXIS_SCALE = "SET_AXIS_SCALE";
 export function getControlsystems() {
     // ask the server for attributes matching the given pattern
     return debounce(function (dispatch) {
-        fetch('/controlsystems')
+        fetch('./controlsystems')
             .then(response => response.json())
             .then(data => dispatch({type: RECEIVE_CONTROLSYSTEMS,
                                     controlsystems: data.controlsystems}));
@@ -55,7 +55,7 @@ export function getSuggestions(controlsystem, pattern) {
     // ask the server for attributes matching the given pattern
     return debounce(function (dispatch, getState) {
         const state = getState();
-        fetch(`/attributes?cs=${state.controlsystem}&search=${pattern}`)
+        fetch(`./attributes?cs=${state.controlsystem}&search=${pattern}`)
             .then(response => response.json())
             .then(data => dispatch({type: RECEIVE_SUGGESTIONS,
                                     suggestions: data.attributes}));
@@ -127,7 +127,7 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
         let fetchTime = (new Date()).getTime();
         latestFetchTime = fetchTime;
 
-        let p = fetch("/image", {
+        let p = fetch("./image", {
             method: "POST",
             body: JSON.stringify({
                 attributes: state.attributes.map(attr => {
