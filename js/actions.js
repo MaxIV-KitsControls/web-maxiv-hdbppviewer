@@ -33,6 +33,7 @@ export const REMOVE_ATTRIBUTES = "REMOVE_ATTRIBUTE";
 export const SET_ATTRIBUTES_AXIS = "SET_ATTRIBUTES_AXIS";
 export const SET_ATTRIBUTE_COLOR = "SET_ATTRIBUTE_COLOR";
 export const SET_AXIS_SCALE = "SET_AXIS_SCALE";
+export const SET_AUTO_SCALE = "SET_AUTO_SCALE";
 
 
 export function getControlsystems() {
@@ -99,6 +100,11 @@ export function setTimeRange(startTime, endTime) {
 export function setYRange(id, value) {
     // set the y range in plot
     return {type: SET_Y_RANGE, id, value};
+}
+
+export function setAutoScale() {
+    // set the y range to auto-scale (the default we get) in plot
+    return {type: SET_AUTO_SCALE};
 }
 
 
