@@ -2,7 +2,7 @@ import React from "react";
 import {connect} from "react-redux";
 import {setTimeRange, fetchArchiveData} from "./actions";
 import { Input, Button, FormGroup, FormControl} from 'react-bootstrap';
-import {setAxisScale} from "./actions";
+import {setAxisScale, setAutoScale} from "./actions";
 import './actionbar.css';
 
 class ActionBar extends React.Component {
@@ -17,6 +17,7 @@ class ActionBar extends React.Component {
           };
           this.handleInputChange = this.handleInputChange.bind(this);
           this.handleKeyPress = this.handleKeyPress.bind(this);
+          this.handleAutoScale = this.handleAutoScale.bind(this);
       }
 
       handleInputChange(event) {
@@ -65,7 +66,10 @@ class ActionBar extends React.Component {
         }
       }
 
-
+      handleAutoScale() {
+        this.setState({y1Min: '', y1Max: '', y2Min: '', y2Max: ''});
+        this.props.dispatch(setAutoScale());
+      }
 
       render() {
           return (
@@ -103,6 +107,11 @@ class ActionBar extends React.Component {
                     onChange={this.handleInputChange}
                     onKeyDown={this.handleKeyPress}
                   />
+                  <Button
+                    bsStyle="warning"
+                    onClick={this.handleAutoScale}
+                    > Auto Scale
+                  </Button>
                 </FormGroup>
               </div>
           );

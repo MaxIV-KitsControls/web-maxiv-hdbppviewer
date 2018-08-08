@@ -18,7 +18,8 @@ import {
     SET_ATTRIBUTE_COLOR,
     SET_TIME_RANGE,
     SET_Y_RANGE,
-    SET_AXIS_SCALE
+    SET_AXIS_SCALE,
+    SET_AUTO_SCALE
 } from "./actions";
 
 
@@ -154,7 +155,6 @@ export function axisConfiguration(state={}, action) {
         return R.assoc(action.axis, newConfig, state);
     case SET_Y_RANGE:
         let type = action.id;
-        console.log(state);
         switch (action.id) {
             case 'y1Min':
                 return {...state, 0: {...state[0], min: action.value}};
@@ -167,6 +167,8 @@ export function axisConfiguration(state={}, action) {
             default:
                 break;
         }
+    case SET_AUTO_SCALE:
+          return {0: {scale: 'linear'}, 1: {scale: 'linear'}};
     }
     return state;
 }
