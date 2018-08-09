@@ -45,11 +45,12 @@ class PlottedAttributes extends React.Component {
 
     onRemove() {
         this.props.removeAttributes(this.state.selected)
-        this.state.selected = []
+        this.setState({selected : []})
     }
 
     onRemoveAll() {
         this.props.removeAttributes(this.props.attributes)
+        this.setState({selected : []})
     }
 
     makeAttributePopover (attr, cs, name) {
