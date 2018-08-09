@@ -10,7 +10,7 @@ import { getControlsystems, setControlsystem, getSuggestions,
          addAttributes, removeAttributes,
          setAxisScale } from "./actions";
 import { parseAttribute } from "./utils";
-import ColorPicker from "./colorpicker"
+import ColorPicker from "./colorpicker";
 
 
 class PlottedAttributes extends React.Component {
@@ -45,6 +45,12 @@ class PlottedAttributes extends React.Component {
 
     onRemove() {
         this.props.removeAttributes(this.state.selected)
+        this.setState({selected : []})
+    }
+
+    onRemoveAll() {
+        this.props.removeAttributes(this.props.attributes)
+        this.setState({selected : []})
     }
 
     makeAttributePopover (attr, cs, name) {
@@ -110,11 +116,19 @@ class PlottedAttributes extends React.Component {
             <FormGroup>
 
               <Panel footer={
-                <Button bsStyle="danger" onClick={this.onRemove.bind(this)}
-                        disabled={this.state.selected.length == 0}
-                        title="Remove the currently selected attribute(s) from the plot">
-                  Remove
-                </Button>
+                <div>
+                  <Button bsStyle="danger" onClick={this.onRemove.bind(this)}
+                          disabled={this.state.selected.length == 0}
+                          title="Remove the currently selected attribute(s) from the plot">
+                    Remove Selected
+                  </Button>
+                  {' '}
+                  <Button bsStyle="danger" onClick={this.onRemoveAll.bind(this)}
+                          disabled={this.props.attributes.length == 0}
+                          title="Remove all attribute(s) from the plot">
+                    Remove All
+                  </Button>
+                </div>
               }>
 
                 <div>
