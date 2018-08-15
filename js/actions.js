@@ -16,6 +16,8 @@ import fetch from "isomorphic-fetch";
 
 import {debounce} from "./utils";
 
+var fileDownload = require('js-file-download');
+
 
 // action types
 export const RECEIVE_CONTROLSYSTEMS = "RECEIVE_CONTROLSYSTEMS";
@@ -220,7 +222,6 @@ export function fetchArchiveDataRaw(type) {
 
         p.then(response => {
             if (response.status >= 400) {
-                console.log(response);
                 dispatch({
                     type: "FETCH_RAW_DATA_FAILED",
                     error: response.status
@@ -241,7 +242,6 @@ export function fetchArchiveDataRaw(type) {
             if (latestFetchTime > fetchTime)
                 return;
             dispatch({type: RECEIVE_ARCHIVE_RAW_DATA});
-            var fileDownload = require('js-file-download');
             fileDownload(data, filename);
         });
     };
