@@ -16,6 +16,8 @@ import fetch from "isomorphic-fetch";
 
 import {debounce} from "./utils";
 
+var fileDownload = require('js-file-download');
+
 
 // action types
 export const RECEIVE_CONTROLSYSTEMS = "RECEIVE_CONTROLSYSTEMS";
@@ -34,6 +36,9 @@ export const SET_ATTRIBUTES_AXIS = "SET_ATTRIBUTES_AXIS";
 export const SET_ATTRIBUTE_COLOR = "SET_ATTRIBUTE_COLOR";
 export const SET_AXIS_SCALE = "SET_AXIS_SCALE";
 export const SET_AUTO_SCALE = "SET_AUTO_SCALE";
+export const FETCH_ARCHIVE_RAW_DATA = "FETCH_ARCHIVE_RAW_DATA";
+export const FETCH_RAW_DATA_FAILED = "FETCH_RAW_DATA_FAILED";
+export const RECEIVE_ARCHIVE_RAW_DATA = "RECEIVE_ARCHIVE_RAW_DATA";
 
 
 export function getControlsystems() {
@@ -177,6 +182,67 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                 return;
             dispatch({type: RECEIVE_ARCHIVE_DESCS, descs: data.descs});
             dispatch({type: RECEIVE_ARCHIVE_DATA, data: data.images});
+        });
+    };
+}
+
+export function fetchArchiveDataRaw(type) {
+    // ask the server for data for the current view
+    let headers = { "Accept": "text/csv" }
+    let filename = "data.csv";
+    if (type == "JSON") {
+        headers = { "Accept": "application/json" };
+        filename = "data.json";
+    }
+
+    return function (dispatch, getState) {
+
+        dispatch({type: FETCH_ARCHIVE_RAW_DATA});
+
+        let state = getState();
+
+        if (state.attributes.length == 0) {
+            // no attributes configured; no point in requesting anything
+            dispatch({type: RECEIVE_ARCHIVE_RAW_DATA});
+            return;
+        }
+
+        let fetchTime = (new Date()).getTime();
+        latestFetchTime = fetchTime;
+
+        let p = fetch("./httpquery", {
+            method: "POST",
+            body: JSON.stringify({
+                attributes: state.attributes,
+                time_range: [state.timeRange.start.toUTCString(),
+                             state.timeRange.end.toUTCString()],
+            }),
+            headers: headers
+        });
+
+        p.then(response => {
+            if (response.status >= 400) {
+                dispatch({
+                    type: "FETCH_RAW_DATA_FAILED",
+                    error: response.status
+                });
+                throw new Error("Did not receive archive raw data!");
+            } else if (latestFetchTime > fetchTime) {
+                // Trying to cancel because there's been a new request.
+                // neither fetch nor js Promises support this ATM, but
+                // maybe there will be a nice way at some point...
+            } else {
+                return response.text();
+            }
+        }, error => {
+            console.log(error);
+            dispatch({type: "FETCH_RAW_DATA_FAILED", error: 500});
+            throw new Error("Could not fetch archive csv data!");
+        }).then(data => {
+            if (latestFetchTime > fetchTime)
+                return;
+            dispatch({type: RECEIVE_ARCHIVE_RAW_DATA});
+            fileDownload(data, filename);
         });
     };
 }

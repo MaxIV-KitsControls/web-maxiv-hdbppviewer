@@ -50,7 +50,7 @@ def render_data_csv(request, data):
     "Render data when the client requests text format, e.g. Accept:text/csv"
     return "\n".join("{}\n{}".format(
         name, "".join(df.to_csv(columns=["t", "value_r"], index=False,
-                                sep="\t", header=["t[us]", "value_r"])))
+                                sep=",", header=["t[us]", "value_r"])))
                      for name, df in data.items()).encode()
 
 

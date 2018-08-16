@@ -164,6 +164,21 @@ async def post_raw_query(hdbpp, request):
     response.enable_compression()
     return response
 
+async def post_raw_query_http(hdbpp, request):
+
+    "Handle queries for data in 'raw' (csv or json) form from the browser"
+
+    params = await request.json()
+
+    attributes = params["attributes"]
+    time_range = [parse_time(params["time_range"][0]),
+                  parse_time(params["time_range"][1])]
+
+    data = await get_data(hdbpp, attributes, time_range)
+
+    response = negotiation.Response(data=data)
+    response.enable_compression()
+    return response
 
 async def post_raw_search(hdbpp, request):
 
@@ -269,6 +284,9 @@ if __name__ == "__main__":
                                   partial(post_raw_query, hdbpp)))
     cors.add(app.router.add_route('POST', '/search',
                                   partial(post_raw_search, hdbpp)))
+
+    cors.add(app.router.add_route('POST', '/httpquery',
+                                  partial(post_raw_query_http, hdbpp)))
 
     # everything else assumed to be requests for static files
     # maybe add '/static'?

@@ -3,7 +3,7 @@ import {findDOMNode} from "react-dom";
 import {connect} from "react-redux";
 
 import {ImagePlot} from "./imageplot";
-import {setTimeRange, fetchArchiveData, setYRange, setAxisScale} from "./actions";
+import {setTimeRange, fetchArchiveData, setYRange, setAxisScale, fetchArchiveDataRaw} from "./actions";
 
 import {saveSvgAsPng} from 'save-svg-as-png';
 import { Button } from 'react-bootstrap';
@@ -74,9 +74,20 @@ class PlotWrapper extends React.Component {
               />
               <div className="plot-wrapper">
                 <div ref={div => this.svgWrapper = div}/>
+                <br></br>
                 <Button bsStyle="success" onClick={() => saveSvgAsPng(this.plot.svg[0][0], 'plot.png')}
                         title="Download the plot image">
-                  Download
+                  Download Image
+                </Button>
+                {' '}
+                <Button bsStyle="success" onClick={this.onDownloadRawCsv.bind(this)}
+                        title="Download the plot data as CSV">
+                  Download CSV
+                </Button>
+                {' '}
+                <Button bsStyle="success" onClick={this.onDownloadRawJson.bind(this)}
+                        title="Download the plot data as JSON">
+                  Download JSON
                 </Button>
               </div>
             </div>
@@ -85,6 +96,14 @@ class PlotWrapper extends React.Component {
 
     onChangeRangeElement(id, value) {
         this.props.dispatch(setYRange(id, value));
+    }
+
+    onDownloadRawCsv() {
+        this.props.dispatch(fetchArchiveDataRaw("CSV"));
+    }
+
+    onDownloadRawJson() {
+        this.props.dispatch(fetchArchiveDataRaw("JSON"));
     }
 
     onChange (start, end, width, height) {

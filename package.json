@@ -9,6 +9,7 @@
     "dependencies": {
         "d3": "^5.5.0",
         "isomorphic-fetch": "2.2.1",
+        "js-file-download": "^0.4.1",
         "moment": "2.14.1",
         "ramda": "0.21.0",
         "react": "15.3.1",
