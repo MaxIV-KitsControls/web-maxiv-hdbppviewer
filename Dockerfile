@@ -25,7 +25,7 @@ RUN apt-get -y install build-essential
 RUN apt-get -y install python-numpy-dev
 ADD hdbviewer.conda /tmp/hdbviewer.conda
 RUN conda env create --name hdbviewer --file=/tmp/hdbviewer.conda
-RUN git https://github.com/MaxIV-KitsControls/web-maxiv-hdbppviewer.git
+RUN git clone https://github.com/MaxIV-KitsControls/web-maxiv-hdbppviewer.git
 
 # Copy the local config file into the checkout
 # This allows customization of e.g. cluster setup
