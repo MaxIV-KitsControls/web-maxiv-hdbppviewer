@@ -20,6 +20,15 @@ class ActionBar extends React.Component {
           this.handleAutoScale = this.handleAutoScale.bind(this);
       }
 
+      componentWillReceiveProps(props) {
+          this.setState({
+              y1Min: props.y1Min ? props.y1Min : '',
+              y1Max: props.y1Max ? props.y1Max : '',
+              y2Min: props.y2Min ? props.y2Min : '',
+              y2Max: props.y2Max ? props.y2Max : ''
+          });
+      }
+
       handleInputChange(event) {
         switch (event.target.id) {
           case 'y1Min':
@@ -67,7 +76,6 @@ class ActionBar extends React.Component {
       }
 
       handleAutoScale() {
-        this.setState({y1Min: '', y1Max: '', y2Min: '', y2Max: ''});
         this.props.dispatch(setAutoScale());
       }
 
@@ -128,18 +136,11 @@ class ActionBar extends React.Component {
 
   const mapStateToProps = (state) => {
       return {
-          y1Min: state.y1Min,
-          y1Max: state.y1Max,
-          y2Min: state.y2Min,
-          y2Max: state.y2Max,
+          y1Min: state.actionBar.y1Min,
+          y1Max: state.actionBar.y1Max,
+          y2Min: state.actionBar.y2Min,
+          y2Max: state.actionBar.y2Max
       }
   }
-
-  const mapDispatchToProps = (state) => {
-      return {
-          setAxisScale: (axis,scale) => dispatch(setAxisScale (axis,scale))
-      }
-  }
-
 
   export default connect(mapStateToProps)(ActionBar);
