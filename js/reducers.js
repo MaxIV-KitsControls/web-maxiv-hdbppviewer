@@ -206,3 +206,17 @@ export function timeRange(state=defaultTimeRange, action) {
         return state;
     }
 }
+
+export function actionBar (state=archiveData, action) {
+    switch (action.type) {
+    case RECEIVE_ARCHIVE_DATA:
+        return {
+            y1Min: action.data[0] ? action.data[0].y_range[0].toExponential(1) : '-1e+0',
+            y1Max: action.data[0] ? action.data[0].y_range[1].toExponential(1) : '1e+0',
+            y2Min: action.data[1] ? action.data[1].y_range[0].toExponential(1) : '-1e+0',
+            y2Max: action.data[1] ? action.data[1].y_range[1].toExponential(1) : '1e+0'
+        };
+    default:
+        return state;
+    }
+}
