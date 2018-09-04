@@ -1,21 +1,43 @@
-import d3 from "d3";
+//import d3 from "d3";
 
-import {debounce, parseAttribute} from "./utils"
+import {debounce, parseAttribute} from "./utils";
+
+import * as d3 from 'd3';
 
 
 const Y_AXIS_WIDTH = 0;  // how much horizontal room to reserve for each Y axis,
                            // to make room for tick labels
 
-var customTimeFormat = d3.time.format.multi([
-  [".%L", function(d) { return d.getMilliseconds(); }],
-  [":%S", function(d) { return d.getSeconds(); }],
-  ["%H:%M", function(d) { return d.getMinutes(); }],
-  ["%H:00", function(d) { return d.getHours(); }],
-  ["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
-  ["%b %d", function(d) { return d.getDate() != 1; }],
-  ["%B", function(d) { return d.getMonth(); }],
-  ["%Y", function() { return true; }]
-]);
+// var customTimeFormat = d3.timeFormat([
+//   [".%L", function(d) { return d.getMilliseconds(); }],
+//   [":%S", function(d) { return d.getSeconds(); }],
+//   ["%H:%M", function(d) { return d.getMinutes(); }],
+//   ["%H:00", function(d) { return d.getHours(); }],
+//   ["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
+//   ["%b %d", function(d) { return d.getDate() != 1; }],
+//   ["%B", function(d) { return d.getMonth(); }],
+//   ["%Y", function() { return true; }]
+// ]);
+
+var formatMillisecond = d3.timeFormat(".%L"),
+    formatSecond = d3.timeFormat(":%S"),
+    formatMinute = d3.timeFormat("%H:%M"),
+    formatHour = d3.timeFormat("%H:00"),
+    formatDay = d3.timeFormat("%a %d"),
+    formatWeek = d3.timeFormat("%b %d"),
+    formatMonth = d3.timeFormat("%B"),
+    formatYear = d3.timeFormat("%Y");
+
+// Define filter conditions
+function customTimeFormat(date) {
+  return (d3.timeSecond(date) < date ? formatMillisecond
+    : d3.timeMinute(date) < date ? formatSecond
+    : d3.timeHour(date) < date ? formatMinute
+    : d3.timeDay(date) < date ? formatHour
+    : d3.timeMonth(date) < date ? (d3.timeWeek(date) < date ? formatDay : formatWeek)
+    : d3.timeYear(date) < date ? formatMonth
+    : formatYear)(date);
+}
 
 
 function closestIndex (num, arr) {
@@ -74,6 +96,7 @@ export class ImagePlot {
 
     setUp(timeRange) {
 
+        this.new_xScale;
         this.yScales = {}
         this.yAxes = {}
         this.yAxisElements = {}
@@ -87,13 +110,11 @@ export class ImagePlot {
               .attr("width", this.width)
 
         // scales
-        this.x = d3.time.scale()
+        this.x = d3.scaleTime()
             .range([Y_AXIS_WIDTH, this.innerWidth])
-            .domain(timeRange);
+            .domain(timeRange)
 
-        this.zoom = d3.behavior.zoom()
-            .x(this.x)
-            .size([this.innerWidth, this.innerHeight])
+        this.zoom = d3.zoom()
             .on("zoom", this.zoomed.bind(this));
 
         this.container = this.svg.append("g")
@@ -107,10 +128,9 @@ export class ImagePlot {
             .attr("height", this.innerHeight)
 
         // X axis
-        this.xAxis = d3.svg.axis()
+        this.xAxis = d3.axisBottom()
             .scale(this.x)
             .ticks(7)
-            .orient("bottom")
             .tickSize(-this.innerHeight)
             .tickFormat(customTimeFormat);
 
@@ -118,6 +138,8 @@ export class ImagePlot {
             .attr("class", "x axis")
             .attr("transform", "translate(0," + (this.innerHeight + this.margin.top) + ")")
             .call(this.xAxis);
+
+        
 
         // clip the plot elements to the area within the axes
         this.clipRect = this.svg.append("defs")
@@ -141,45 +163,49 @@ export class ImagePlot {
         this.addYAxis("linear")
         this.addYAxis("linear")
 
+
+
         // vertical and horizontal lines showing the mouse position
-        this.crosshair = this.inner.append("svg:g")
-            .classed("crosshair", true)
+        // this.crosshair = this.inner.append("svg:g")
+        //     .classed("crosshair", true)
 
-        this.crosshairLineX = this.crosshair.append("svg:line")
-            .classed({cursor: true, x: true})
-            .attr("y1", 0)
-            .attr("y2", this.innerHeight)
+        // this.crosshairLineX = this.crosshair.append("svg:line")
 
-        this.crosshairLabelX = this.crosshair
-            .append("svg:text")
-            .attr("y", this.innerHeight)
-            .attr("dy", "-0.2em")
+        // this.crosshairLineX
+        //     .classed({cursor: true, x: true})
+        //     .attr("y1", 0)
+        //     .attr("y2", this.innerHeight)
 
-        this.crosshairLineY = this.crosshair
-            .append("svg:line")
-            .classed({cursor: true, x: true})
-            .attr("x1", 0)
-            .attr("x2", this.innerWidth)
+        // this.crosshairLabelX = this.crosshair
+        //     .append("svg:text")
+        //     .attr("y", this.innerHeight)
+        //     .attr("dy", "-0.2em")
 
-        this.crosshairLabelY1 = this.crosshair
-            .append("svg:text")
-            .attr("x", Y_AXIS_WIDTH)
-            .attr("dx", 2)
-            .attr("dy", "-.2em")
-            .style("text-anchor", "start")
-            .text("hej")
+        // this.crosshairLineY = this.crosshair
+        //     .append("svg:line")
+        //     .classed({cursor: true, x: true})
+        //     .attr("x1", 0)
+        //     .attr("x2", this.innerWidth)
 
-        this.crosshairLabelY2 = this.crosshair
-            .append("svg:text")
-            .attr("x", this.innerWidth - Y_AXIS_WIDTH)
-            .attr("dy", "-.2em")
-            .attr("dx", -2)
-            .style("text-anchor", "end")
-            .text("hej")
+        // this.crosshairLabelY1 = this.crosshair
+        //     .append("svg:text")
+        //     .attr("x", Y_AXIS_WIDTH)
+        //     .attr("dx", 2)
+        //     .attr("dy", "-.2em")
+        //     .style("text-anchor", "start")
+        //     .text("hej")
 
-        let [startTime, endTime] = this.x.domain()
+        // this.crosshairLabelY2 = this.crosshair
+        //     .append("svg:text")
+        //     .attr("x", this.innerWidth - Y_AXIS_WIDTH)
+        //     .attr("dy", "-.2em")
+        //     .attr("dx", -2)
+        //     .style("text-anchor", "end")
+        //     .text("hej")
+        const auxDomain = this.new_xScale ? this.new_xScale.domain() : this.x.domain();
+        let [startTime, endTime] = auxDomain;
         this.currentImage = 0
-        this.imageTimeRanges = [this.x.domain(), this.x.domain()];
+        this.imageTimeRanges = [auxDomain, auxDomain];
 
         // element that shows information about the point closest
         // to the mouse cursor
@@ -195,17 +221,46 @@ export class ImagePlot {
         const number = Object.keys(this.yAxes).length;
         const name = ""+number;
 
-        const scale = d3.scale[scaleType]()
+
+        if (scaleType === 'linear') {
+            var scale = d3.scaleLinear()
               .range([this.innerHeight + this.margin.top, this.margin.top])
               .domain([-1, 1])
+        }
+
+        else {
+            var scale = d3.scaleLog()
+              .range([this.innerHeight + this.margin.top, this.margin.top])
+              .domain([-1, 1])
+        }
+
+        // const scale = d3.scaleLinear()
+        //       .range([this.innerHeight + this.margin.top, this.margin.top])
+        //       .domain([-1, 1])
 
         this.yScales[name] = scale;
 
-        const axis = d3.svg.axis()
+        if ((number %2) === 0) {
+            var axis = d3.axisLeft()
               .scale(scale)
               .ticks(5, ".1e")
-              .orient(number % 2 === 0? "left" : "right")
+              //.orient(number % 2 === 0? "left" : "right")
               .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
+        }
+
+        else {
+            var axis = d3.axisRight()
+              .scale(scale)
+              .ticks(5, ".1e")
+              //.orient(number % 2 === 0? "left" : "right")
+              .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
+        }
+
+        // const axis = d3.axis()
+        //       .scale(scale)
+        //       .ticks(5, ".1e")
+        //       .orient(number % 2 === 0? "left" : "right")
+        //       .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
 
         this.yAxes[name] = axis;
 
@@ -231,9 +286,9 @@ export class ImagePlot {
                 .attr("height", this.innerHeight)
         ];
 
-        this.container
-            .on("mousemove", this.showCrosshair.bind(this))
-            .on("mouseleave", this.hideCrosshair.bind(this))
+        // this.container
+        //     .on("mousemove", this.showCrosshair.bind(this))
+        //     .on("mouseleave", this.hideCrosshair.bind(this))
 
         return name;
 
@@ -250,9 +305,18 @@ export class ImagePlot {
     }
 
     setYAxisScale(yAxis, scaleType) {
-        // const domain = this.yScales[yAxis].domain();
-        const scale = d3.scale[scaleType]()
+        if (scaleType === 'linear') {
+            var scale = d3.scaleLinear()
               .range([this.innerHeight + this.margin.top, this.margin.top])
+        }
+
+        else {
+            const scale = d3.scaleLog()
+              .range([this.innerHeight + this.margin.top, this.margin.top])
+        }
+        // const domain = this.yScales[yAxis].domain();
+        // const scale = d3.scale[scaleType]()
+        //       .range([this.innerHeight + this.margin.top, this.margin.top])
         this.yScales[yAxis] = scale;
         const axis = this.yAxes[yAxis];
         axis.scale(scale);
@@ -262,8 +326,7 @@ export class ImagePlot {
 
     setTimeRange(range) {
         this.x.domain(range);
-        this.zoom.x(this.x)  // reset the zoom behavior
-        this.zoomed()
+        //this.zoomed()
     }
 
     setConfig(config) {
@@ -330,6 +393,7 @@ export class ImagePlot {
 
 
             const {image, x_range, y_range} = data[axis];
+            console.log(x_range);
             const [currentYMin, currentYMax] = this.yScales[axis].domain();
             const [yMin, yMax] = y_range;
             const yScale = (Math.abs(yMax - yMin) /
@@ -403,8 +467,62 @@ export class ImagePlot {
     }
 
     zoomed() {
+        //this.xAxisElement.call(this.xAxis);
+        // console.log("***X DOMAIN***",this.x.domain());
+        
+        this.new_xScale = d3.event.transform.rescaleX(this.x);
+
+        this.xAxisElement.call(this.xAxis.scale(this.new_xScale));
+        //this.xAxis.scale(d3.event.transform.rescaleX(this.x));
+        
+        // //console.log("***X DOMAIN***",this.x.domain());
+
+        // for (let yAxis of Object.keys(this.yAxes)) {
+        //     this.getImage(yAxis)
+        //         .attr("transform", d3.event.transform);
+        // }
+
+        const [currentStartTime, currentEndTime] = this.new_xScale.domain(),
+              [startTime, endTime] = this.imageTimeRanges[this.currentImage],
+              scale = ((endTime - startTime) /
+                       (currentEndTime.getTime() - currentStartTime.getTime()));
+
+        console.log("***START TIME***",this.x(startTime));
+
+        for (let yAxis of Object.keys(this.yAxes)) {
+            this.getImage(yAxis)
+                .attr("transform", "translate(" + d3.event.translate - Y_AXIS_WIDTH +
+                      ")"+"scale("+ d3.event.scale +")");
+        }
+        //this.xAxisElement.call(this.xAxis);
+        
         // this.hideDescription();
-        this.updateTimeRange();
+        //this.updateTimeRange();
+
+        
+        // console.log("********** NEW CALCULATED SCALE", this.new_xScale.domain());
+        // console.log("*******OLD X", this.x.domain());
+        // console.log("*******NEW X", new_xScale.domain());
+
+        //this.x.domain(new_xScale.domain());
+
+        //var new_yScale = d3.event.transform.rescaleY(yAxisScale)
+
+        // update axes
+    
+
+        //console.log("*******NEW X", this.x.domain());
+
+
+        //console.log("*** NEW X DOMAIN***", this.x.domain());
+
+        //gY.call(yAxis.scale(new_yScale));
+        
+      
+
+    
+        // update circle
+        //circles.attr("transform", d3.event.transform)
         this.runChangeCallback();
     }
 
@@ -433,10 +551,11 @@ export class ImagePlot {
     }
 
     _runChangeCallback () {
-        const [xStart, xEnd] = this.x.domain(),
+        const [xStart, xEnd] = this.new_xScale ? this.new_xScale.domain() : this.x.domain(),
               [xMin, xMax] = this.x.range(),
               [yMin, yMax] = this.yScales[0].range();
         const height = Math.abs(yMax - yMin);
+        console.log("Boooo", xStart, xEnd, xMax - xMin, height)
         this.onChange(xStart, xEnd, xMax - xMin, height);
     }
 
