@@ -8,16 +8,6 @@ import * as d3 from 'd3';
 const Y_AXIS_WIDTH = 0;  // how much horizontal room to reserve for each Y axis,
                            // to make room for tick labels
 
-// var customTimeFormat = d3.timeFormat([
-//   [".%L", function(d) { return d.getMilliseconds(); }],
-//   [":%S", function(d) { return d.getSeconds(); }],
-//   ["%H:%M", function(d) { return d.getMinutes(); }],
-//   ["%H:00", function(d) { return d.getHours(); }],
-//   ["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
-//   ["%b %d", function(d) { return d.getDate() != 1; }],
-//   ["%B", function(d) { return d.getMonth(); }],
-//   ["%Y", function() { return true; }]
-// ]);
 
 var formatMillisecond = d3.timeFormat(".%L"),
     formatSecond = d3.timeFormat(":%S"),
@@ -97,7 +87,6 @@ export class ImagePlot {
     setUp(timeRange) {
 
         this.new_xScale;
-        this.xTransform;
         this.yScales = {}
         this.yAxes = {}
         this.yAxisElements = {}
@@ -235,10 +224,6 @@ export class ImagePlot {
               .domain([-1, 1])
         }
 
-        // const scale = d3.scaleLinear()
-        //       .range([this.innerHeight + this.margin.top, this.margin.top])
-        //       .domain([-1, 1])
-
         this.yScales[name] = scale;
 
         if ((number %2) === 0) {
@@ -256,12 +241,6 @@ export class ImagePlot {
               //.orient(number % 2 === 0? "left" : "right")
               .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
         }
-
-        // const axis = d3.axis()
-        //       .scale(scale)
-        //       .ticks(5, ".1e")
-        //       .orient(number % 2 === 0? "left" : "right")
-        //       .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
 
         this.yAxes[name] = axis;
 
@@ -300,9 +279,6 @@ export class ImagePlot {
         delete this.yAxes[name];
         this.container.remove(this.yAxisElements[name])
         delete this.yAxisElements[name];
-        // this.container.remove(this.images[name][0])
-        // this.container.remove(this.images[name][1])
-        // delete this.images[name];
     }
 
     setYAxisScale(yAxis, scaleType) {
@@ -315,19 +291,13 @@ export class ImagePlot {
             const scale = d3.scaleLog()
               .range([this.innerHeight + this.margin.top, this.margin.top])
         }
-        // const domain = this.yScales[yAxis].domain();
-        // const scale = d3.scale[scaleType]()
-        //       .range([this.innerHeight + this.margin.top, this.margin.top])
         this.yScales[yAxis] = scale;
         const axis = this.yAxes[yAxis];
         axis.scale(scale);
-        // this.yAxisElements[yAxis].call(axis)
         this.runChangeCallback();
     }
 
     setTimeRange(range) {
-        console.log("***D3 ZOOM TRANSFORM SETTIMERANGE***", this.zoom.transform);
-        console.log("***D3 ZOOM IDENTITY SETTIMERANGE***",d3.zoomIdentity);
         this.x.domain(range);
         this.xAxisElement.call(this.zoom.transform, d3.zoomIdentity);
         //this.zoomed();
@@ -350,10 +320,6 @@ export class ImagePlot {
         this.crosshairLabelX
             .attr("display", "block")
             .attr("text-anchor", mouseX > (this.innerWidth / 2)? "end" : "start")
-            // .attr({
-            //    display: "block",
-            //    "text-anchor": mouseX > (this.innerWidth / 2)? "end" : "start"
-            // })
             .attr("x", mouseX)
             .text(this.x.invert(mouseX).toLocaleString())
         this.crosshairLineY
@@ -380,9 +346,6 @@ export class ImagePlot {
     }
 
     setData(data) {
-        console.log("*** IN SET DATA ***");
-        console.log(data);
-
         const axes = Object.keys(data);
         for (let axis of [0, 1]) {
 
@@ -399,7 +362,6 @@ export class ImagePlot {
 
 
             const {image, x_range, y_range} = data[axis];
-            // console.log(x_range);
             const [currentYMin, currentYMax] = this.yScales[axis].domain();
             const [yMin, yMax] = y_range;
             const yScale = (Math.abs(yMax - yMin) /
@@ -408,13 +370,10 @@ export class ImagePlot {
             // Set the data of the "offscreen" image, and reset the
             // transform Is there a way to do this "atomically"? Maybe
             // use a canvas instead...
-            console.log("***SET DATA X***",this.x(x_range[0]), this.x(x_range[1]));
-            //console.log("***SET DATA X TRANSFORM***", d3.event.transform.x);
             this.yScales[axis].domain([yMin, yMax]);
             this.getNextImage(axis)
                 .attr("xlink:href", "data:image/png;base64," + image)
                 .attr("visibility", null)
-                // .attr("transform", "translate(0,0)scale(1,1)");
                 //.attr("transform", "translate("+this.x(x_range[0])+",0)scale(1,1)");
 
             this.yAxisElements[axis]
@@ -471,78 +430,13 @@ export class ImagePlot {
     zoomed() {
         
         this.new_xScale = d3.event.transform.rescaleX(this.x);
-
-        const [currentStartTime, currentEndTime] = this.new_xScale.domain(),
-              [startTime, endTime] = this.imageTimeRanges[this.currentImage],
-              scale = ((endTime - startTime) /
-                       (currentEndTime.getTime() - currentStartTime.getTime()));
-
-        //console.log("***START TIME***",this.x(startTime));
-
-        // for (let yAxis of Object.keys(this.yAxes)) {
-        //     this.getImage(yAxis)
-        //         .attr("transform", "translate(" + (this.x(startTime) -
-        //                                            Y_AXIS_WIDTH) +
-        //               ",0)scale("+ scale + ",1)");
-        // }
-
-        // console.log("***D3 EVENT TRANSLATE***",d3.event.transform.x);
-        // console.log("***OLD TRANSLATE***", this.x(startTime) - Y_AXIS_WIDTH);
-        // console.log("***D3 EVENT SCALE***",d3.event.transform.k);
-        // console.log("***OLD SCALE***", scale);
-        // console.log("***D3 ZOOM TRANSFORM***", this.zoom.transform);
-        // console.log("***D3 ZOOM IDENTITY***",d3.zoomIdentity);
-
-        //for (let yAxis of Object.keys(this.yAxes)) {
-            // var tempImage = this.getImage(yAxis);
-            // console.log("***IMAGE***",tempImage);
-            // var transform = d3.zoomTransform(tempImage.node());
-
-        //     this.getImage(yAxis)
-        //         .attr("transform", "translate("+d3.event.transform.x+",0) scale("+d3.event.transform.k+",1)");
-        //     //tempImage.call(this.zoom.transform, d3.zoomIdentity);
-        //     //     .call(d3.zoom.transform, d3.zoomIdentity)
-        //     // tempImage.attr("transform", "translate(" + transform.x + ") scale(" + transform.k + ",0)");
-        // }
-
-        this.xTransform = d3.event.transform.x;
         this.xAxisElement.call(this.xAxis.scale(this.new_xScale));  
 
-       for (let yAxis of Object.keys(this.yAxes)) {
+        for (let yAxis of Object.keys(this.yAxes)) {
             this.getImage(yAxis)
                 .attr("transform", "translate("+d3.event.transform.x+",0) scale("+d3.event.transform.k+",1)");
         }
         
-        //this.xAxisElement.call(this.xAxis);
-        
-        // this.hideDescription();
-        //this.updateTimeRange();
-
-        
-        // console.log("********** NEW CALCULATED SCALE", this.new_xScale.domain());
-        // console.log("*******OLD X", this.x.domain());
-        // console.log("*******NEW X", new_xScale.domain());
-
-        //this.x.domain(new_xScale.domain());
-
-        //var new_yScale = d3.event.transform.rescaleY(yAxisScale)
-
-        // update axes
-    
-
-        //console.log("*******NEW X", this.x.domain());
-
-
-        //console.log("*** NEW X DOMAIN***", this.x.domain());
-
-        //gY.call(yAxis.scale(new_yScale));
-        
-      
-
-    
-        // update circle
-        //circles.attr("transform", d3.event.transform)
-        //this.swapImage(),
         this.runChangeCallback();
     }
 
@@ -575,7 +469,6 @@ export class ImagePlot {
               [xMin, xMax] = this.x.range(),
               [yMin, yMax] = this.yScales[0].range();
         const height = Math.abs(yMax - yMin);
-        //console.log("Boooo", xStart, xEnd, xMax - xMin, height)
         this.onChange(xStart, xEnd, xMax - xMin, height);
     }
 
