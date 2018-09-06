@@ -97,6 +97,7 @@ export class ImagePlot {
     setUp(timeRange) {
 
         this.new_xScale;
+        this.xTransform;
         this.yScales = {}
         this.yAxes = {}
         this.yAxisElements = {}
@@ -166,42 +167,42 @@ export class ImagePlot {
 
 
         // vertical and horizontal lines showing the mouse position
-        // this.crosshair = this.inner.append("svg:g")
-        //     .classed("crosshair", true)
+        this.crosshair = this.inner.append("g")
+            .classed("crosshair", true)
 
-        // this.crosshairLineX = this.crosshair.append("svg:line")
+        this.crosshairLineX = this.crosshair.append("line")
 
-        // this.crosshairLineX
-        //     .classed({cursor: true, x: true})
-        //     .attr("y1", 0)
-        //     .attr("y2", this.innerHeight)
+        this.crosshairLineX
+            .attr("class", "cursor x")
+            .attr("y1", 0)
+            .attr("y2", this.innerHeight)
 
-        // this.crosshairLabelX = this.crosshair
-        //     .append("svg:text")
-        //     .attr("y", this.innerHeight)
-        //     .attr("dy", "-0.2em")
+        this.crosshairLabelX = this.crosshair
+            .append("svg:text")
+            .attr("y", this.innerHeight)
+            .attr("dy", "-0.2em")
 
-        // this.crosshairLineY = this.crosshair
-        //     .append("svg:line")
-        //     .classed({cursor: true, x: true})
-        //     .attr("x1", 0)
-        //     .attr("x2", this.innerWidth)
+        this.crosshairLineY = this.crosshair
+            .append("svg:line")
+            .attr("class", "cursor x")
+            .attr("x1", 0)
+            .attr("x2", this.innerWidth)
 
-        // this.crosshairLabelY1 = this.crosshair
-        //     .append("svg:text")
-        //     .attr("x", Y_AXIS_WIDTH)
-        //     .attr("dx", 2)
-        //     .attr("dy", "-.2em")
-        //     .style("text-anchor", "start")
-        //     .text("hej")
+        this.crosshairLabelY1 = this.crosshair
+            .append("svg:text")
+            .attr("x", Y_AXIS_WIDTH)
+            .attr("dx", 2)
+            .attr("dy", "-.2em")
+            .style("text-anchor", "start")
+            .text("hej")
 
-        // this.crosshairLabelY2 = this.crosshair
-        //     .append("svg:text")
-        //     .attr("x", this.innerWidth - Y_AXIS_WIDTH)
-        //     .attr("dy", "-.2em")
-        //     .attr("dx", -2)
-        //     .style("text-anchor", "end")
-        //     .text("hej")
+        this.crosshairLabelY2 = this.crosshair
+            .append("svg:text")
+            .attr("x", this.innerWidth - Y_AXIS_WIDTH)
+            .attr("dy", "-.2em")
+            .attr("dx", -2)
+            .style("text-anchor", "end")
+            .text("hej")
         const auxDomain = this.new_xScale ? this.new_xScale.domain() : this.x.domain();
         let [startTime, endTime] = auxDomain;
         this.currentImage = 0
@@ -286,9 +287,9 @@ export class ImagePlot {
                 .attr("height", this.innerHeight)
         ];
 
-        // this.container
-        //     .on("mousemove", this.showCrosshair.bind(this))
-        //     .on("mouseleave", this.hideCrosshair.bind(this))
+        this.container
+            .on("mousemove", this.showCrosshair.bind(this))
+            .on("mouseleave", this.hideCrosshair.bind(this))
 
         return name;
 
@@ -325,8 +326,11 @@ export class ImagePlot {
     }
 
     setTimeRange(range) {
+        console.log("***D3 ZOOM TRANSFORM SETTIMERANGE***", this.zoom.transform);
+        console.log("***D3 ZOOM IDENTITY SETTIMERANGE***",d3.zoomIdentity);
         this.x.domain(range);
-        //this.zoomed()
+        this.xAxisElement.call(this.zoom.transform, d3.zoomIdentity);
+        //this.zoomed();
     }
 
     setConfig(config) {
@@ -340,42 +344,44 @@ export class ImagePlot {
     showCrosshair() {
         const [mouseX, mouseY] = d3.mouse(this.clipBox.node());
         this.crosshairLineX
-            .style("display", "block")
+            .attr("display", "block")
             .attr("x1", mouseX)
             .attr("x2", mouseX);
         this.crosshairLabelX
-            .style({
-                display: "block",
-                "text-anchor": mouseX > (this.innerWidth / 2)? "end" : "start"
-            })
+            .attr("display", "block")
+            .attr("text-anchor", mouseX > (this.innerWidth / 2)? "end" : "start")
+            // .attr({
+            //    display: "block",
+            //    "text-anchor": mouseX > (this.innerWidth / 2)? "end" : "start"
+            // })
             .attr("x", mouseX)
             .text(this.x.invert(mouseX).toLocaleString())
         this.crosshairLineY
-            .style({
-                display: "block",
-            })
+            .attr("display", "block")
             .attr("y1", mouseY)
             .attr("y2", mouseY);
         this.crosshairLabelY1
-            .style("display", "block")
+            .attr("display", "block")
             .attr("transform", "translate(0," + mouseY + ")")
             .text(d3.format(".2e")(this.yScales[0].invert(mouseY)))
         this.crosshairLabelY2
-            .style("display", "block")
+            .attr("display", "block")
             .attr("transform", "translate(0," + mouseY + ")")
             .text(d3.format(".2e")(this.yScales[1].invert(mouseY)))
     }
 
     hideCrosshair() {
-        this.crosshairLineX.style("display", "none")
-        this.crosshairLineY.style("display", "none")
-        this.crosshairLabelX.style("display", "none")
-        this.crosshairLabelY1.style("display", "none")
-        this.crosshairLabelY2.style("display", "none")
+        this.crosshairLineX.attr("display", "none")
+        this.crosshairLineY.attr("display", "none")
+        this.crosshairLabelX.attr("display", "none")
+        this.crosshairLabelY1.attr("display", "none")
+        this.crosshairLabelY2.attr("display", "none")
 
     }
 
     setData(data) {
+        console.log("*** IN SET DATA ***");
+        console.log(data);
 
         const axes = Object.keys(data);
         for (let axis of [0, 1]) {
@@ -393,7 +399,7 @@ export class ImagePlot {
 
 
             const {image, x_range, y_range} = data[axis];
-            console.log(x_range);
+            // console.log(x_range);
             const [currentYMin, currentYMax] = this.yScales[axis].domain();
             const [yMin, yMax] = y_range;
             const yScale = (Math.abs(yMax - yMin) /
@@ -402,16 +408,14 @@ export class ImagePlot {
             // Set the data of the "offscreen" image, and reset the
             // transform Is there a way to do this "atomically"? Maybe
             // use a canvas instead...
+            console.log("***SET DATA X***",this.x(x_range[0]), this.x(x_range[1]));
+            //console.log("***SET DATA X TRANSFORM***", d3.event.transform.x);
             this.yScales[axis].domain([yMin, yMax]);
             this.getNextImage(axis)
-                // .attr("transform",
-                //       `translate(${this.x(x_range[0])},${-this.margin.top})` +
-                //       `scale(1,${yScale})`)
                 .attr("xlink:href", "data:image/png;base64," + image)
                 .attr("visibility", null)
-                // .transition()
-                .attr("transform", `translate(${this.x(x_range[0])},0)` +
-                      `scale(1,1)`)
+                // .attr("transform", "translate(0,0)scale(1,1)");
+                //.attr("transform", "translate("+this.x(x_range[0])+",0)scale(1,1)");
 
             this.yAxisElements[axis]
                 .transition()
@@ -426,16 +430,16 @@ export class ImagePlot {
         // way to hook into it. "onload" does not help.  One issue
         // is that the timeout is basically determined by manual
         // testing, ans may not always be enough.
-        if (this._swapTimeout) {
-            // remove any previously set timeout.
-            clearTimeout(this._swapTimeout);
-        }
-        this._swapTimeout = setTimeout(() => {
-            // TODO: before swapping, make sure that we actually updated the
-            // images! If not, we should show nothing.
-            this.swapImage(),
-            this._swapTimeout = null;
-        }, 100)
+        // if (this._swapTimeout) {
+        //     // remove any previously set timeout.
+        //     clearTimeout(this._swapTimeout);
+        // }
+        // this._swapTimeout = setTimeout(() => {
+        //     // TODO: before swapping, make sure that we actually updated the
+        //     // images! If not, we should show nothing.
+        //     this.swapImage(),
+        //     this._swapTimeout = null;
+        // }, 100)
 
     }
 
@@ -452,48 +456,63 @@ export class ImagePlot {
         this.innerWidth = width;
     }
 
-    updateTimeRange() {
-        this.xAxisElement.call(this.xAxis);
-        const [currentStartTime, currentEndTime] = this.x.domain(),
-              [startTime, endTime] = this.imageTimeRanges[this.currentImage],
-              scale = ((endTime - startTime) /
-                       (currentEndTime.getTime() - currentStartTime.getTime()));
-        for (let yAxis of Object.keys(this.yAxes)) {
-            this.getImage(yAxis)
-                .attr("transform", "translate(" + (this.x(startTime) -
-                                                   Y_AXIS_WIDTH) +
-                      ",0)scale("+ scale + ",1)");
-        }
-    }
+    // updateTimeRange() {
+    //     this.xAxisElement.call(this.xAxis);
+    //     const [currentStartTime, currentEndTime] = this.x.domain(),
+    //           [startTime, endTime] = this.imageTimeRanges[this.currentImage],
+    //           scale = ((endTime - startTime) /
+    //                    (currentEndTime.getTime() - currentStartTime.getTime()));
+    //     for (let yAxis of Object.keys(this.yAxes)) {
+    //         this.getImage(yAxis)
+    //             .attr("transform", "translate(" + (this.x(startTime) - Y_AXIS_WIDTH) +",0)scale("+ scale + ",1)");
+    //     }
+    // }
 
     zoomed() {
-        //this.xAxisElement.call(this.xAxis);
-        // console.log("***X DOMAIN***",this.x.domain());
         
         this.new_xScale = d3.event.transform.rescaleX(this.x);
-
-        this.xAxisElement.call(this.xAxis.scale(this.new_xScale));
-        //this.xAxis.scale(d3.event.transform.rescaleX(this.x));
-        
-        // //console.log("***X DOMAIN***",this.x.domain());
-
-        // for (let yAxis of Object.keys(this.yAxes)) {
-        //     this.getImage(yAxis)
-        //         .attr("transform", d3.event.transform);
-        // }
 
         const [currentStartTime, currentEndTime] = this.new_xScale.domain(),
               [startTime, endTime] = this.imageTimeRanges[this.currentImage],
               scale = ((endTime - startTime) /
                        (currentEndTime.getTime() - currentStartTime.getTime()));
 
-        console.log("***START TIME***",this.x(startTime));
+        //console.log("***START TIME***",this.x(startTime));
 
-        for (let yAxis of Object.keys(this.yAxes)) {
+        // for (let yAxis of Object.keys(this.yAxes)) {
+        //     this.getImage(yAxis)
+        //         .attr("transform", "translate(" + (this.x(startTime) -
+        //                                            Y_AXIS_WIDTH) +
+        //               ",0)scale("+ scale + ",1)");
+        // }
+
+        // console.log("***D3 EVENT TRANSLATE***",d3.event.transform.x);
+        // console.log("***OLD TRANSLATE***", this.x(startTime) - Y_AXIS_WIDTH);
+        // console.log("***D3 EVENT SCALE***",d3.event.transform.k);
+        // console.log("***OLD SCALE***", scale);
+        // console.log("***D3 ZOOM TRANSFORM***", this.zoom.transform);
+        // console.log("***D3 ZOOM IDENTITY***",d3.zoomIdentity);
+
+        //for (let yAxis of Object.keys(this.yAxes)) {
+            // var tempImage = this.getImage(yAxis);
+            // console.log("***IMAGE***",tempImage);
+            // var transform = d3.zoomTransform(tempImage.node());
+
+        //     this.getImage(yAxis)
+        //         .attr("transform", "translate("+d3.event.transform.x+",0) scale("+d3.event.transform.k+",1)");
+        //     //tempImage.call(this.zoom.transform, d3.zoomIdentity);
+        //     //     .call(d3.zoom.transform, d3.zoomIdentity)
+        //     // tempImage.attr("transform", "translate(" + transform.x + ") scale(" + transform.k + ",0)");
+        // }
+
+        this.xTransform = d3.event.transform.x;
+        this.xAxisElement.call(this.xAxis.scale(this.new_xScale));  
+
+       for (let yAxis of Object.keys(this.yAxes)) {
             this.getImage(yAxis)
-                .attr("transform", "translate(" + d3.event.translate - Y_AXIS_WIDTH +
-                      ")"+"scale("+ d3.event.scale +")");
+                .attr("transform", "translate("+d3.event.transform.x+",0) scale("+d3.event.transform.k+",1)");
         }
+        
         //this.xAxisElement.call(this.xAxis);
         
         // this.hideDescription();
@@ -523,6 +542,7 @@ export class ImagePlot {
     
         // update circle
         //circles.attr("transform", d3.event.transform)
+        //this.swapImage(),
         this.runChangeCallback();
     }
 
@@ -555,7 +575,7 @@ export class ImagePlot {
               [xMin, xMax] = this.x.range(),
               [yMin, yMax] = this.yScales[0].range();
         const height = Math.abs(yMax - yMin);
-        console.log("Boooo", xStart, xEnd, xMax - xMin, height)
+        //console.log("Boooo", xStart, xEnd, xMax - xMin, height)
         this.onChange(xStart, xEnd, xMax - xMin, height);
     }
 
