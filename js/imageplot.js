@@ -85,8 +85,6 @@ export class ImagePlot {
 
 
     setUp(timeRange) {
-
-        this.new_xScale;
         this.yScales = {}
         this.yAxes = {}
         this.yAxisElements = {}
@@ -103,6 +101,8 @@ export class ImagePlot {
         this.x = d3.scaleTime()
             .range([Y_AXIS_WIDTH, this.innerWidth])
             .domain(timeRange)
+
+        this.newXScale;
 
         this.zoom = d3.zoom()
             .on("zoom", this.zoomed.bind(this));
@@ -192,7 +192,7 @@ export class ImagePlot {
             .attr("dx", -2)
             .style("text-anchor", "end")
             .text("hej")
-        const auxDomain = this.new_xScale ? this.new_xScale.domain() : this.x.domain();
+        const auxDomain = this.newXScale ? this.newXScale.domain() : this.x.domain();
         let [startTime, endTime] = auxDomain;
         this.currentImage = 0
         this.imageTimeRanges = [auxDomain, auxDomain];
@@ -230,7 +230,6 @@ export class ImagePlot {
             var axis = d3.axisLeft()
               .scale(scale)
               .ticks(5, ".1e")
-              //.orient(number % 2 === 0? "left" : "right")
               .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
         }
 
@@ -238,7 +237,6 @@ export class ImagePlot {
             var axis = d3.axisRight()
               .scale(scale)
               .ticks(5, ".1e")
-              //.orient(number % 2 === 0? "left" : "right")
               .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
         }
 
@@ -371,10 +369,12 @@ export class ImagePlot {
             // transform Is there a way to do this "atomically"? Maybe
             // use a canvas instead...
             this.yScales[axis].domain([yMin, yMax]);
+
             this.getNextImage(axis)
                 .attr("xlink:href", "data:image/png;base64," + image)
                 .attr("visibility", null)
-                //.attr("transform", "translate("+this.x(x_range[0])+",0)scale(1,1)");
+                .attr("transform", `translate(${this.newXScale(x_range[0])},0)` +
+                      `scale(1,1)`)
 
             this.yAxisElements[axis]
                 .transition()
@@ -389,16 +389,16 @@ export class ImagePlot {
         // way to hook into it. "onload" does not help.  One issue
         // is that the timeout is basically determined by manual
         // testing, ans may not always be enough.
-        // if (this._swapTimeout) {
-        //     // remove any previously set timeout.
-        //     clearTimeout(this._swapTimeout);
-        // }
-        // this._swapTimeout = setTimeout(() => {
-        //     // TODO: before swapping, make sure that we actually updated the
-        //     // images! If not, we should show nothing.
-        //     this.swapImage(),
-        //     this._swapTimeout = null;
-        // }, 100)
+        if (this._swapTimeout) {
+            //remove any previously set timeout.
+            clearTimeout(this._swapTimeout);
+        }
+        this._swapTimeout = setTimeout(() => {
+            // TODO: before swapping, make sure that we actually updated the
+            // images! If not, we should show nothing.
+            this.swapImage(),
+            this._swapTimeout = null;
+        }, 200)
 
     }
 
@@ -415,28 +415,23 @@ export class ImagePlot {
         this.innerWidth = width;
     }
 
-    // updateTimeRange() {
-    //     this.xAxisElement.call(this.xAxis);
-    //     const [currentStartTime, currentEndTime] = this.x.domain(),
-    //           [startTime, endTime] = this.imageTimeRanges[this.currentImage],
-    //           scale = ((endTime - startTime) /
-    //                    (currentEndTime.getTime() - currentStartTime.getTime()));
-    //     for (let yAxis of Object.keys(this.yAxes)) {
-    //         this.getImage(yAxis)
-    //             .attr("transform", "translate(" + (this.x(startTime) - Y_AXIS_WIDTH) +",0)scale("+ scale + ",1)");
-    //     }
-    // }
+    updateTimeRange() {
+        this.newXScale = d3.event.transform.rescaleX(this.x);
+        this.xAxisElement.call(this.xAxis.scale(this.newXScale));
 
-    zoomed() {
-        
-        this.new_xScale = d3.event.transform.rescaleX(this.x);
-        this.xAxisElement.call(this.xAxis.scale(this.new_xScale));  
+        const [currentStartTime, currentEndTime] = this.newXScale.domain(),
+              [startTime, endTime] = this.imageTimeRanges[this.currentImage],
+              scale = ((endTime - startTime) /
+                       (currentEndTime.getTime() - currentStartTime.getTime()));
 
         for (let yAxis of Object.keys(this.yAxes)) {
             this.getImage(yAxis)
-                .attr("transform", "translate("+d3.event.transform.x+",0) scale("+d3.event.transform.k+",1)");
+                .attr("transform", "translate(" + (this.newXScale(startTime) - Y_AXIS_WIDTH) +",0)scale("+ scale + ",1)");
         }
-        
+    }
+
+    zoomed() {
+        this.updateTimeRange();
         this.runChangeCallback();
     }
 
@@ -465,7 +460,7 @@ export class ImagePlot {
     }
 
     _runChangeCallback () {
-        const [xStart, xEnd] = this.new_xScale ? this.new_xScale.domain() : this.x.domain(),
+        const [xStart, xEnd] = this.newXScale ? this.newXScale.domain() : this.x.domain(),
               [xMin, xMax] = this.x.range(),
               [yMin, yMax] = this.yScales[0].range();
         const height = Math.abs(yMax - yMin);
