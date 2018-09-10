@@ -1,5 +1,3 @@
-//import d3 from "d3";
-
 import {debounce, parseAttribute} from "./utils";
 
 import * as d3 from 'd3';
@@ -129,8 +127,6 @@ export class ImagePlot {
             .attr("transform", "translate(0," + (this.innerHeight + this.margin.top) + ")")
             .call(this.xAxis);
 
-        
-
         // clip the plot elements to the area within the axes
         this.clipRect = this.svg.append("defs")
             .append("svg:clipPath")
@@ -210,7 +206,6 @@ export class ImagePlot {
     addYAxis(scaleType) {
         const number = Object.keys(this.yAxes).length;
         const name = ""+number;
-
 
         if (scaleType === 'linear') {
             var scale = d3.scaleLinear()
@@ -398,7 +393,7 @@ export class ImagePlot {
             // images! If not, we should show nothing.
             this.swapImage(),
             this._swapTimeout = null;
-        }, 200)
+        }, 100)
 
     }
 
