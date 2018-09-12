@@ -281,9 +281,10 @@ export class ImagePlot {
         }
 
         else {
-            const scale = d3.scaleLog()
+            var scale = d3.scaleLog()
               .range([this.innerHeight + this.margin.top, this.margin.top])
         }
+
         this.yScales[yAxis] = scale;
         const axis = this.yAxes[yAxis];
         axis.scale(scale);
@@ -293,7 +294,7 @@ export class ImagePlot {
     setTimeRange(range) {
         this.x.domain(range);
         this.xAxisElement.call(this.zoom.transform, d3.zoomIdentity);
-        //this.zoomed();
+        this.zoomed();
     }
 
     setConfig(config) {
