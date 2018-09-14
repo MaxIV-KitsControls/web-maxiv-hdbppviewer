@@ -65,7 +65,7 @@ class PlotWrapper extends React.Component {
         // happen in the plot
         return false
     }
-
+    
     render() {
         return (
             <div>
@@ -75,7 +75,7 @@ class PlotWrapper extends React.Component {
               <div className="plot-wrapper">
                 <div ref={div => this.svgWrapper = div}/>
                 <br></br>
-                <Button bsStyle="success" onClick={() => saveSvgAsPng(this.plot.svg[0][0], 'plot.png')}
+                <Button bsStyle="success" onClick={() => saveSvgAsPng(this.plot.svg['_groups'][0][0], 'plot.png')}
                         title="Download the plot image">
                   Download Image
                 </Button>
