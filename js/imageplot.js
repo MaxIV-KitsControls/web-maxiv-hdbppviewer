@@ -307,6 +307,7 @@ export class ImagePlot {
 
     showCrosshair() {
         const [mouseX, mouseY] = d3.mouse(this.clipBox.node());
+        var mouseXText = this.newXScale ? this.newXScale.invert(mouseX).toLocaleString() : this.x.invert(mouseX).toLocaleString()
         this.crosshairLineX
             .attr("display", "block")
             .attr("x1", mouseX)
@@ -315,7 +316,7 @@ export class ImagePlot {
             .attr("display", "block")
             .attr("text-anchor", mouseX > (this.innerWidth / 2)? "end" : "start")
             .attr("x", mouseX)
-            .text(this.x.invert(mouseX).toLocaleString())
+            .text(mouseXText)
         this.crosshairLineY
             .attr("display", "block")
             .attr("y1", mouseY)
