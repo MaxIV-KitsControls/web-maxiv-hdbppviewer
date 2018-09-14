@@ -413,7 +413,7 @@ export class ImagePlot {
     }
 
     updateTimeRange() {
-        this.newXScale = d3.event.transform.rescaleX(this.x);
+        this.newXScale = d3.event ? d3.event.transform.rescaleX(this.x) : this.x;
         this.xAxisElement.call(this.xAxis.scale(this.newXScale));
 
         const [currentStartTime, currentEndTime] = this.newXScale.domain(),
