@@ -144,7 +144,6 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                 attributes: state.attributes.map(attr => {
                     return {
                         name: attr,
-                        color: state.attributeConfig[attr].color,
                         y_axis: state.attributeConfig[attr].axis
                     };
                 }),
@@ -178,10 +177,12 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
             dispatch({type: "FETCH_FAILED", error: 500});
             throw new Error("Could not fetch archive data!");
         }).then(data => {
-            if (latestFetchTime > fetchTime)
+            if (latestFetchTime > fetchTime) {
+                console.log("discarding data because of staleness")
                 return;
+            }
             dispatch({type: RECEIVE_ARCHIVE_DESCS, descs: data.descs});
-            dispatch({type: RECEIVE_ARCHIVE_DATA, data: data.images});
+            dispatch({type: RECEIVE_ARCHIVE_DATA, data: data});
         });
     };
 }

@@ -31,8 +31,8 @@ def make_image(data, time_range, y_range, size, scale=None, width=0):
                                 vmean=datashader.mean("value_r"),
                                 vmin=datashader.min("value_r"),
                                 vmax=datashader.max("value_r")))
-    color = data["info"].get("color", "red")
-    image = datashader.transfer_functions.shade(agg_line, cmap=[color])
+    color = data["info"].get("color", "white")
+    image = datashader.transfer_functions.shade(agg_line, cmap=["white"])
 
     if width > 0:
         image = datashader.transfer_functions.spread(image, px=width)
@@ -47,7 +47,7 @@ def make_image(data, time_range, y_range, size, scale=None, width=0):
         vmax = np.take(np.nanmax(agg_points["vmax"].values, axis=0), indices)
         # vmean = np.take(np.nanmax(agg_points["vmean"].values, axis=0), indices)
         # TODO: aggregating the mean is not quite this simple...
-        timestamps = np.take(agg_points["x_axis"].values, indices)
+        timestamps = np.take(agg_points["t"].values, indices)
         count = np.take(np.sum(agg_points["count"].values, axis=0), indices)
         desc = {
             "total_points": data["points"],
@@ -68,7 +68,7 @@ def encode_image(image):
     # convert into a PNG
     pil_image.save(bytesio, format='PNG')
     data = bytesio.getvalue()
-    return base64.b64encode(data)
+    return b"data:image/png;base64," + base64.b64encode(data)
 
 
 def get_extrema(attributes, results, time_range, axes):
@@ -130,12 +130,12 @@ def get_axis_limits(y_axis, data):
     return axis_min, axis_max, nodata
 
 
-def make_axis_images(per_axis, time_range, size, axes):
+def make_attribute_images(per_axis, time_range, size, axes):
 
-    "Create one image for each axis containing attributes"
+    "Create one image for each attribute, and compute limits for each y-axis"
 
     images = {}
-    descs = {}
+    y_axes = {}
     for y_axis, attributes in per_axis.items():
 
         logging.debug("Computing data for axis %r %r",
@@ -190,31 +190,39 @@ def make_axis_images(per_axis, time_range, size, axes):
         logging.debug("Axis %r has range %r", y_axis, y_range)
 
         # project the data into an image (using datashader)
-        axis_images = []
         for name, data in attributes.items():
             if name in nodata:
                 continue
             image, desc = make_image(data, time_range, y_range, size, scale)
-            axis_images.append(image)
-            descs[name] = desc
+            images[name] = {
+                # Turn the image into a JSON compatible string
+                "image": encode_image(image).decode("utf-8"),
+                "desc": desc,
+                "y_axis": y_axis
+            }
 
-        # flatten the images into a single one
-        if not axis_images:
-            logging.debug("No images for axis %r!", y_axis)
-            continue
-        logging.debug("Stacking %d images", len(axis_images))
-        stacked_image = datashader.transfer_functions.stack(*axis_images)
+        # # flatten the images into a single one
+        # if not axis_images:
+        #     logging.debug("No images for axis %r!", y_axis)
+        #     continue
+        # logging.debug("Stacking %d images", len(axis_images))
+        # stacked_image = datashader.transfer_functions.stack(*axis_images)
 
-        logging.debug("Encoding image")
-        encoded_data = encode_image(stacked_image)
+        # logging.debug("Encoding image")
+        # encoded_data = encode_image(stacked_image)
 
-        images[str(y_axis)] = {
-            "image": encoded_data.decode("utf-8"),
+        y_axes[y_axis] = {
             "y_range": y_range,
             "x_range": [time_range[0].timestamp()*1000,
                         time_range[1].timestamp()*1000]
         }
+        # images[str(y_axis)] = {
+        #     "image": encoded_data.decode("utf-8"),
+        #     "y_range": y_range,
+        #     "x_range": [time_range[0].timestamp()*1000,
+        #                 time_range[1].timestamp()*1000]
+        # }
         # TODO: also grab configuration, e.g. label, unit, ...
         # Note that this can also change over time!
 
-    return images, descs
+    return images, y_axes

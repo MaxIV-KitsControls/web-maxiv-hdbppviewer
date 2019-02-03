@@ -54,7 +54,7 @@ import aiohttp_cors
 from aiohttp_utils import negotiation
 from asyncio import Queue, QueueEmpty
 
-from plot import get_extrema, make_axis_images
+from plot import get_extrema, make_attribute_images
 from hdbpp import HDBPlusPlusConnection
 from utils import timer
 from data import get_data, render_data_csv, render_data_json
@@ -72,11 +72,9 @@ async def get_controlsystems(hdbpp, request):
 
 async def get_attributes(hdbpp, request):
     "Handle queries for attribute names"
-    cs = request.GET["cs"]
-    search = request.GET["search"]
-    max_n = request.GET.get("max", 100)
+    cs = request.query["cs"]
+    search = request.query.get("search")
     regex = fnmatch.translate(search)
-    logging.info("search: %s", search)
     loop = asyncio.get_event_loop()
 
     result = await loop.run_in_executor(None, hdbpp.get_attributes)
@@ -98,13 +96,14 @@ async def get_images(hdbpp, request):
     # possible to do more dynamic stuff on the client like hiding/
     # showing attributes, changing color...
 
+    print(await request.read())
     params = await request.json()
 
     attributes = params["attributes"]
     time_range = [parse_time(params["time_range"][0]),
                   parse_time(params["time_range"][1])]
     size = params["size"]
-    axes = params.get("axes")
+    axes = params.get("axes", {'0': {'scale': 'linear'}, '1': {'scale': 'linear'}})
 
     logging.debug("Attributes: %r", attributes)
     logging.debug("Time range: %r", time_range)
@@ -134,11 +133,11 @@ async def get_images(hdbpp, request):
         # I haven't benchmarked this, but I'm hoping that this will speed
         # things up (apart from not blocking) since numpy etc can release
         # the GIL. Maybe look into using a process pool?
-        images, descs = await loop.run_in_executor(
-            None, partial(make_axis_images, per_axis, time_range, size, axes))
+        attr_images, y_axes = await loop.run_in_executor(
+            None, partial(make_attribute_images, per_axis, time_range, size, axes))
 
     # Now wrap all the results up in a JSON response.
-    data = json.dumps({"images": images, "descs": descs})
+    data = json.dumps({"attributes": attr_images, "y_axes": y_axes})
     response = web.Response(body=data.encode("utf-8"),
                             content_type="application/json")
     # With compression, the size of the data goes down even further, almost
