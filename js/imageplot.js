@@ -87,7 +87,7 @@ class YAxisImage {
         this.attributeConfigs = [];
         this.attributeDescs = {};
         this.attributeImages = {};
-        this.attributesWaitingForUpdate = null;
+        this.attributesWaitingForUpdate = new Set();
     }
 
     setSize(w, h) {
@@ -113,7 +113,6 @@ class YAxisImage {
         // wait until we have received callbacks for every one before
         // drawing anything.
         if (this.attributesWaitingForUpdate.size === 0) {
-            this.attributesWaitingForUpdate = null;
             this.draw();
         }
     }
@@ -128,7 +127,6 @@ class YAxisImage {
 
     setData(data) {
         const newAttributeImages = {};
-        this.attributesWaitingForUpdate = new Set();
         // TODO We should get the attributes as a list instead, since
         // the images should be drawn in consistent order.
         Object.entries(this.attributeConfigs).forEach(
@@ -145,13 +143,29 @@ class YAxisImage {
         this.attributeImages = newAttributeImages;
     }
 
+    refresh() {
+        // TODO We should get the attributes as a list instead, since
+        // the images should be drawn in consistent order.
+        Object.entries(this.attributeConfigs).forEach(
+            ([attrName, attrConfig]) => {
+                const attrImg = this.getAttribute(attrName);
+                if (attrImg.config != attrConfig) {
+                    attrImg.config = attrConfig;
+                    attrImg.draw()
+                }
+            }
+        );
+        this.draw();
+    }
+
     // Render all the attribute images onto an internal canvas.
     draw() {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         Object.entries(this.attributeConfigs).forEach(
             ([attrName, attrConfig]) => {
                 const attrImg = this.attributeImages[attrName];
-                this.context.drawImage(attrImg.canvas, 0, 0);
+                if (attrImg)
+                    this.context.drawImage(attrImg.canvas, 0, 0);
             }
         );
         this.callback(this);
@@ -228,6 +242,7 @@ export class ImagePlot {
      */
 
     constructor(containerElement, timeRange, onChange) {
+        this.config = {};
         this.containerElement = containerElement;
         this.onChange = onChange;
         this.runChangeCallback = debounce(this._runChangeCallback, 100);
@@ -489,7 +504,7 @@ export class ImagePlot {
     }
 
     setConfig(config) {
-        this.config = config;
+        this.redraw(config)
     }
 
     setDescriptions(descriptions) {
@@ -501,41 +516,77 @@ export class ImagePlot {
         var mouseXText = this.newXScale
             ? this.newXScale.invert(mouseX).toLocaleString()
             : this.x.invert(mouseX).toLocaleString();
+        this.crosshair.attr("display", null);
         this.crosshairLineX
-            .attr("display", "block")
             .attr("x1", mouseX)
             .attr("x2", mouseX);
         this.crosshairLabelX
-            .attr("display", "block")
             .attr("text-anchor", mouseX > this.innerWidth / 2 ? "end" : "start")
             .attr("x", mouseX)
             .text(mouseXText);
         this.crosshairLineY
-            .attr("display", "block")
             .attr("y1", mouseY)
             .attr("y2", mouseY);
         this.crosshairLabelY1
-            .attr("display", "block")
             .attr("transform", "translate(0," + mouseY + ")")
             .text(d3.format(".2e")(this.yScales[0].invert(mouseY)));
         this.crosshairLabelY2
-            .attr("display", "block")
             .attr("transform", "translate(0," + mouseY + ")")
             .text(d3.format(".2e")(this.yScales[1].invert(mouseY)));
     }
 
     hideCrosshair() {
-        this.crosshairLineX.attr("display", "none");
-        this.crosshairLineY.attr("display", "none");
-        this.crosshairLabelX.attr("display", "none");
-        this.crosshairLabelY1.attr("display", "none");
-        this.crosshairLabelY2.attr("display", "none");
+        this.crosshair.attr("display", "none");
     }
 
-    setData(data) {
+    setData(data, config) {
         const axes = Object.keys(data);
+
+        // split attributes by y axis
+        // TODO maybe we should send the data in this form to begin with..?
         let axisConfigs = {};
-        Object.entries(this.config).forEach(([attr, conf]) => {
+        Object.entries(config).forEach(([attr, conf]) => {
+            if (data.attributes[attr]) {
+                if (!axisConfigs[conf.axis]) {
+                    axisConfigs[conf.axis] = {};
+                }
+                axisConfigs[conf.axis][attr] = conf;
+            }
+        });
+
+        // Update y axis images
+        Object.entries(axisConfigs).forEach(([axis, confs]) => {
+            const yAxisImage = this.yAxisImages[axis];
+            if (data.y_axes[axis]) {
+                yAxisImage.setConfigs(confs);
+                yAxisImage.setXRange(data.y_axes[axis].x_range)
+                yAxisImage.setSize(this.innerWidth, this.innerHeight)
+                yAxisImage.setData(data.attributes)
+                const scale = this.yScales[axis];
+                scale.domain(data.y_axes[axis].y_range)
+                this.yAxes[axis].scale(scale)
+                this.yAxisElements[axis]
+                    .transition()
+                    .call(this.yAxes[axis])
+            } else {
+                yAxisImage.setConfigs({})
+                yAxisImage.setData({})
+            }
+        });
+
+        // Clean up empty y axis images
+        Object.entries(this.yAxisImages).forEach(([axis, image]) => {
+            if (!axisConfigs[axis]) {
+                image.setConfigs({})
+                image.setData({})
+                image.refresh();
+            }
+        })
+    }
+
+    redraw(config) {
+        let axisConfigs = {};
+        Object.entries(config).forEach(([attr, conf]) => {
             if (!axisConfigs[conf.axis]) {
                 axisConfigs[conf.axis] = {};
             }
@@ -543,17 +594,11 @@ export class ImagePlot {
         });
         Object.entries(axisConfigs).forEach(([axis, confs]) => {
             const yAxisImage = this.yAxisImages[axis];
-            yAxisImage.setConfigs(confs);
-            yAxisImage.setXRange(data.y_axes[axis].x_range)
-            yAxisImage.setSize(this.innerWidth, this.innerHeight)
-            yAxisImage.setData(data.attributes)
-            const scale = this.yScales[axis];
-            scale.domain(data.y_axes[axis].y_range)
-            this.yAxes[axis].scale(scale)
-            this.yAxisElements[axis]
-                .transition()
-                .call(this.yAxes[axis])
-        });
+            if (yAxisImage) {
+                yAxisImage.setConfigs(confs);
+                yAxisImage.refresh();
+            }
+        })
     }
 
     setSize() {
@@ -601,6 +646,7 @@ export class ImagePlot {
     zoomed() {
         this.updateTimeRange();
         this.runChangeCallback();
+        this.hideCrosshair()
     }
 
     _runChangeCallback() {

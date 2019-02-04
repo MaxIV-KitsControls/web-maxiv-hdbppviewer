@@ -8,9 +8,9 @@ import { Input, Button, DropdownButton, MenuItem, Col, Panel, Popover,
 
 import { getControlsystems, setControlsystem, getSuggestions,
          addAttributes, removeAttributes,
-         setAxisScale } from "./actions";
-import { parseAttribute } from "./utils";
-import ColorPicker from "./colorpicker";
+         setAxisScale, setAttributeColor, setAttributeWidth } from "./actions";
+import { parseAttribute, debounce } from "./utils";
+import { ChromePicker } from 'react-color';
 
 
 class PlottedAttributes extends React.Component {
@@ -24,17 +24,19 @@ class PlottedAttributes extends React.Component {
 
     getAttributesOnYAxis(axis) {
         return this.props.attributes
-            //.map(k => this.props.config[k])
-            .filter(a => this.props.config[a].axis == axis);
+        //.map(k => this.props.config[k])
+                   .filter(a => this.props.config[a].axis == axis);
     }
 
     onAttributeClick(attribute) {
         let selected;
         if (this.state.selected.indexOf(attribute) == -1) {
             selected = [...this.state.selected, attribute]
+            this.props.setAttributeWidth(attribute, 2);
         } else  {
             selected = [...this.state.selected]
             selected.splice(selected.indexOf(attribute), 1)
+            this.props.setAttributeWidth(attribute, 1);
         }
         this.setState({selected});
     }
@@ -54,8 +56,10 @@ class PlottedAttributes extends React.Component {
     }
 
     makeAttributePopover (attr, cs, name) {
-        const config = this.props.config[attr] || {}
-        const desc = this.props.desc[attr] || {};
+        const config = this.props.config[attr] || {};
+        const data = this.props.archiveData;
+        const desc = (data && data.attributes && data.attributes[attr])? data.attributes[attr].desc : {};
+
         return (<Popover className="attribute-info" id={`attribute-${name}`}>
                   <table>
                     <tbody>
@@ -66,8 +70,6 @@ class PlottedAttributes extends React.Component {
                           <th>CS:</th> <td colSpan="5">{cs}</td>
                         </tr>
                         <tr>
-                          <th>Axis:</th> <td>{config.axis}</td>
-                          <th>Color:</th> <td>{config.color}</td>
                           <th>Points:</th> <td>{desc.total_points}</td>
                         </tr>
                       </tbody>
@@ -77,33 +79,58 @@ class PlottedAttributes extends React.Component {
 
     onAxisScaleChange(axis, event) {
         const isLog = event.target.checked;
-        console.log("axisScale change", axis, isLog)
         this.props.setAxisScale(axis, isLog? "log" : "linear");
     }
-
 
     // makeAxisPopover (axis) {
     //     const config = this.props.axes[axis];
     //     return (<Popover id={`attribute-${attr}`} title={axis}>
-    //               <div>Scale: {config.scale || "linear"}</div>
+    //               <span>Scale: {config.scale || "linear"}</div>
     //             </Popover>);
     // }
 
+    changeAttributeColor(attr, event) {
+        const color = event.hex;
+        this.props.setAttributeColor(attr, color);
+    }
+
+    makeColorPickerPopover(attr, color) {
+        return (
+            <div style={{position: "absolute", left: 10, zIndex: 2}}>
+                <ChromePicker color={color}
+                              onChange={debounce(this.changeAttributeColor.bind(this, attr), 200)} />
+            </div>
+        );
+    }
+    
     makeAttribute(a) {
         const [cs, name] = parseAttribute(a)
+        const config = this.props.config[a];
         return (<li key={a} onClick={this.onAttributeClick.bind(this, a)}
-                style={{
-                    background: this.state.selected.indexOf(a) != -1? "lightgrey" : null
-                }}>
-                  <OverlayTrigger trigger={["hover", "focus"]} placement="right"
-                                  overlay={this.makeAttributePopover(a, cs, name)}>
-                    <div>
-                      <span style={{color: this.props.config[a].color}}>■</span>
-                        &nbsp;
-                      <span>{name}</span>
-                    </div>
-                  </OverlayTrigger>
-                </li>)
+                    style={{
+                        background: this.state.selected.indexOf(a) != -1? "lightgrey" : null
+                    }}>
+            <OverlayTrigger trigger={"hover"} placement="right"
+                            overlay={this.makeAttributePopover(a, cs, name)}>
+                
+                <div>
+
+                    <OverlayTrigger trigger={"click"} rootClose={true}placement="bottom"
+                                    overlay={this.makeColorPickerPopover(a, config.color)}>
+
+                        <span style={{background: config.color,
+                                      display: "inline-block",
+                                      verticalAlign: "middle",
+                                      border: "1px solid grey",
+                                      width: 20, height: 20, margin: 5}}>
+                        </span>
+                    </OverlayTrigger>
+
+                    <span>{name}</span>
+                </div>
+            </OverlayTrigger>
+
+        </li>)
     }
 
     render () {
@@ -209,6 +236,7 @@ class Attributes extends React.Component {
     onSelectAttributes (event) {
         let selected = getSelectedOptions(event.target);
         this.setState({selectedAttributes: selected});
+        this.props.setAttributeWidth(selected[0], 2);
     }
 
     // the user is adding attributes to the plot
@@ -232,32 +260,6 @@ class Attributes extends React.Component {
         this.props.getSuggestions(controlsystem, this.state.pattern);
     }
 
-    renderAttributeInfo() {
-        if (this.state.selectedAttributes.length > 0) {
-            const attr = this.state.selectedAttributes[0];
-            const config = this.props.config[attr]
-            const desc = this.props.desc[attr]
-            return (<Table condensed className="attribute-info">
-                      <thead>
-                        <tr>
-                          <th>Name:</th> <th>{attr}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>Axis:</td> <td>{config.axis}</td>
-                        </tr>
-                        <tr>
-                          <td>Color:</td> <td>{config.color}</td>
-                        </tr>
-                        <tr>
-                          <td>Points:</td> <td>{desc.total_points}</td>
-                        </tr>
-                      </tbody>
-                    </Table>);
-        }
-    }
-
     render () {
         // the list of available control systems
         const controlsystemOptions = (
@@ -279,7 +281,8 @@ class Attributes extends React.Component {
 
         // the list of plotted attributes
         const plottedAttributes = <PlottedAttributes {...this.props}
-                                      removeAttributes={this.onRemoveAttributes.bind(this)}/>
+                                                     removeAttributes={this.onRemoveAttributes.bind(this)}
+                                                     setAttributeColor={this.props.setAttributeColor.bind(this)} />
 
         const addButton = (
                 <DropdownButton id="add-attribute" bsStyle="success" title="Add"
@@ -321,10 +324,6 @@ class Attributes extends React.Component {
                                      onChange={this.onSelectSuggestions.bind(this)}>
                             {suggestOptions}
                         </FormControl>
-                        <ColorPicker
-                          color={this.state.selectedColor}
-                          onSelectColor={this.onSelectColor.bind(this)}
-                        />
                     </Panel>
                     {plottedAttributes}
                 </div>
@@ -338,6 +337,7 @@ function mapStateToProps (state) {
         controlsystems: state.controlsystems,
         controlsystem: state.controlsystem,
         attributes: state.attributes,
+        archiveData: state.archiveData,
         config: state.attributeConfig,
         desc: state.descriptions,
         suggestions: state.attributeSuggestions,
@@ -353,7 +353,9 @@ function mapDispatchToProps(dispatch) {
         getSuggestions: (controlsystem, pattern) => dispatch(getSuggestions(controlsystem, pattern)),
         addAttributes: (attributes, axis) => dispatch(addAttributes(attributes, axis)),
         removeAttributes: attributes => dispatch(removeAttributes(attributes)),
-        setAxisScale: (axis, scale) => dispatch(setAxisScale(axis, scale))
+        setAxisScale: (axis, scale) => dispatch(setAxisScale(axis, scale)),
+        setAttributeColor: (attribute, color) => dispatch(setAttributeColor(attribute, color)),
+        setAttributeWidth: (attribute, width) => dispatch(setAttributeWidth(attribute, width)),
     }
 }
 

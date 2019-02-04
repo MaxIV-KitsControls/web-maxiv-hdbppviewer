@@ -34,6 +34,7 @@ export const ADD_ATTRIBUTES = "ADD_ATTRIBUTE";
 export const REMOVE_ATTRIBUTES = "REMOVE_ATTRIBUTE";
 export const SET_ATTRIBUTES_AXIS = "SET_ATTRIBUTES_AXIS";
 export const SET_ATTRIBUTE_COLOR = "SET_ATTRIBUTE_COLOR";
+export const SET_ATTRIBUTE_WIDTH = "SET_ATTRIBUTE_WIDTH";
 export const SET_AXIS_SCALE = "SET_AXIS_SCALE";
 export const SET_AUTO_SCALE = "SET_AUTO_SCALE";
 export const FETCH_ARCHIVE_RAW_DATA = "FETCH_ARCHIVE_RAW_DATA";
@@ -117,6 +118,14 @@ export function setAxisScale(axis, scale) {
     return {type: SET_AXIS_SCALE, axis, scale};
 }
 
+
+export function setAttributeColor(attribute, color) {
+    return {type: SET_ATTRIBUTE_COLOR, attribute, color};
+}
+
+export function setAttributeWidth(attribute, width) {
+    return {type: SET_ATTRIBUTE_WIDTH, attribute, width};
+}
 
 var latestFetchTime = 0;
 export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {

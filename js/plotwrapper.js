@@ -38,9 +38,9 @@ class PlotWrapper extends React.Component {
             this.plot.runChangeCallback()
         }
         if (props.data != this.props.data) {
-            this.plot.setData(props.data);
-        }
-        if (props.config != this.props.config) {
+            this.plot.setData(props.data, props.config);
+        } else if (props.config != this.props.config) {
+            console.log("confifg")
             this.plot.setConfig(props.config)
         }
         if (props.descriptions != this.props.descriptions) {
