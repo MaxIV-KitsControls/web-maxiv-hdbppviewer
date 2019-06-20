@@ -84,7 +84,19 @@ $ npm install
 $ webpack
 ```
 
+### Docker Image build
 
+Before building the docker image Please VERSION your release by editing the VERSION variable in the [MakeFile](MakeFile). Then you can build by simply executing:
+
+```
+$ make build
+```
+
+and publish your image:
+
+```
+$ make publish
+```
 
 ## Configuration
 
