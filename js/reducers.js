@@ -15,7 +15,7 @@ import {
     FETCH_ARCHIVE_DATA, RECEIVE_ARCHIVE_DATA, RECEIVE_DETAILS,
     RECEIVE_ARCHIVE_DESCS, FETCH_FAILED,
     ADD_ATTRIBUTES, REMOVE_ATTRIBUTES, SET_ATTRIBUTES_AXIS,
-    SET_ATTRIBUTE_COLOR,
+    SET_ATTRIBUTE_COLOR, SET_ATTRIBUTE_WIDTH,
     SET_TIME_RANGE,
     SET_Y_RANGE,
     SET_AXIS_SCALE,
@@ -129,6 +129,9 @@ export function attributeConfig(state={}, action) {
         }
         updates[action.attribute] = {...state[action.attribute], color};
         return {...state, ...updates};
+    case SET_ATTRIBUTE_WIDTH:
+        updates[action.attribute] = {...state[action.attribute], width: action.width}
+        return {...state, ...updates}
     case SET_ATTRIBUTES_AXIS:
         action.attributes.forEach(
             attr => {

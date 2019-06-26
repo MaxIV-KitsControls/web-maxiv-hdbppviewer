@@ -2,36 +2,37 @@ body, html {
     position: relative;
     background: #ddd;
     /* width: 960px; */
-    height: 100%;
+
     background-color: #555;
 }
 
 div#main {
-    height: 100%;
+
 }
+
 
 svg {
     /* font: 13px sans-serif; */
+    image-rendering: optimizeSpeed;             /* Older versions of FF          */
+    image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
+    image-rendering: -webkit-optimize-contrast; /* Safari                        */
+    image-rendering: -o-crisp-edges;            /* OS X & Windows Opera (12.02+) */
+    image-rendering: pixelated;                 /* Awesome future-browsers       */
+    -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
+    -moz-disable-resampling: true
 }
 
 rect {
-    fill: #ff0;
+    /* fill: #ff0; */
 }
 
-.axis path, .axis line {
+path.domain {
     fill: none;
-    stroke: rgba(255,255,255,0.2);
-    shape-rendering: crispEdges;
-    pointer-events: none;
-}
-
-.axis path {
-    fill: none;
-    stroke: #aaa;
+    stroke: white;
     shape-rendering: crispEdges;
 }
 
-.axis text {
+g.tick text {
     fill: white;
 }
 
@@ -40,57 +41,26 @@ rect {
     right: 30px;
     top: 30px;
 }
-.line {
-    fill: none;
-    stroke: steelblue;
-    stroke-width: 2px;
-    vector-effect: non-scaling-stroke;
-    pointer-events: none;
-}
-
-.overlay {
-    fill: black;
-}
 
 .tick line {
     stroke: rgba(255,255,255,0.2);
     shape-rendering: crispEdges;
 }
 
-#over {
-    fill:black;
-}
-
-image {
-    /* image-rendering:optimizeSpeed;             /\* Legal fallback *\/ */
-    /* image-rendering:-moz-crisp-edges;          /\* Firefox        *\/ */
-    /* image-rendering:-o-crisp-edges;            /\* Opera          *\/ */
-    /* image-rendering:-webkit-optimize-contrast; /\* Safari         *\/ */
-    /* image-rendering:optimize-contrast;         /\* CSS3 Proposed  *\/ */
-    /* image-rendering:crisp-edges;               /\* CSS4 Proposed  *\/ */
-    /* image-rendering:pixelated;                 /\* CSS4 Proposed  *\/ */
-    /* -ms-interpolation-mode:nearest-neighbor;   /\* IE8+           *\/     */
-}
-
-
 .time-range {
     color: white;
 }
 
-.plot-wrapper {
-    position: relative;  /* we want to position e.g. hover stuff relative to this */
+.plot-container {
+    height: 85%;
 }
 
-div.description {
-    pointer-events: none;
-    z-index: 100;
-    background-color: rgba(50,50,50,0.6);
-    color: white;
-    position: absolute;
-    white-space: nowrap;
-    padding: 3px;
-    border-radius: 3px;
-    margin: 10px;
+.plot-wrapper {
+    position: relative;
+}
+
+.download-buttons {
+    padding: 10px;
 }
 
 #current-attributes {
@@ -141,6 +111,11 @@ ul.y-axis-attributes li:hover {
 /* a fix to allow the popover to fit the width of the info */
 .popover.attribute-info {
     max-width: 100%;
+}
+
+
+canvas {
+    background: black;
 }
 
 

@@ -34,6 +34,7 @@ export const ADD_ATTRIBUTES = "ADD_ATTRIBUTE";
 export const REMOVE_ATTRIBUTES = "REMOVE_ATTRIBUTE";
 export const SET_ATTRIBUTES_AXIS = "SET_ATTRIBUTES_AXIS";
 export const SET_ATTRIBUTE_COLOR = "SET_ATTRIBUTE_COLOR";
+export const SET_ATTRIBUTE_WIDTH = "SET_ATTRIBUTE_WIDTH";
 export const SET_AXIS_SCALE = "SET_AXIS_SCALE";
 export const SET_AUTO_SCALE = "SET_AUTO_SCALE";
 export const FETCH_ARCHIVE_RAW_DATA = "FETCH_ARCHIVE_RAW_DATA";
@@ -118,6 +119,14 @@ export function setAxisScale(axis, scale) {
 }
 
 
+export function setAttributeColor(attribute, color) {
+    return {type: SET_ATTRIBUTE_COLOR, attribute, color};
+}
+
+export function setAttributeWidth(attribute, width) {
+    return {type: SET_ATTRIBUTE_WIDTH, attribute, width};
+}
+
 var latestFetchTime = 0;
 export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
     // ask the server for data for the current view
@@ -144,7 +153,6 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                 attributes: state.attributes.map(attr => {
                     return {
                         name: attr,
-                        color: state.attributeConfig[attr].color,
                         y_axis: state.attributeConfig[attr].axis
                     };
                 }),
@@ -178,10 +186,12 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
             dispatch({type: "FETCH_FAILED", error: 500});
             throw new Error("Could not fetch archive data!");
         }).then(data => {
-            if (latestFetchTime > fetchTime)
+            if (latestFetchTime > fetchTime) {
+                console.log("discarding data because of staleness")
                 return;
+            }
             dispatch({type: RECEIVE_ARCHIVE_DESCS, descs: data.descs});
-            dispatch({type: RECEIVE_ARCHIVE_DATA, data: data.images});
+            dispatch({type: RECEIVE_ARCHIVE_DATA, data: data});
         });
     };
 }

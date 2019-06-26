@@ -25,7 +25,7 @@ class PlotWrapper extends React.Component {
 
     componentDidMount () {
         // create the SVG plot immediately, once
-        let container = findDOMNode(this.svgWrapper);
+        let container = findDOMNode(this.refs.svgWrapper);
         this.plot = new ImagePlot(container, this.state.timeRange,
                                   this.onChange.bind(this));
         this.props.dispatch(setAxisScale(0, "linear"));
@@ -38,9 +38,9 @@ class PlotWrapper extends React.Component {
             this.plot.runChangeCallback()
         }
         if (props.data != this.props.data) {
-            this.plot.setData(props.data);
-        }
-        if (props.config != this.props.config) {
+            this.plot.setData(props.data, props.config);
+        } else if (props.config != this.props.config) {
+            console.log("confifg")
             this.plot.setConfig(props.config)
         }
         if (props.descriptions != this.props.descriptions) {
@@ -68,13 +68,14 @@ class PlotWrapper extends React.Component {
     
     render() {
         return (
-            <div>
-              <ActionBar
+                <div className="plot-wrapper">
+                              <ActionBar
                   onChangeRangeElement={this.onChangeRangeElement.bind(this)}
-              />
-              <div className="plot-wrapper">
-                <div ref={div => this.svgWrapper = div}/>
-                <br></br>
+                >
+                </ActionBar>
+
+                <div ref="svgWrapper"/>
+                <div>
                 <Button bsStyle="success" onClick={() => saveSvgAsPng(this.plot.svg['_groups'][0][0], 'plot.png')}
                         title="Download the plot image">
                   Download Image
@@ -88,8 +89,10 @@ class PlotWrapper extends React.Component {
                 <Button bsStyle="success" onClick={this.onDownloadRawJson.bind(this)}
                         title="Download the plot data as JSON">
                   Download JSON
-                </Button>
-              </div>
+            </Button>
+                </div>
+
+
             </div>
         );
     }
