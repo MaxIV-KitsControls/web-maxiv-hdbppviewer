@@ -405,7 +405,7 @@ export class ImagePlot {
         let pageHeight = window.innerHeight;
         const margin = this.margin = {top: 5, right: 70, bottom: 20, left: 70};
         this.width = containerWidth;
-        this.height = pageHeight - 100;
+        this.height = pageHeight - 200;
         const width = this.width - margin.left - margin.right;
         const height = this.height - margin.top - margin.bottom;
         this.innerHeight = height;
