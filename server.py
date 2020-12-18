@@ -72,9 +72,9 @@ async def get_controlsystems(hdbpp, request):
 
 async def get_attributes(hdbpp, request):
     "Handle queries for attribute names"
-    cs = request.GET["cs"]
-    search = request.GET["search"]
-    max_n = request.GET.get("max", 100)
+    cs = request.query["cs"]
+    search = request.query["search"]
+    max_n = request.query.get("max", 100)
     regex = fnmatch.translate(search)
     logging.info("search: %s", search)
     loop = asyncio.get_event_loop()
