@@ -86,11 +86,12 @@ async def get_data(hdbpp, attributes, time_range, interval=None,
 
     t0, t1 = time_range
 
-    futures = [hdbpp.get_attribute_data(attribute.lower(),
-                                        t0,
-                                        t1)
+    futures = [hdbpp.get_attribute_data(attribute.lower(), t0, t1)
                for attribute in attributes]
 
+    # Fetch all the attributes in parallel.
+    # TODO I'm not sure if this is good or not, as it could lead to a lot of parallel
+    # queries. But at least each attribute is fetched in chunks. Something to tweak.
     results = await asyncio.gather(*futures)
 
     if restrict_time:
@@ -98,9 +99,11 @@ async def get_data(hdbpp, attributes, time_range, interval=None,
             attr: resample(res[(t0 <= res["data_time"])
                                & (res["data_time"] <= t1)], interval)
             for attr, res in zip(attributes, results)
+            if res is not None
         }
 
     return {
         attr: resample(res, interval)
         for attr, res in zip(attributes, results)
+        if res is not None
     }

@@ -122,8 +122,10 @@ class HDBPlusPlusConnection(object):
 
         s = self.cluster.connect(keyspace)
         # TODO: Might be useful to be able to set the consistency
-        # level in the configuration
-        s.default_consistency_level = ConsistencyLevel.LOCAL_QUORUM
+        # level in the configuration. But it seems ONE should be enough since data
+        # never changes. Worst case is that we don't always get the very latest
+        # points. And it is fastest.
+        s.default_consistency_level = ConsistencyLevel.ONE
         self.session = aiosession(s)  # asyncio wrapper
         self.session.default_fetch_size = fetch_size
 
@@ -270,7 +272,7 @@ class HDBPlusPlusConnection(object):
             params = row
         return params
 
-    def get_attribute_data(self, attr, start_time=None, end_time=None):
+    async def get_attribute_data(self, attr, start_time=None, end_time=None):
 
         """Get all data points for the given attribute between
         start_time and end_time.
@@ -310,16 +312,20 @@ class HDBPlusPlusConnection(object):
         logging.debug("fetching periods: %r", periods)
         cs, name = split_cs_and_attribute(attr)
 
+        def chunker(it, n):
+            return (it[i:i + n] for i in range(0, len(it), n))
+
         # request all periods at once
-        fut = asyncio.gather(*[self.get_attribute_period(cs, name, period)
-                               for period in periods])
-        # we'll return a "dummy" future which is resolved with all the
-        # data, once it's all arrived.
-        dummy_fut = asyncio.Future()
-        fut.add_done_callback(
-            lambda fut_: dummy_fut.set_result(pd.concat(fut_.result(),
-                                                        ignore_index=True)))
-        return dummy_fut
+        period_queries = [self.get_attribute_period(cs, name, period)
+                          for period in periods]
+        total_results = []
+
+        for chunk in chunker(period_queries, 50):
+            chunk_results = await asyncio.gather(*chunk)
+            total_results.extend(chunk_results)
+
+        if total_results:
+            return pd.concat(total_results, ignore_index=True)
 
     @retry_future(max_retries=3)
     def get_attribute_period(self, cs, attr, period):
