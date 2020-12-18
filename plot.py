@@ -47,7 +47,7 @@ def make_image(data, time_range, y_range, size, scale=None, width=0):
         vmax = np.take(np.nanmax(agg_points["vmax"].values, axis=0), indices)
         # vmean = np.take(np.nanmax(agg_points["vmean"].values, axis=0), indices)
         # TODO: aggregating the mean is not quite this simple...
-        timestamps = np.take(agg_points["x_axis"].values, indices)
+        timestamps = np.take(agg_points["t"].values, indices)
         count = np.take(np.sum(agg_points["count"].values, axis=0), indices)
         desc = {
             "total_points": data["points"],
@@ -85,8 +85,8 @@ def get_extrema(attributes, results, time_range, axes):
         axis_config = axes.get(str(y_axis), {})
         # we have to assume that we have more data than the time_range
         # requested, so we'll make a slice containing only the relevant part
-        i0, = data["t"].searchsorted(t0.timestamp() * 1e6)  # t is in µs!
-        i1, = data["t"].searchsorted(t1.timestamp() * 1e6)
+        i0 = data["t"].searchsorted(t0.timestamp() * 1e6)  # t is in µs!
+        i1 = data["t"].searchsorted(t1.timestamp() * 1e6)
         relevant = data[i0:i1]
         
         with timer("getting max/min"):
