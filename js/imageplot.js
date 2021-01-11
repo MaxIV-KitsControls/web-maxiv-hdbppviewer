@@ -1,31 +1,21 @@
-import {debounce, parseAttribute} from "./utils";
+import d3 from "d3";
 
-import * as d3 from 'd3';
+import {debounce, parseAttribute} from "./utils"
 
 
 const Y_AXIS_WIDTH = 0;  // how much horizontal room to reserve for each Y axis,
                            // to make room for tick labels
 
-
-var formatMillisecond = d3.timeFormat(".%L"),
-    formatSecond = d3.timeFormat(":%S"),
-    formatMinute = d3.timeFormat("%H:%M"),
-    formatHour = d3.timeFormat("%H:00"),
-    formatDay = d3.timeFormat("%a %d"),
-    formatWeek = d3.timeFormat("%b %d"),
-    formatMonth = d3.timeFormat("%B"),
-    formatYear = d3.timeFormat("%Y");
-
-// Define filter conditions
-function customTimeFormat(date) {
-  return (d3.timeSecond(date) < date ? formatMillisecond
-    : d3.timeMinute(date) < date ? formatSecond
-    : d3.timeHour(date) < date ? formatMinute
-    : d3.timeDay(date) < date ? formatHour
-    : d3.timeMonth(date) < date ? (d3.timeWeek(date) < date ? formatDay : formatWeek)
-    : d3.timeYear(date) < date ? formatMonth
-    : formatYear)(date);
-}
+var customTimeFormat = d3.time.format.multi([
+  [".%L", function(d) { return d.getMilliseconds(); }],
+  [":%S", function(d) { return d.getSeconds(); }],
+  ["%H:%M", function(d) { return d.getMinutes(); }],
+  ["%H:00", function(d) { return d.getHours(); }],
+  ["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
+  ["%b %d", function(d) { return d.getDate() != 1; }],
+  ["%B", function(d) { return d.getMonth(); }],
+  ["%Y", function() { return true; }]
+]);
 
 
 function closestIndex (num, arr) {
@@ -83,6 +73,7 @@ export class ImagePlot {
 
 
     setUp(timeRange) {
+
         this.yScales = {}
         this.yAxes = {}
         this.yAxisElements = {}
@@ -96,13 +87,13 @@ export class ImagePlot {
               .attr("width", this.width)
 
         // scales
-        this.x = d3.scaleTime()
+        this.x = d3.time.scale()
             .range([Y_AXIS_WIDTH, this.innerWidth])
-            .domain(timeRange)
+            .domain(timeRange);
 
-        this.newXScale;
-
-        this.zoom = d3.zoom()
+        this.zoom = d3.behavior.zoom()
+            .x(this.x)
+            .size([this.innerWidth, this.innerHeight])
             .on("zoom", this.zoomed.bind(this));
 
         this.container = this.svg.append("g")
@@ -116,9 +107,10 @@ export class ImagePlot {
             .attr("height", this.innerHeight)
 
         // X axis
-        this.xAxis = d3.axisBottom()
+        this.xAxis = d3.svg.axis()
             .scale(this.x)
             .ticks(7)
+            .orient("bottom")
             .tickSize(-this.innerHeight)
             .tickFormat(customTimeFormat);
 
@@ -149,16 +141,12 @@ export class ImagePlot {
         this.addYAxis("linear")
         this.addYAxis("linear")
 
-
-
         // vertical and horizontal lines showing the mouse position
-        this.crosshair = this.inner.append("g")
+        this.crosshair = this.inner.append("svg:g")
             .classed("crosshair", true)
 
-        this.crosshairLineX = this.crosshair.append("line")
-
-        this.crosshairLineX
-            .attr("class", "cursor x")
+        this.crosshairLineX = this.crosshair.append("svg:line")
+            .classed({cursor: true, x: true})
             .attr("y1", 0)
             .attr("y2", this.innerHeight)
 
@@ -169,7 +157,7 @@ export class ImagePlot {
 
         this.crosshairLineY = this.crosshair
             .append("svg:line")
-            .attr("class", "cursor x")
+            .classed({cursor: true, x: true})
             .attr("x1", 0)
             .attr("x2", this.innerWidth)
 
@@ -188,10 +176,10 @@ export class ImagePlot {
             .attr("dx", -2)
             .style("text-anchor", "end")
             .text("hej")
-        const auxDomain = this.newXScale ? this.newXScale.domain() : this.x.domain();
-        let [startTime, endTime] = auxDomain;
+
+        let [startTime, endTime] = this.x.domain()
         this.currentImage = 0
-        this.imageTimeRanges = [auxDomain, auxDomain];
+        this.imageTimeRanges = [this.x.domain(), this.x.domain()];
 
         // element that shows information about the point closest
         // to the mouse cursor
@@ -207,33 +195,17 @@ export class ImagePlot {
         const number = Object.keys(this.yAxes).length;
         const name = ""+number;
 
-        if (scaleType === 'linear') {
-            var scale = d3.scaleLinear()
+        const scale = d3.scale[scaleType]()
               .range([this.innerHeight + this.margin.top, this.margin.top])
               .domain([-1, 1])
-        }
-
-        else {
-            var scale = d3.scaleLog()
-              .range([this.innerHeight + this.margin.top, this.margin.top])
-              .domain([-1, 1])
-        }
 
         this.yScales[name] = scale;
 
-        if ((number %2) === 0) {
-            var axis = d3.axisLeft()
+        const axis = d3.svg.axis()
               .scale(scale)
               .ticks(5, ".1e")
+              .orient(number % 2 === 0? "left" : "right")
               .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
-        }
-
-        else {
-            var axis = d3.axisRight()
-              .scale(scale)
-              .ticks(5, ".1e")
-              .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
-        }
 
         this.yAxes[name] = axis;
 
@@ -272,29 +244,26 @@ export class ImagePlot {
         delete this.yAxes[name];
         this.container.remove(this.yAxisElements[name])
         delete this.yAxisElements[name];
+        // this.container.remove(this.images[name][0])
+        // this.container.remove(this.images[name][1])
+        // delete this.images[name];
     }
 
     setYAxisScale(yAxis, scaleType) {
-        if (scaleType === 'linear') {
-            var scale = d3.scaleLinear()
+        // const domain = this.yScales[yAxis].domain();
+        const scale = d3.scale[scaleType]()
               .range([this.innerHeight + this.margin.top, this.margin.top])
-        }
-
-        else {
-            var scale = d3.scaleLog()
-              .range([this.innerHeight + this.margin.top, this.margin.top])
-        }
-
         this.yScales[yAxis] = scale;
         const axis = this.yAxes[yAxis];
         axis.scale(scale);
+        // this.yAxisElements[yAxis].call(axis)
         this.runChangeCallback();
     }
 
     setTimeRange(range) {
         this.x.domain(range);
-        this.xAxisElement.call(this.zoom.transform, d3.zoomIdentity);
-        this.zoomed();
+        this.zoom.x(this.x)  // reset the zoom behavior
+        this.zoomed()
     }
 
     setConfig(config) {
@@ -307,40 +276,44 @@ export class ImagePlot {
 
     showCrosshair() {
         const [mouseX, mouseY] = d3.mouse(this.clipBox.node());
-        var mouseXText = this.newXScale ? this.newXScale.invert(mouseX).toLocaleString() : this.x.invert(mouseX).toLocaleString()
         this.crosshairLineX
-            .attr("display", "block")
+            .style("display", "block")
             .attr("x1", mouseX)
             .attr("x2", mouseX);
         this.crosshairLabelX
-            .attr("display", "block")
-            .attr("text-anchor", mouseX > (this.innerWidth / 2)? "end" : "start")
+            .style({
+                display: "block",
+                "text-anchor": mouseX > (this.innerWidth / 2)? "end" : "start"
+            })
             .attr("x", mouseX)
-            .text(mouseXText)
+            .text(this.x.invert(mouseX).toLocaleString())
         this.crosshairLineY
-            .attr("display", "block")
+            .style({
+                display: "block",
+            })
             .attr("y1", mouseY)
             .attr("y2", mouseY);
         this.crosshairLabelY1
-            .attr("display", "block")
+            .style("display", "block")
             .attr("transform", "translate(0," + mouseY + ")")
             .text(d3.format(".2e")(this.yScales[0].invert(mouseY)))
         this.crosshairLabelY2
-            .attr("display", "block")
+            .style("display", "block")
             .attr("transform", "translate(0," + mouseY + ")")
             .text(d3.format(".2e")(this.yScales[1].invert(mouseY)))
     }
 
     hideCrosshair() {
-        this.crosshairLineX.attr("display", "none")
-        this.crosshairLineY.attr("display", "none")
-        this.crosshairLabelX.attr("display", "none")
-        this.crosshairLabelY1.attr("display", "none")
-        this.crosshairLabelY2.attr("display", "none")
+        this.crosshairLineX.style("display", "none")
+        this.crosshairLineY.style("display", "none")
+        this.crosshairLabelX.style("display", "none")
+        this.crosshairLabelY1.style("display", "none")
+        this.crosshairLabelY2.style("display", "none")
 
     }
 
     setData(data) {
+
         const axes = Object.keys(data);
         for (let axis of [0, 1]) {
 
@@ -366,11 +339,14 @@ export class ImagePlot {
             // transform Is there a way to do this "atomically"? Maybe
             // use a canvas instead...
             this.yScales[axis].domain([yMin, yMax]);
-
             this.getNextImage(axis)
+                // .attr("transform",
+                //       `translate(${this.x(x_range[0])},${-this.margin.top})` +
+                //       `scale(1,${yScale})`)
                 .attr("xlink:href", "data:image/png;base64," + image)
                 .attr("visibility", null)
-                .attr("transform", `translate(${this.newXScale(x_range[0])},0)` +
+                // .transition()
+                .attr("transform", `translate(${this.x(x_range[0])},0)` +
                       `scale(1,1)`)
 
             this.yAxisElements[axis]
@@ -387,7 +363,7 @@ export class ImagePlot {
         // is that the timeout is basically determined by manual
         // testing, ans may not always be enough.
         if (this._swapTimeout) {
-            //remove any previously set timeout.
+            // remove any previously set timeout.
             clearTimeout(this._swapTimeout);
         }
         this._swapTimeout = setTimeout(() => {
@@ -413,21 +389,21 @@ export class ImagePlot {
     }
 
     updateTimeRange() {
-        this.newXScale = d3.event ? d3.event.transform.rescaleX(this.x) : this.x;
-        this.xAxisElement.call(this.xAxis.scale(this.newXScale));
-
-        const [currentStartTime, currentEndTime] = this.newXScale.domain(),
+        this.xAxisElement.call(this.xAxis);
+        const [currentStartTime, currentEndTime] = this.x.domain(),
               [startTime, endTime] = this.imageTimeRanges[this.currentImage],
               scale = ((endTime - startTime) /
                        (currentEndTime.getTime() - currentStartTime.getTime()));
-
         for (let yAxis of Object.keys(this.yAxes)) {
             this.getImage(yAxis)
-                .attr("transform", "translate(" + (this.newXScale(startTime) - Y_AXIS_WIDTH) +",0)scale("+ scale + ",1)");
+                .attr("transform", "translate(" + (this.x(startTime) -
+                                                   Y_AXIS_WIDTH) +
+                      ",0)scale("+ scale + ",1)");
         }
     }
 
     zoomed() {
+        // this.hideDescription();
         this.updateTimeRange();
         this.runChangeCallback();
     }
@@ -457,7 +433,7 @@ export class ImagePlot {
     }
 
     _runChangeCallback () {
-        const [xStart, xEnd] = this.newXScale ? this.newXScale.domain() : this.x.domain(),
+        const [xStart, xEnd] = this.x.domain(),
               [xMin, xMax] = this.x.range(),
               [yMin, yMax] = this.yScales[0].range();
         const height = Math.abs(yMax - yMin);
