@@ -112,7 +112,7 @@ class HDBPlusPlusConnection(object):
     "A very simple direct interface to the HDB++ cassandra backend"
 
     def __init__(self, nodes=None, keyspace="hdb", address_map=None,
-                 fetch_size=50000, cache_size=1e9):
+                 fetch_size=50000, cache_size=1e9, consistency_level="ONE"):
         self.nodes = nodes if nodes else ["localhost"]
         if address_map:
             translator = LocalNetworkAdressTranslator(address_map)
@@ -121,9 +121,7 @@ class HDBPlusPlusConnection(object):
             self.cluster = Cluster(self.nodes)
 
         s = self.cluster.connect(keyspace)
-        # TODO: Might be useful to be able to set the consistency
-        # level in the configuration
-        s.default_consistency_level = ConsistencyLevel.LOCAL_QUORUM
+        s.default_consistency_level = getattr(ConsistencyLevel, consistency_level)
         self.session = aiosession(s)  # asyncio wrapper
         self.session.default_fetch_size = fetch_size
 
