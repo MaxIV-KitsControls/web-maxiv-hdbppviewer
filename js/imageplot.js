@@ -91,9 +91,14 @@ export class ImagePlot {
             .range([Y_AXIS_WIDTH, this.innerWidth])
             .domain(timeRange);
 
+        // Such a zoom min allowes to view ten years on one plot - considered as enough
+        var zoomMax = (timeRange[1].getTime() - timeRange[0].getTime()) / (1000 * 3600),
+        zoomMin = 0.00001;
+
         this.zoom = d3.behavior.zoom()
             .x(this.x)
             .size([this.innerWidth, this.innerHeight])
+            .scaleExtent([zoomMin, zoomMax])
             .on("zoom", this.zoomed.bind(this));
 
         this.container = this.svg.append("g")
@@ -394,12 +399,16 @@ export class ImagePlot {
               [startTime, endTime] = this.imageTimeRanges[this.currentImage],
               scale = ((endTime - startTime) /
                        (currentEndTime.getTime() - currentStartTime.getTime()));
-        for (let yAxis of Object.keys(this.yAxes)) {
-            this.getImage(yAxis)
-                .attr("transform", "translate(" + (this.x(startTime) -
-                                                   Y_AXIS_WIDTH) +
-                      ",0)scale("+ scale + ",1)");
+        
+        if (scale > 0 && scale !== Infinity) {
+            for (let yAxis of Object.keys(this.yAxes)) {
+                    this.getImage(yAxis)
+                        .attr("transform", "translate(" + (this.x(startTime) -
+                                                        Y_AXIS_WIDTH) +
+                            ",0)scale("+ scale + ",1)");
+            }
         }
+
     }
 
     zoomed() {
