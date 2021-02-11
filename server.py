@@ -235,8 +235,9 @@ if __name__ == "__main__":
     config = configparser.RawConfigParser()
     config.read(args.config)
     PORT = config.getint("server", "port")
-    CASSANDRA_NODES = config.get("hdbpp:cassandra", "nodes").split(",")
-    CASSANDRA_KEYSPACE = config.get("hdbpp:cassandra", "keyspace")
+    CASSANDRA_NODES = config["hdbpp:cassandra"].get("nodes").split(",")
+    CASSANDRA_KEYSPACE = config["hdbpp:cassandra"].get("keyspace")
+    CASSANDRA_CONSISTENCY_LEVEL = config["hdbpp:cassandra"].get("consistency_level", "ONE")
     if config.has_section("hdbpp:cassandra_address_translation"):
         CASSANDRA_ADDRESS_TRANSLATION = dict(
             config.items("hdbpp:cassandra_address_translation"))
@@ -253,7 +254,8 @@ if __name__ == "__main__":
     hdbpp = HDBPlusPlusConnection(nodes=CASSANDRA_NODES,
                                   keyspace=CASSANDRA_KEYSPACE,
                                   address_map=CASSANDRA_ADDRESS_TRANSLATION,
-                                  cache_size=DATA_CACHE_SIZE)
+                                  cache_size=DATA_CACHE_SIZE,
+                                  consistency_level=CASSANDRA_CONSISTENCY_LEVEL)
 
     app.router.add_route('GET', '/controlsystems',
                          partial(get_controlsystems, hdbpp))
