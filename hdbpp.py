@@ -112,7 +112,7 @@ class HDBPlusPlusConnection(object):
     "A very simple direct interface to the HDB++ cassandra backend"
 
     def __init__(self, nodes=None, keyspace="hdb", address_map=None,
-                 fetch_size=50000, cache_size=1e9, consistency_level="ONE"):
+                 fetch_size=5000, cache_size=1e9, consistency_level="ONE"):
         self.nodes = nodes if nodes else ["localhost"]
         if address_map:
             translator = LocalNetworkAdressTranslator(address_map)
