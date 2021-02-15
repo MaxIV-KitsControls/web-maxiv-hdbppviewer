@@ -323,7 +323,7 @@ class HDBPlusPlusConnection(object):
         if total_results:
             return pd.concat(total_results, ignore_index=True)
 
-    @retry_future(max_retries=3)
+    # @retry_future(max_retries=3)
     def get_attribute_period(self, cs, attr, period):
         """
         Return the data for a given attribute and period (day)
