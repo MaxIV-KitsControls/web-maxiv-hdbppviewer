@@ -122,6 +122,7 @@ class HDBPlusPlusConnection(object):
 
         s = self.cluster.connect(keyspace)
         s.default_consistency_level = getattr(ConsistencyLevel, consistency_level)
+        s.default_timeout = 60
         self.session = aiosession(s)  # asyncio wrapper
         self.session.default_fetch_size = fetch_size
 
