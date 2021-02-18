@@ -1,4 +1,7 @@
-input#y1Min.form-control, input#y1Max.form-control, input#y2Min.form-control, input#y2Max.form-control {
+input#y1Min.form-control,
+input#y1Max.form-control,
+input#y2Min.form-control,
+input#y2Max.form-control {
   width: 22%;
-  display:inline;
+  display: inline;
 }

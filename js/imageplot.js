@@ -1,39 +1,39 @@
 import d3 from "d3";
 
-import {debounce, parseAttribute} from "./utils"
+import { debounce, parseAttribute } from "./utils"
 
 
 const Y_AXIS_WIDTH = 0;  // how much horizontal room to reserve for each Y axis,
-                           // to make room for tick labels
+// to make room for tick labels
 
 var customTimeFormat = d3.time.format.multi([
-  [".%L", function(d) { return d.getMilliseconds(); }],
-  [":%S", function(d) { return d.getSeconds(); }],
-  ["%H:%M", function(d) { return d.getMinutes(); }],
-  ["%H:00", function(d) { return d.getHours(); }],
-  ["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
-  ["%b %d", function(d) { return d.getDate() != 1; }],
-  ["%B", function(d) { return d.getMonth(); }],
-  ["%Y", function() { return true; }]
+    [".%L", function (d) { return d.getMilliseconds(); }],
+    [":%S", function (d) { return d.getSeconds(); }],
+    ["%H:%M", function (d) { return d.getMinutes(); }],
+    ["%H:00", function (d) { return d.getHours(); }],
+    ["%a %d", function (d) { return d.getDay() && d.getDate() != 1; }],
+    ["%b %d", function (d) { return d.getDate() != 1; }],
+    ["%B", function (d) { return d.getMonth(); }],
+    ["%Y", function () { return true; }]
 ]);
 
 
-function closestIndex (num, arr) {
+function closestIndex(num, arr) {
     let diff = num - arr[0];
-        // index = -1;
+    // index = -1;
     for (var val = 0; val < arr.length; val++) {
         let newdiff = num - arr[val];
         if (newdiff < 0) {
             if (-newdiff < diff)
                 return val;
             else
-                return val-1;
+                return val - 1;
             diff = newdiff;
             // curr = arr[val];
             // index = val;
         }
     }
-    return val-1;
+    return val - 1;
     // return index;
 }
 
@@ -82,9 +82,9 @@ export class ImagePlot {
 
         // Create the plot SVG element, using D3
         this.svg = d3.select(this.containerElement)
-              .append("svg")
-              .attr("height", this.height)
-              .attr("width", this.width)
+            .append("svg")
+            .attr("height", this.height)
+            .attr("width", this.width)
 
         // scales
         this.x = d3.time.scale()
@@ -146,7 +146,7 @@ export class ImagePlot {
             .classed("crosshair", true)
 
         this.crosshairLineX = this.crosshair.append("svg:line")
-            .classed({cursor: true, x: true})
+            .classed({ cursor: true, x: true })
             .attr("y1", 0)
             .attr("y2", this.innerHeight)
 
@@ -157,7 +157,7 @@ export class ImagePlot {
 
         this.crosshairLineY = this.crosshair
             .append("svg:line")
-            .classed({cursor: true, x: true})
+            .classed({ cursor: true, x: true })
             .attr("x1", 0)
             .attr("x2", this.innerWidth)
 
@@ -193,27 +193,27 @@ export class ImagePlot {
 
     addYAxis(scaleType) {
         const number = Object.keys(this.yAxes).length;
-        const name = ""+number;
+        const name = "" + number;
 
         const scale = d3.scale[scaleType]()
-              .range([this.innerHeight + this.margin.top, this.margin.top])
-              .domain([-1, 1])
+            .range([this.innerHeight + this.margin.top, this.margin.top])
+            .domain([-1, 1])
 
         this.yScales[name] = scale;
 
         const axis = d3.svg.axis()
-              .scale(scale)
-              .ticks(5, ".1e")
-              .orient(number % 2 === 0? "left" : "right")
-              .tickSize(number % 2 === 0? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
+            .scale(scale)
+            .ticks(5, ".1e")
+            .orient(number % 2 === 0 ? "left" : "right")
+            .tickSize(number % 2 === 0 ? -(this.innerWidth - Y_AXIS_WIDTH) : -5)
 
         this.yAxes[name] = axis;
 
         const element = this.container.append("g")
-              .attr("class", "y axis")
-              .attr("transform", "translate(" + (number % 2 === 0? 0 :
-                                                 this.innerWidth ) + ",0)")
-              .call(axis);
+            .attr("class", "y axis")
+            .attr("transform", "translate(" + (number % 2 === 0 ? 0 :
+                this.innerWidth) + ",0)")
+            .call(axis);
 
         this.yAxisElements[name] = element;
 
@@ -252,7 +252,7 @@ export class ImagePlot {
     setYAxisScale(yAxis, scaleType) {
         // const domain = this.yScales[yAxis].domain();
         const scale = d3.scale[scaleType]()
-              .range([this.innerHeight + this.margin.top, this.margin.top])
+            .range([this.innerHeight + this.margin.top, this.margin.top])
         this.yScales[yAxis] = scale;
         const axis = this.yAxes[yAxis];
         axis.scale(scale);
@@ -283,7 +283,7 @@ export class ImagePlot {
         this.crosshairLabelX
             .style({
                 display: "block",
-                "text-anchor": mouseX > (this.innerWidth / 2)? "end" : "start"
+                "text-anchor": mouseX > (this.innerWidth / 2) ? "end" : "start"
             })
             .attr("x", mouseX)
             .text(this.x.invert(mouseX).toLocaleString())
@@ -329,11 +329,11 @@ export class ImagePlot {
             }
 
 
-            const {image, x_range, y_range} = data[axis];
+            const { image, x_range, y_range } = data[axis];
             const [currentYMin, currentYMax] = this.yScales[axis].domain();
             const [yMin, yMax] = y_range;
             const yScale = (Math.abs(yMax - yMin) /
-                            Math.abs(currentYMax - currentYMin));
+                Math.abs(currentYMax - currentYMin));
             this.imageTimeRanges[(this.currentImage + 1) % 2] = x_range;
             // Set the data of the "offscreen" image, and reset the
             // transform Is there a way to do this "atomically"? Maybe
@@ -347,7 +347,7 @@ export class ImagePlot {
                 .attr("visibility", null)
                 // .transition()
                 .attr("transform", `translate(${this.x(x_range[0])},0)` +
-                      `scale(1,1)`)
+                    `scale(1,1)`)
 
             this.yAxisElements[axis]
                 .transition()
@@ -370,7 +370,7 @@ export class ImagePlot {
             // TODO: before swapping, make sure that we actually updated the
             // images! If not, we should show nothing.
             this.swapImage(),
-            this._swapTimeout = null;
+                this._swapTimeout = null;
         }, 100)
 
     }
@@ -379,7 +379,7 @@ export class ImagePlot {
         // calculate element dimensions
         let containerWidth = this.containerElement.offsetWidth;
         let pageHeight = window.innerHeight;
-        const margin = this.margin = {top: 5, right: 70, bottom: 20, left: 70};
+        const margin = this.margin = { top: 5, right: 70, bottom: 20, left: 70 };
         this.width = containerWidth;
         this.height = pageHeight - 200;
         const width = this.width - margin.left - margin.right;
@@ -391,14 +391,14 @@ export class ImagePlot {
     updateTimeRange() {
         this.xAxisElement.call(this.xAxis);
         const [currentStartTime, currentEndTime] = this.x.domain(),
-              [startTime, endTime] = this.imageTimeRanges[this.currentImage],
-              scale = ((endTime - startTime) /
-                       (currentEndTime.getTime() - currentStartTime.getTime()));
+            [startTime, endTime] = this.imageTimeRanges[this.currentImage],
+            scale = ((endTime - startTime) /
+                (currentEndTime.getTime() - currentStartTime.getTime()));
         for (let yAxis of Object.keys(this.yAxes)) {
             this.getImage(yAxis)
                 .attr("transform", "translate(" + (this.x(startTime) -
-                                                   Y_AXIS_WIDTH) +
-                      ",0)scale("+ scale + ",1)");
+                    Y_AXIS_WIDTH) +
+                    ",0)scale(" + scale + ",1)");
         }
     }
 
@@ -432,10 +432,10 @@ export class ImagePlot {
         return this.images[yAxis][(this.currentImage + 1) % 2]
     }
 
-    _runChangeCallback () {
+    _runChangeCallback() {
         const [xStart, xEnd] = this.x.domain(),
-              [xMin, xMax] = this.x.range(),
-              [yMin, yMax] = this.yScales[0].range();
+            [xMin, xMax] = this.x.range(),
+            [yMin, yMax] = this.yScales[0].range();
         const height = Math.abs(yMax - yMin);
         this.onChange(xStart, xEnd, xMax - xMin, height);
     }
