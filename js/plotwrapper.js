@@ -85,7 +85,7 @@ class PlotWrapper extends React.Component {
             zIndex: 10000,
           }}
         >
-            <Button
+          <Button
             bsStyle="success"
             onClick={() =>
               saveSvgAsPng(this.plot.svg["_groups"][0][0], "plot.png")
@@ -115,7 +115,7 @@ class PlotWrapper extends React.Component {
         <div className="plot-wrapper">
           <div ref={(div) => (this.svgWrapper = div)} />
           <br></br>
-          
+
         </div>
       </div>
     );
