@@ -286,30 +286,22 @@ class Attributes extends React.Component {
       removeAttributes={this.onRemoveAttributes.bind(this)} />
 
     const addButton = (
-
-      <Row>
-        <Col sm={4}>
-          <label className="attributes-radio-label">
-            <input name="account_type" checked="true" id="input-type-student" value="Student" type="radio" />
-            <font>Left Y</font>
-          </label>
-        </Col>
-        <Col sm={4}>
-          <label className="attributes-radio-label">
-            <input name="account_type" id="input-type-tutor" value="Tutor" type="radio" />
-            <font>Right Y</font>
-          </label>
-        </Col>
-        <Col sm={4}>
-          <Button onClick={this.onAddAttributes.bind(this)} disabled={this.state.selectedSuggestions.length == 0} className="full-width btn-success" variant="success">Add</Button>{' '}
-        </Col>
-      </Row>
+      <DropdownButton id="add-attribute" bsStyle="success" title="Add" disabled={this.state.selectedSuggestions.length == 0}>
+        <MenuItem eventKey={0}
+          onSelect={this.onAddAttributes.bind(this)}>
+          Left Y
+                    </MenuItem>
+        <MenuItem eventKey={1}
+          onSelect={this.onAddAttributes.bind(this)}>
+          Right Y
+                    </MenuItem>
+      </DropdownButton>
     );
 
 
     return (
       <div>
-        <Panel footer={addButton}>
+        <Panel className="left-top-panel" footer={addButton}>
           <FormGroup>
             <FormControl componentClass="select" ref="cs"
               title="Pick your control system"

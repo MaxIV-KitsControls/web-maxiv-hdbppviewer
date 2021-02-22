@@ -18,3 +18,15 @@
 .full-width {
   width: 100%;
 }
+
+.dropdown {
+  width: 100%;
+}
+
+.dropdown > #add-attribute {
+  width: 50%;
+}
+
+.left-top-panel .panel-body {
+  padding-bottom: 5px;
+}

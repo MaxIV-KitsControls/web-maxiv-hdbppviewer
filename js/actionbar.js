@@ -125,7 +125,7 @@ class ActionBar extends React.Component {
               </p>
             </Col>
           </Row>
-          <Row style={{ paddingTop: "1rem" }}>
+          <Row>
             <Col sm="4">
               <Col xs="4" className="no-padding-right">
                 <label className="input-label">Right Y Min</label>

@@ -157,13 +157,13 @@ svg circle {
 
 .download-bar {
   padding: 1rem;
-  padding-top: 0;
+  padding-top: 0.5rem;
   float: right;
   padding-right: 7rem;
 }
 
 .max-logo {
-  height: 40px;
+  height: 30px;
   width: auto;
   padding: 0;
 }
@@ -180,7 +180,7 @@ svg circle {
 }
 
 .mr-auto {
-  padding-top: 0.5rem;
+  /* padding-top: 0.5rem; */
 }
 
 .navbar-form {
@@ -193,7 +193,10 @@ svg circle {
 }
 
 .navbar-brand {
-  padding: 7px 15px;
+  /* padding: 7px 15px; */
+  padding-top: 0px;
+  padding-bottom: 0;
+  height: 30px;
 }
 
 .header-app-name-secondary {
@@ -206,4 +209,18 @@ svg circle {
   border-bottom: 1px solid #ccc;
   text-decoration: none;
   color: #7a7a7c;
+}
+
+.navbar-default .navbar-nav > li > a {
+  padding-top: 7px;
+  padding-bottom: 2px;
+}
+
+.navbar {
+  min-height: 30px;
+  margin-bottom: 15px;
+}
+
+.panel {
+  margin-bottom: 10px;
 }

@@ -70,7 +70,6 @@ class App extends React.Component {
         </Row>
 
         <Row>
-          {/* <TimeRange /> */}
           <Col sm={3} md={3}>
             <AttributeSearch />
           </Col>

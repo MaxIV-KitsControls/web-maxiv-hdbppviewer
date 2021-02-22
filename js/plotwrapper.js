@@ -81,7 +81,7 @@ class PlotWrapper extends React.Component {
         />
         <div className="plot-wrapper">
           <div ref={(div) => (this.svgWrapper = div)} />
-          <br></br>
+
         </div>
         <div className="download-bar">
           <Button
