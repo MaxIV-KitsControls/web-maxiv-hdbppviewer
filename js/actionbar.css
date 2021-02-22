@@ -27,3 +27,7 @@ input#y2Max.form-control {
 .action-bar {
   padding-left: 6rem;
 }
+
+.action-bar .form-group {
+  margin-bottom: 0;
+}
