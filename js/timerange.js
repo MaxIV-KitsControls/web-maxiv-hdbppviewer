@@ -119,7 +119,7 @@ class TimeRange extends React.Component {
             </div>);
 
         return (<div ref="trigger">
-            <Button onClick={this.handleShow.bind(this)}
+            <Button style={{ width: "100%" }} onClick={this.handleShow.bind(this)}
                 active={this.state.show}
                 title="Click to manually select a range of dates">
                 <span className="pull-left"><Glyphicon glyph="calendar" />

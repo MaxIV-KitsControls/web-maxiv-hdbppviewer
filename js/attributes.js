@@ -5,7 +5,7 @@ import { bindActionCreators } from 'redux'
 import {
   Input, Button, DropdownButton, MenuItem, Col, Panel, Popover,
   OverlayTrigger, FormGroup, FormControl, Modal, Accordion, Table, Well,
-  Checkbox
+  Checkbox, Row
 } from 'react-bootstrap';
 
 import {
@@ -15,6 +15,8 @@ import {
 } from "./actions";
 import { parseAttribute } from "./utils";
 import ColorPicker from "./colorpicker";
+import "./attributes.css";
+import { lab } from "d3";
 
 
 class PlottedAttributes extends React.Component {
@@ -121,13 +123,13 @@ class PlottedAttributes extends React.Component {
 
         <Panel footer={
           <div>
-            <Button bsStyle="danger" onClick={this.onRemove.bind(this)}
+            <Button style={{ width: "49%" }} bsStyle="danger" onClick={this.onRemove.bind(this)}
               disabled={this.state.selected.length == 0}
               title="Remove the currently selected attribute(s) from the plot">
               Remove Selected
                   </Button>
             {' '}
-            <Button bsStyle="danger" onClick={this.onRemoveAll.bind(this)}
+            <Button style={{ width: "49%" }} bsStyle="danger" onClick={this.onRemoveAll.bind(this)}
               disabled={this.props.attributes.length == 0}
               title="Remove all attribute(s) from the plot">
               Remove All
@@ -136,16 +138,14 @@ class PlottedAttributes extends React.Component {
         }>
 
           <div>
-            <strong onClick={this.onYAxisClick.bind(this, 0)}>
-              Left Y axis
-                  </strong>
+            <strong onClick={this.onYAxisClick.bind(this, 0)}>Left Y axis</strong>
             <Checkbox checked={this.props.axes[0] && this.props.axes[0].scale == "log"}
               onChange={this.onAxisScaleChange.bind(this, 0)}
               inline style={{ "float": "right" }}>
               Log
-                </Checkbox>
+            </Checkbox>
           </div>
-          <ul className="y-axis-attributes"
+          <ul className="y-axis-attributes attributes-axis"
             style={{ listStyle: "none", paddingLeft: "10px" }}>
             {leftYAxis}
           </ul>
@@ -161,7 +161,7 @@ class PlottedAttributes extends React.Component {
               Log
                   </Checkbox>
           </div>
-          <ul className="y-axis-attributes"
+          <ul className="y-axis-attributes attributes-axis"
             style={{ listStyle: "none", paddingLeft: "10px" }}>
             {rightYAxis}
           </ul>
@@ -286,17 +286,24 @@ class Attributes extends React.Component {
       removeAttributes={this.onRemoveAttributes.bind(this)} />
 
     const addButton = (
-      <DropdownButton id="add-attribute" bsStyle="success" title="Add"
-        disabled={this.state.selectedSuggestions.length == 0}>
-        <MenuItem eventKey={0}
-          onSelect={this.onAddAttributes.bind(this)}>
-          Left Y
-                  </MenuItem>
-        <MenuItem eventKey={1}
-          onSelect={this.onAddAttributes.bind(this)}>
-          Right Y
-                  </MenuItem>
-      </DropdownButton>
+
+      <Row>
+        <Col sm={4}>
+          <label className="attributes-radio-label">
+            <input name="account_type" checked="true" id="input-type-student" value="Student" type="radio" />
+            <font>Left Y</font>
+          </label>
+        </Col>
+        <Col sm={4}>
+          <label className="attributes-radio-label">
+            <input name="account_type" id="input-type-tutor" value="Tutor" type="radio" />
+            <font>Right Y</font>
+          </label>
+        </Col>
+        <Col sm={4}>
+          <Button onClick={this.onAddAttributes.bind(this)} disabled={this.state.selectedSuggestions.length == 0} className="full-width btn-success" variant="success">Add</Button>{' '}
+        </Col>
+      </Row>
     );
 
 

@@ -1,9 +1,10 @@
 import React from "react";
 import { connect } from "react-redux";
 import { setTimeRange, fetchArchiveData } from "./actions";
-import { Input, Button, FormGroup, FormControl } from 'react-bootstrap';
+import { Input, Button, FormGroup, FormControl, FormLabel, Col, Row, Form } from 'react-bootstrap';
 import { setAxisScale, setAutoScale } from "./actions";
 import './actionbar.css';
+import TimeRange from "./timerange";
 
 class ActionBar extends React.Component {
 
@@ -83,43 +84,89 @@ class ActionBar extends React.Component {
     return (
       <div className="action-bar">
         <FormGroup>
-          <FormControl
-            type="text"
-            id="y1Min"
-            value={this.state.y1Min}
-            placeholder="Left Y Min"
-            onChange={this.handleInputChange}
-            onKeyDown={this.handleKeyPress}
-          />
-          <FormControl
-            type="text"
-            id="y1Max"
-            value={this.state.y1Max}
-            placeholder="Left Y Max"
-            onChange={this.handleInputChange}
-            onKeyDown={this.handleKeyPress}
-          />
-          <FormControl
-            type="text"
-            id="y2Min"
-            value={this.state.y2Min}
-            placeholder="Right Y Min"
-            onChange={this.handleInputChange}
-            onKeyDown={this.handleKeyPress}
-          />
-          <FormControl
-            type="text"
-            id="y2Max"
-            value={this.state.y2Max}
-            placeholder="Right Y Max"
-            onChange={this.handleInputChange}
-            onKeyDown={this.handleKeyPress}
-          />
-          <Button
-            bsStyle="warning"
-            onClick={this.handleAutoScale}
-          > Auto Scale
+          <Row>
+            <Col sm="4">
+              <Col xs="4" className="no-padding-right">
+                <label className="input-label">Left Y Min</label>
+              </Col>
+              <Col xs="8">
+                <FormControl
+                  type="text"
+                  id="y1Min"
+                  value={this.state.y1Min}
+                  placeholder="Left Y Min"
+                  onChange={this.handleInputChange}
+                  onKeyDown={this.handleKeyPress}
+                  className="full-width"
+                />
+              </Col>
+            </Col>
+
+            <Col sm="4">
+              <Col xs="4" className="no-padding-right">
+                <label className="input-label">Left Y Max</label>
+              </Col>
+              <Col xs="8">
+                <FormControl
+                  type="text"
+                  id="y1Max"
+                  value={this.state.y1Max}
+                  placeholder="Left Y Max"
+                  onChange={this.handleInputChange}
+                  onKeyDown={this.handleKeyPress}
+                  className="full-width"
+                />
+              </Col>
+            </Col>
+
+            <Col sm="3">
+              <p>
+                <TimeRange style={{ width: "100%" }} />
+              </p>
+            </Col>
+          </Row>
+          <Row style={{ paddingTop: "1rem" }}>
+            <Col sm="4">
+              <Col xs="4" className="no-padding-right">
+                <label className="input-label">Right Y Min</label>
+              </Col>
+              <Col xs="8">
+                <FormControl
+                  type="text"
+                  id="y2Min"
+                  value={this.state.y2Min}
+                  placeholder="Right Y Min"
+                  onChange={this.handleInputChange}
+                  onKeyDown={this.handleKeyPress}
+                  className="full-width"
+                />
+              </Col>
+            </Col>
+            <Col sm="4">
+              <Col xs="4" className="no-padding-right">
+                <label className="input-label">Right Y Max</label>
+              </Col>
+              <Col xs="8">
+                <FormControl
+                  type="text"
+                  id="y2Max"
+                  value={this.state.y2Max}
+                  placeholder="Right Y Max"
+                  onChange={this.handleInputChange}
+                  onKeyDown={this.handleKeyPress}
+                  className="full-width"
+                />
+              </Col>
+            </Col>
+            <Col sm="3">
+              <Button
+                bsStyle="warning"
+                onClick={this.handleAutoScale}
+                className="full-width"
+              > Auto Scale
                   </Button>
+            </Col>
+          </Row>
         </FormGroup>
       </div>
     );

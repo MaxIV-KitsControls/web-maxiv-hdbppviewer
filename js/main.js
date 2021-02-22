@@ -13,10 +13,11 @@ import {
   addAttributes, setTimeRange, setAxisScale
 } from "./actions";
 import PlotWrapper from "./plotwrapper";
-import TimeRange from "./timerange";
+// import TimeRange from "./timerange";
 import AttributeSearch from "./attributes";
 import CommunicationInfo from "./communication";
 import { debounce, loadStateFromHash, setHashFromState } from "./utils";
+import { Container } from "react-bootstrap/lib/Tab";
 
 /* redux store */
 
@@ -39,23 +40,37 @@ class App extends React.Component {
     return (<div>
       <Grid fluid={true}>
         <Row>
-          <Navbar>
-            <Navbar.Header>
+          <Navbar fluid={true}>
+            <Navbar.Header style={{ width: "40%" }}>
               <Navbar.Brand>
-                <a href="/index.html">HDB++ Archive Viewer</a>
+                <a href="https://maxiv.lu.se">
+                  <img
+                    src="images/maxiv.png"
+                    className="d-inline-block align-top max-logo"
+                    alt="React Bootstrap logo"
+                  />
+                </a>
               </Navbar.Brand>
             </Navbar.Header>
-            <Nav>
-              <NavItem eventKey={2} href="/help.html">Help</NavItem>
+
+            <Nav className="mr-auto">
+              <NavItem className="navitem" eventKey={2} href="/index.html">
+                <div className="header-app-name">
+                  HDB++<span className="header-app-name-secondary">Archive Viewer</span>
+                </div>
+              </NavItem>
             </Nav>
 
             <Navbar.Form pullRight>
-              <TimeRange />
+              <Nav>
+                <NavItem eventKey={2} href="/help.html">Help</NavItem>
+              </Nav>
             </Navbar.Form>
           </Navbar>
         </Row>
 
         <Row>
+          {/* <TimeRange /> */}
           <Col sm={3} md={3}>
             <AttributeSearch />
           </Col>
