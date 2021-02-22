@@ -3,7 +3,6 @@
   padding-left: 10px;
   max-height: 120px;
   overflow: scroll;
-  overflow: -moz-scrollbars-vertical;
 }
 
 .attributes-radio-label {

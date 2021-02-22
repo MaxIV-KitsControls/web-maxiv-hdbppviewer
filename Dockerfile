@@ -26,8 +26,7 @@ RUN apt-get -y install python-numpy-dev
 ADD hdbviewer.yaml /tmp/hdbviewer.yaml
 RUN conda config --set restore_free_channel true
 RUN conda env create --name hdbviewer --file=/tmp/hdbviewer.yaml
-# RUN git clone https://github.com/MaxIV-KitsControls/web-maxiv-hdbppviewer.git
-RUN git clone https://github.com/muhammad-saad-maxiv/web-maxiv-hdbppviewer.git
+RUN git clone https://github.com/MaxIV-KitsControls/web-maxiv-hdbppviewer.git
 
 # Copy the local config file into the checkout
 # This allows customization of e.g. cluster setup
