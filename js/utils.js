@@ -5,9 +5,9 @@
 // leading edge, instead of the trailing.
 export function debounce(func, wait, immediate) {
 	var timeout;
-	return function() {
+	return function () {
 		var context = this, args = arguments;
-		var later = function() {
+		var later = function () {
 			timeout = null;
 			if (!immediate) func.apply(context, args);
 		};
@@ -20,25 +20,25 @@ export function debounce(func, wait, immediate) {
 
 
 export function loadStateFromHash() {
-    // TODO: verify that the hash data makes sense?
-    return JSON.parse(decodeURIComponent(document.location.hash).slice(1));
+	// TODO: verify that the hash data makes sense?
+	return JSON.parse(decodeURIComponent(document.location.hash).slice(1));
 }
 
 
 export function setHashFromState(state) {
-    let hash = JSON.stringify({
-        controlsystem: state.controlsystem,
-        timeRange: state.timeRange,
-        attributes: state.attributes,
-        config: state.attributeConfig,
-        axes: state.axisConfiguration
-    })
-    document.location.hash = hash;
+	let hash = JSON.stringify({
+		controlsystem: state.controlsystem,
+		timeRange: state.timeRange,
+		attributes: state.attributes,
+		config: state.attributeConfig,
+		axes: state.axisConfiguration
+	})
+	document.location.hash = hash;
 }
 
 
 const ATTRIBUTE_REGEX = /(.*)\/([^/]+\/[^/]*\/[^/]*\/[^/]*)/;
 
 export function parseAttribute(attr) {
-    return ATTRIBUTE_REGEX.exec(attr).slice(1);
+	return ATTRIBUTE_REGEX.exec(attr).slice(1);
 }

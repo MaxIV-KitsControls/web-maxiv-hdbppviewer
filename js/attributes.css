@@ -1,0 +1,20 @@
+.attributes-axis {
+  list-style: none;
+  padding-left: 10px;
+  max-height: 120px;
+  overflow: scroll;
+  overflow: -moz-scrollbars-vertical;
+}
+
+.attributes-radio-label {
+  padding-top: 0.5rem;
+}
+
+.attributes-radio-label font {
+  vertical-align: inherit;
+  padding-left: 1rem;
+}
+
+.full-width {
+  width: 100%;
+}

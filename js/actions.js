@@ -14,7 +14,7 @@ happen, depending on the outcome of e.g. network calls.
 
 import fetch from "isomorphic-fetch";
 
-import {debounce} from "./utils";
+import { debounce } from "./utils";
 
 var fileDownload = require('js-file-download');
 
@@ -46,14 +46,16 @@ export function getControlsystems() {
     return debounce(function (dispatch) {
         fetch('./controlsystems')
             .then(response => response.json())
-            .then(data => dispatch({type: RECEIVE_CONTROLSYSTEMS,
-                                    controlsystems: data.controlsystems}));
+            .then(data => dispatch({
+                type: RECEIVE_CONTROLSYSTEMS,
+                controlsystems: data.controlsystems
+            }));
     }, 500);  // no point in asking too often
 }
 
 
 export function setControlsystem(controlsystem) {
-    return {type: SET_CONTROLSYSTEM, controlsystem};
+    return { type: SET_CONTROLSYSTEM, controlsystem };
 }
 
 
@@ -63,8 +65,10 @@ export function getSuggestions(controlsystem, pattern) {
         const state = getState();
         fetch(`./attributes?cs=${state.controlsystem}&search=${pattern}`)
             .then(response => response.json())
-            .then(data => dispatch({type: RECEIVE_SUGGESTIONS,
-                                    suggestions: data.attributes}));
+            .then(data => dispatch({
+                type: RECEIVE_SUGGESTIONS,
+                suggestions: data.attributes
+            }));
     }, 500);  // no point in asking too often
 }
 
@@ -78,43 +82,43 @@ export function addAttributes(attributes, axis) {
             if (attr.constructor === Array) {
                 const [name, color] = attr;
                 attrs.push(name);
-                dispatch({type: SET_ATTRIBUTE_COLOR, attribute: name, color});
+                dispatch({ type: SET_ATTRIBUTE_COLOR, attribute: name, color });
 
             } else {
                 attrs.push(attr);
-                dispatch({type: SET_ATTRIBUTE_COLOR, attribute: attr});
+                dispatch({ type: SET_ATTRIBUTE_COLOR, attribute: attr });
             }
         });
-        dispatch({type: SET_ATTRIBUTES_AXIS, attributes: attrs, axis});
-        dispatch({type: ADD_ATTRIBUTES, attributes: attrs});
+        dispatch({ type: SET_ATTRIBUTES_AXIS, attributes: attrs, axis });
+        dispatch({ type: ADD_ATTRIBUTES, attributes: attrs });
     };
 }
 
 
 export function removeAttributes(attributes) {
     // remove a list of attributes from the plot
-    return {type: REMOVE_ATTRIBUTES, attributes};
+    return { type: REMOVE_ATTRIBUTES, attributes };
 }
 
 
 export function setTimeRange(startTime, endTime) {
     // change the current time range shown in the plot
-    return {type: SET_TIME_RANGE, startTime, endTime};
+    return { type: SET_TIME_RANGE, startTime, endTime };
 }
 
 export function setYRange(id, value) {
     // set the y range in plot
-    return {type: SET_Y_RANGE, id, value};
+    return { type: SET_Y_RANGE, id, value };
 }
 
 export function setAutoScale() {
     // set the y range to auto-scale (the default we get) in plot
-    return {type: SET_AUTO_SCALE};
+    return { type: SET_AUTO_SCALE };
 }
 
 
 export function setAxisScale(axis, scale) {
-    return {type: SET_AXIS_SCALE, axis, scale};
+    return { type: SET_AXIS_SCALE, axis, scale };
 }
 
 
@@ -124,14 +128,14 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
 
     return function (dispatch, getState) {
 
-        dispatch({type: FETCH_ARCHIVE_DATA});
+        dispatch({ type: FETCH_ARCHIVE_DATA });
 
         let state = getState();
 
         if (state.attributes.length == 0) {
             // no attributes configured; no point in requesting anything
-            dispatch({type: RECEIVE_ARCHIVE_DESCS, descs: {}});
-            dispatch({type: RECEIVE_ARCHIVE_DATA, data: {}});
+            dispatch({ type: RECEIVE_ARCHIVE_DESCS, descs: {} });
+            dispatch({ type: RECEIVE_ARCHIVE_DATA, data: {} });
             return;
         }
 
@@ -149,7 +153,7 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
                     };
                 }),
                 time_range: [state.timeRange.start.toUTCString(),
-                             state.timeRange.end.toUTCString()],
+                state.timeRange.end.toUTCString()],
                 size: [imageWidth, imageHeight],
                 axes: state.axisConfiguration,
             }),
@@ -175,13 +179,13 @@ export function fetchArchiveData(startTime, endTime, imageWidth, imageHeight) {
             }
         }, error => {
             console.log(error);
-            dispatch({type: "FETCH_FAILED", error: 500});
+            dispatch({ type: "FETCH_FAILED", error: 500 });
             throw new Error("Could not fetch archive data!");
         }).then(data => {
             if (latestFetchTime > fetchTime)
                 return;
-            dispatch({type: RECEIVE_ARCHIVE_DESCS, descs: data.descs});
-            dispatch({type: RECEIVE_ARCHIVE_DATA, data: data.images});
+            dispatch({ type: RECEIVE_ARCHIVE_DESCS, descs: data.descs });
+            dispatch({ type: RECEIVE_ARCHIVE_DATA, data: data.images });
         });
     };
 }
@@ -197,13 +201,13 @@ export function fetchArchiveDataRaw(type) {
 
     return function (dispatch, getState) {
 
-        dispatch({type: FETCH_ARCHIVE_RAW_DATA});
+        dispatch({ type: FETCH_ARCHIVE_RAW_DATA });
 
         let state = getState();
 
         if (state.attributes.length == 0) {
             // no attributes configured; no point in requesting anything
-            dispatch({type: RECEIVE_ARCHIVE_RAW_DATA});
+            dispatch({ type: RECEIVE_ARCHIVE_RAW_DATA });
             return;
         }
 
@@ -215,7 +219,7 @@ export function fetchArchiveDataRaw(type) {
             body: JSON.stringify({
                 attributes: state.attributes,
                 time_range: [state.timeRange.start.toUTCString(),
-                             state.timeRange.end.toUTCString()],
+                state.timeRange.end.toUTCString()],
             }),
             headers: headers
         });
@@ -236,12 +240,12 @@ export function fetchArchiveDataRaw(type) {
             }
         }, error => {
             console.log(error);
-            dispatch({type: "FETCH_RAW_DATA_FAILED", error: 500});
+            dispatch({ type: "FETCH_RAW_DATA_FAILED", error: 500 });
             throw new Error("Could not fetch archive csv data!");
         }).then(data => {
             if (latestFetchTime > fetchTime)
                 return;
-            dispatch({type: RECEIVE_ARCHIVE_RAW_DATA});
+            dispatch({ type: RECEIVE_ARCHIVE_RAW_DATA });
             fileDownload(data, filename);
         });
     };

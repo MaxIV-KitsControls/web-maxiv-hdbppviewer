@@ -1,156 +1,209 @@
-body, html {
-    position: relative;
-    background: #ddd;
-    /* width: 960px; */
-    height: 100%;
-    background-color: #555;
+body,
+html {
+  position: relative;
+  /* background: #ddd; */
+  /* width: 960px; */
+  height: 100%;
+  /* background-color: #555; */
 }
 
 div#main {
-    height: 100%;
+  height: 100%;
 }
 
 svg {
-    /* font: 13px sans-serif; */
+  /* font: 13px sans-serif; */
 }
 
 rect {
-    fill: #ff0;
+  fill: #ff0;
 }
 
-.axis path, .axis line {
-    fill: none;
-    stroke: rgba(255,255,255,0.2);
-    shape-rendering: crispEdges;
-    pointer-events: none;
+.axis path,
+.axis line {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  shape-rendering: crispEdges;
+  pointer-events: none;
 }
 
 .axis path {
-    fill: none;
-    stroke: #aaa;
-    shape-rendering: crispEdges;
+  fill: none;
+  stroke: #aaa;
+  shape-rendering: crispEdges;
 }
 
 .axis text {
-    fill: white;
+  fill: darkslategray;
 }
 
 .buttons {
-    position: absolute;
-    right: 30px;
-    top: 30px;
+  position: absolute;
+  right: 30px;
+  top: 30px;
 }
 .line {
-    fill: none;
-    stroke: steelblue;
-    stroke-width: 2px;
-    vector-effect: non-scaling-stroke;
-    pointer-events: none;
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .overlay {
-    fill: black;
+  fill: black;
 }
 
 .tick line {
-    stroke: rgba(255,255,255,0.2);
-    shape-rendering: crispEdges;
+  stroke: rgba(255, 255, 255, 0.2);
+  shape-rendering: crispEdges;
 }
 
 #over {
-    fill:black;
+  fill: black;
 }
 
 image {
-    /* image-rendering:optimizeSpeed;             /\* Legal fallback *\/ */
-    /* image-rendering:-moz-crisp-edges;          /\* Firefox        *\/ */
-    /* image-rendering:-o-crisp-edges;            /\* Opera          *\/ */
-    /* image-rendering:-webkit-optimize-contrast; /\* Safari         *\/ */
-    /* image-rendering:optimize-contrast;         /\* CSS3 Proposed  *\/ */
-    /* image-rendering:crisp-edges;               /\* CSS4 Proposed  *\/ */
-    /* image-rendering:pixelated;                 /\* CSS4 Proposed  *\/ */
-    /* -ms-interpolation-mode:nearest-neighbor;   /\* IE8+           *\/     */
+  /* image-rendering:optimizeSpeed;             /\* Legal fallback *\/ */
+  /* image-rendering:-moz-crisp-edges;          /\* Firefox        *\/ */
+  /* image-rendering:-o-crisp-edges;            /\* Opera          *\/ */
+  /* image-rendering:-webkit-optimize-contrast; /\* Safari         *\/ */
+  /* image-rendering:optimize-contrast;         /\* CSS3 Proposed  *\/ */
+  /* image-rendering:crisp-edges;               /\* CSS4 Proposed  *\/ */
+  /* image-rendering:pixelated;                 /\* CSS4 Proposed  *\/ */
+  /* -ms-interpolation-mode:nearest-neighbor;   /\* IE8+           *\/     */
 }
 
-
 .time-range {
-    color: white;
+  color: white;
 }
 
 .plot-wrapper {
-    position: relative;  /* we want to position e.g. hover stuff relative to this */
+  position: relative; /* we want to position e.g. hover stuff relative to this */
 }
 
 div.description {
-    pointer-events: none;
-    z-index: 100;
-    background-color: rgba(50,50,50,0.6);
-    color: white;
-    position: absolute;
-    white-space: nowrap;
-    padding: 3px;
-    border-radius: 3px;
-    margin: 10px;
+  pointer-events: none;
+  z-index: 100;
+  background-color: rgba(50, 50, 50, 0.6);
+  color: white;
+  position: absolute;
+  white-space: nowrap;
+  padding: 3px;
+  border-radius: 3px;
+  margin: 10px;
 }
 
 #current-attributes {
-    background-color: black;
-    color: white;
+  background-color: black;
+  color: white;
 }
 
 line.cursor.x {
-    stroke: white;
-    opacity: 1;
-    stroke-width: 1;
-    pointer-events: none;
-    shape-rendering: crispEdges;
+  stroke: white;
+  opacity: 1;
+  stroke-width: 1;
+  pointer-events: none;
+  shape-rendering: crispEdges;
 }
 
 line.cursor.y {
-    stroke: white;
-    opacity: 0.25;
-    pointer-events: none;
-    shape-rendering: crispEdges;
+  stroke: white;
+  opacity: 0.25;
+  pointer-events: none;
+  shape-rendering: crispEdges;
 }
 
 select option {
-
 }
 
 select option:disabled {
-    color: #888;
+  color: #888;
 }
-
 
 ul.y-axis-attributes li:hover {
-    background: #eee;
+  background: #eee;
 }
 
-
 .attribute-info td {
-    padding: 3px 10px;
-    white-space: nowrap;
+  padding: 3px 10px;
+  white-space: nowrap;
 }
 
 .attribute-info th {
-    white-space: nowrap;
-    text-align: right;
+  white-space: nowrap;
+  text-align: right;
 }
-
 
 /* a fix to allow the popover to fit the width of the info */
 .popover.attribute-info {
-    max-width: 100%;
+  max-width: 100%;
 }
-
 
 svg circle {
-    stroke-width: 1.5px;
-    stroke: white;
+  stroke-width: 1.5px;
+  stroke: white;
 }
 
-
 .crosshair text {
-    fill: white;
-    font-size: small;
+  fill: white;
+  font-size: small;
+}
+
+.download-btn {
+  height: 34px;
+  font-size: 14px;
+}
+
+.download-bar {
+  padding: 1rem;
+  padding-top: 0;
+  float: right;
+  padding-right: 7rem;
+}
+
+.max-logo {
+  height: 40px;
+  width: auto;
+  padding: 0;
+}
+
+.header-app-name {
+  font-size: 1.4em;
+  color: #7a7a7c;
+  font-family: "Helvetica", "sans-serif";
+  letter-spacing: 0.15em;
+  transition: all 1s ease-in-out;
+  border-bottom: 1px solid transparent;
+  font-weight: 200;
+  cursor: pointer;
+}
+
+.mr-auto {
+  padding-top: 0.5rem;
+}
+
+.navbar-form {
+  margin: 0;
+}
+
+.navbar-default {
+  box-shadow: 0px 2px 1px -1px rgb(0 0 0 / 20%),
+    0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 1px 3px 0px rgb(0 0 0 / 12%);
+}
+
+.navbar-brand {
+  padding: 7px 15px;
+}
+
+.header-app-name-secondary {
+  color: #f48a2c;
+  font-weight: 200;
+  cursor: pointer;
+}
+
+.header-app-name:hover {
+  border-bottom: 1px solid #ccc;
+  text-decoration: none;
+  color: #7a7a7c;
 }

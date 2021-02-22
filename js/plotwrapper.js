@@ -76,21 +76,21 @@ class PlotWrapper extends React.Component {
   render() {
     return (
       <div>
-        <div
-          style={{
-            padding: "1rem",
-            position: "fixed",
-            bottom: "1.5rem",
-            left: "1.5rem",
-            zIndex: 10000,
-          }}
-        >
-            <Button
+        <ActionBar
+          onChangeRangeElement={this.onChangeRangeElement.bind(this)}
+        />
+        <div className="plot-wrapper">
+          <div ref={(div) => (this.svgWrapper = div)} />
+          <br></br>
+        </div>
+        <div className="download-bar">
+          <Button
             bsStyle="success"
             onClick={() =>
               saveSvgAsPng(this.plot.svg["_groups"][0][0], "plot.png")
             }
             title="Download the plot image"
+            className="download-btn"
           >
             Download Image
           </Button>{" "}
@@ -98,6 +98,7 @@ class PlotWrapper extends React.Component {
             bsStyle="success"
             onClick={this.onDownloadRawCsv.bind(this)}
             title="Download the plot data as CSV"
+            className="download-btn"
           >
             Download CSV
           </Button>{" "}
@@ -105,17 +106,10 @@ class PlotWrapper extends React.Component {
             bsStyle="success"
             onClick={this.onDownloadRawJson.bind(this)}
             title="Download the plot data as JSON"
+            className="download-btn"
           >
             Download JSON
           </Button>
-        </div>
-        <ActionBar
-          onChangeRangeElement={this.onChangeRangeElement.bind(this)}
-        />
-        <div className="plot-wrapper">
-          <div ref={(div) => (this.svgWrapper = div)} />
-          <br></br>
-          
         </div>
       </div>
     );
