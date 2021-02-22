@@ -87,23 +87,6 @@ class ActionBar extends React.Component {
           <Row>
             <Col sm="4">
               <Col xs="4" className="no-padding-right">
-                <label className="input-label">Left Y Min</label>
-              </Col>
-              <Col xs="8">
-                <FormControl
-                  type="text"
-                  id="y1Min"
-                  value={this.state.y1Min}
-                  placeholder="Left Y Min"
-                  onChange={this.handleInputChange}
-                  onKeyDown={this.handleKeyPress}
-                  className="full-width"
-                />
-              </Col>
-            </Col>
-
-            <Col sm="4">
-              <Col xs="4" className="no-padding-right">
                 <label className="input-label">Left Y Max</label>
               </Col>
               <Col xs="8">
@@ -112,30 +95,6 @@ class ActionBar extends React.Component {
                   id="y1Max"
                   value={this.state.y1Max}
                   placeholder="Left Y Max"
-                  onChange={this.handleInputChange}
-                  onKeyDown={this.handleKeyPress}
-                  className="full-width"
-                />
-              </Col>
-            </Col>
-
-            <Col sm="3">
-              <p>
-                <TimeRange style={{ width: "100%" }} />
-              </p>
-            </Col>
-          </Row>
-          <Row>
-            <Col sm="4">
-              <Col xs="4" className="no-padding-right">
-                <label className="input-label">Right Y Min</label>
-              </Col>
-              <Col xs="8">
-                <FormControl
-                  type="text"
-                  id="y2Min"
-                  value={this.state.y2Min}
-                  placeholder="Right Y Min"
                   onChange={this.handleInputChange}
                   onKeyDown={this.handleKeyPress}
                   className="full-width"
@@ -152,6 +111,48 @@ class ActionBar extends React.Component {
                   id="y2Max"
                   value={this.state.y2Max}
                   placeholder="Right Y Max"
+                  onChange={this.handleInputChange}
+                  onKeyDown={this.handleKeyPress}
+                  className="full-width"
+                />
+              </Col>
+            </Col>
+
+
+            <Col sm="3">
+              <p>
+                <TimeRange style={{ width: "100%" }} />
+              </p>
+            </Col>
+          </Row>
+          <Row>
+
+            <Col sm="4">
+              <Col xs="4" className="no-padding-right">
+                <label className="input-label">Left Y Min</label>
+              </Col>
+              <Col xs="8">
+                <FormControl
+                  type="text"
+                  id="y1Min"
+                  value={this.state.y1Min}
+                  placeholder="Left Y Min"
+                  onChange={this.handleInputChange}
+                  onKeyDown={this.handleKeyPress}
+                  className="full-width"
+                />
+              </Col>
+            </Col>
+            <Col sm="4">
+              <Col xs="4" className="no-padding-right">
+                <label className="input-label">Right Y Min</label>
+              </Col>
+              <Col xs="8">
+                <FormControl
+                  type="text"
+                  id="y2Min"
+                  value={this.state.y2Min}
+                  placeholder="Right Y Min"
                   onChange={this.handleInputChange}
                   onKeyDown={this.handleKeyPress}
                   className="full-width"
