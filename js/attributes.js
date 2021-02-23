@@ -123,14 +123,14 @@ class PlottedAttributes extends React.Component {
 
         <Panel footer={
           <Row>
-            <Col lg={6}>
+            <Col xs={6} lg={6}>
               <Button style={{ width: "100%" }} bsStyle="danger" onClick={this.onRemove.bind(this)}
                 disabled={this.state.selected.length == 0}
                 title="Remove the currently selected attribute(s) from the plot">
                 Remove Selected
                   </Button>
             </Col>
-            <Col lg={6}>
+            <Col xs={6} lg={6}>
               <Button style={{ width: "100%" }} bsStyle="danger" onClick={this.onRemoveAll.bind(this)}
                 disabled={this.props.attributes.length == 0}
                 title="Remove all attribute(s) from the plot">
