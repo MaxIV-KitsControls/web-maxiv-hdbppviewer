@@ -29,7 +29,7 @@ class ColorPicker extends React.Component {
     }
     return (
       <div>
-        <Button onClick={this.handleClick}>Pick Color</Button>
+        <Button style={{ width: "50%", marginTop: "0.5rem" }} onClick={this.handleClick}>Pick Color</Button>
         { this.state.displayColorPicker ? <div style={popover}>
           <div style={cover} onClick={this.handleClose} />
           <ChromePicker

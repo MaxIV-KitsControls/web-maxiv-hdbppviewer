@@ -1,7 +1,33 @@
-input#y1Min.form-control,
-input#y1Max.form-control,
-input#y2Min.form-control,
+/* input#y1Min.form-control, */
+/* input#y1Max.form-control, */
+/* input#y2Min.form-control,
 input#y2Max.form-control {
   width: 22%;
   display: inline;
+} */
+
+.input-label {
+  padding-right: 0px;
+  padding-top: 0.5rem;
+  font-size: 13px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.no-padding-right {
+  padding-right: 0;
+}
+
+.no-padding {
+  padding: 0;
+}
+
+.action-bar {
+  padding-left: 6rem;
+}
+
+.action-bar .form-group {
+  margin-bottom: 0;
 }

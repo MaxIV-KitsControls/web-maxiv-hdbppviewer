@@ -26,7 +26,13 @@ module.exports = {
       {
         test: /\.css$/,
         use: ["style-loader", "css-loader"]
-      }
+      },
+      {
+        test: /\.(jpg|png)$/,
+        use: {
+          loader: 'url-loader',
+        },
+      },
     ]
   },
   resolve: {
@@ -40,6 +46,7 @@ module.exports = {
     proxy: {
       '/': 'http://localhost:5005'
     },
+    // port: 5005,
     watchContentBase: true
   }
 };
