@@ -122,19 +122,22 @@ class PlottedAttributes extends React.Component {
       <FormGroup>
 
         <Panel footer={
-          <div>
-            <Button style={{ width: "49%" }} bsStyle="danger" onClick={this.onRemove.bind(this)}
-              disabled={this.state.selected.length == 0}
-              title="Remove the currently selected attribute(s) from the plot">
-              Remove Selected
+          <Row>
+            <Col lg={6}>
+              <Button style={{ width: "100%" }} bsStyle="danger" onClick={this.onRemove.bind(this)}
+                disabled={this.state.selected.length == 0}
+                title="Remove the currently selected attribute(s) from the plot">
+                Remove Selected
                   </Button>
-            {' '}
-            <Button style={{ width: "49%" }} bsStyle="danger" onClick={this.onRemoveAll.bind(this)}
-              disabled={this.props.attributes.length == 0}
-              title="Remove all attribute(s) from the plot">
-              Remove All
+            </Col>
+            <Col lg={6}>
+              <Button style={{ width: "100%" }} bsStyle="danger" onClick={this.onRemoveAll.bind(this)}
+                disabled={this.props.attributes.length == 0}
+                title="Remove all attribute(s) from the plot">
+                Remove All
                   </Button>
-          </div>
+            </Col>
+          </Row>
         }>
 
           <div>
