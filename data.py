@@ -3,6 +3,7 @@ from functools import partial
 from itertools import chain
 import json
 import time
+import numpy
 
 import pandas as pd
 from pandas.tseries.frequencies import to_offset
@@ -62,6 +63,8 @@ def render_data_json(request, data):
     # Note: this implementation will potentially use a lot of memory
     # as it will create two new representations of the data in
     # memory...
+    for _name, df in data.items():
+        df.replace({numpy.nan: None}, inplace=True)
     return json.dumps([
         {
             "target": name,
