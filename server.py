@@ -56,7 +56,7 @@ from asyncio import Queue, QueueEmpty
 
 from plot import get_extrema, make_axis_images
 from hdbpp import HDBPlusPlusConnection
-from utils import timer
+from utils import timer, parse_time_to_naive
 from data import get_data, render_data_csv, render_data_json
 
 
@@ -101,8 +101,8 @@ async def get_images(hdbpp, request):
     params = await request.json()
 
     attributes = params["attributes"]
-    time_range = [parse_time(params["time_range"][0]),
-                  parse_time(params["time_range"][1])]
+    time_range = [parse_time_to_naive(params["time_range"][0]),
+                  parse_time_to_naive(params["time_range"][1])]
     size = params["size"]
     axes = params.get("axes")
 
@@ -154,8 +154,8 @@ async def post_raw_query(hdbpp, request):
 
     params = await request.json()
     attributes = ["{cs}/{target}".format(**t) for t in params["targets"]]
-    time_range = [parse_time(params["range"]["from"]),
-                  parse_time(params["range"]["to"])]
+    time_range = [parse_time_to_naive(params["range"]["from"]),
+                  parse_time_to_naive(params["range"]["to"])]
     interval = params.get("interval")
     data = await get_data(hdbpp, attributes, time_range, interval,
                           restrict_time=True)
@@ -171,8 +171,8 @@ async def post_raw_query_http(hdbpp, request):
     params = await request.json()
 
     attributes = params["attributes"]
-    time_range = [parse_time(params["time_range"][0]),
-                  parse_time(params["time_range"][1])]
+    time_range = [parse_time_to_naive(params["time_range"][0]),
+                  parse_time_to_naive(params["time_range"][1])]
 
     data = await get_data(hdbpp, attributes, time_range)
 
