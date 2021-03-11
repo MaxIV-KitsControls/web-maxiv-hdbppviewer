@@ -10,7 +10,7 @@ from dateutil.parser import parse as parse_time
 # Parse a string into a time.
 # The database uses UTC, and Pandas needs a 'naive' time without timezone.
 # If we get a time without timezone, we assume it's UTC
-# If the timezone it give, we translate to UTC, and then drop the timezone. 
+# If the time is given with timezone, we translate to UTC and then drop the timezone. 
 def parse_time_to_naive(timestring):
     parsed_time = parse_time(timestring)
     if not parsed_time.tzinfo:
