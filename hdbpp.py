@@ -112,7 +112,7 @@ class HDBPlusPlusConnection(object):
     "A very simple direct interface to the HDB++ cassandra backend"
 
     def __init__(self, nodes=None, keyspace="hdb", address_map=None,
-                 fetch_size=50000, cache_size=1e9, consistency_level="ONE"):
+                 fetch_size=5000, cache_size=1e9, consistency_level="ONE"):
         self.nodes = nodes if nodes else ["localhost"]
         if address_map:
             translator = LocalNetworkAdressTranslator(address_map)
@@ -122,6 +122,7 @@ class HDBPlusPlusConnection(object):
 
         s = self.cluster.connect(keyspace)
         s.default_consistency_level = getattr(ConsistencyLevel, consistency_level)
+        s.default_timeout = 60
         self.session = aiosession(s)  # asyncio wrapper
         self.session.default_fetch_size = fetch_size
 
@@ -268,7 +269,7 @@ class HDBPlusPlusConnection(object):
             params = row
         return params
 
-    def get_attribute_data(self, attr, start_time=None, end_time=None):
+    async def get_attribute_data(self, attr, start_time=None, end_time=None):
 
         """Get all data points for the given attribute between
         start_time and end_time.
@@ -308,18 +309,22 @@ class HDBPlusPlusConnection(object):
         logging.debug("fetching periods: %r", periods)
         cs, name = split_cs_and_attribute(attr)
 
-        # request all periods at once
-        fut = asyncio.gather(*[self.get_attribute_period(cs, name, period)
-                               for period in periods])
-        # we'll return a "dummy" future which is resolved with all the
-        # data, once it's all arrived.
-        dummy_fut = asyncio.Future()
-        fut.add_done_callback(
-            lambda fut_: dummy_fut.set_result(pd.concat(fut_.result(),
-                                                        ignore_index=True)))
-        return dummy_fut
+        def chunker(it, n):
+            return (it[i:i + n] for i in range(0, len(it), n))
 
-    @retry_future(max_retries=3)
+        # request all periods at once
+        period_queries = [self.get_attribute_period(cs, name, period)
+                          for period in periods]
+        total_results = []
+
+        for chunk in chunker(period_queries, 50):
+            chunk_results = await asyncio.gather(*chunk)
+            total_results.extend(chunk_results)
+
+        if total_results:
+            return pd.concat(total_results, ignore_index=True)
+
+    # @retry_future(max_retries=3)
     def get_attribute_period(self, cs, attr, period):
         """
         Return the data for a given attribute and period (day)

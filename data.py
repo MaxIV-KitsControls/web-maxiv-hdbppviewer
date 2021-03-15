@@ -3,6 +3,7 @@ from functools import partial
 from itertools import chain
 import json
 import time
+import numpy
 
 import pandas as pd
 from pandas.tseries.frequencies import to_offset
@@ -62,6 +63,8 @@ def render_data_json(request, data):
     # Note: this implementation will potentially use a lot of memory
     # as it will create two new representations of the data in
     # memory...
+    for _name, df in data.items():
+        df.replace({numpy.nan: None}, inplace=True)
     return json.dumps([
         {
             "target": name,
@@ -86,21 +89,26 @@ async def get_data(hdbpp, attributes, time_range, interval=None,
 
     t0, t1 = time_range
 
-    futures = [hdbpp.get_attribute_data(attribute.lower(),
-                                        t0,
-                                        t1)
+    futures = [hdbpp.get_attribute_data(attribute.lower(), t0, t1)
                for attribute in attributes]
 
-    results = await asyncio.gather(*futures)
+    # Fetch all the attributes in parallel.
+    # TODO I'm not sure if this is good or not, as it could lead to a lot of parallel
+    # queries. But at least each attribute is fetched in chunks. Something to tweak.
+    #results = await asyncio.gather(*futures)
+
+    results = [await fut for fut in futures]
 
     if restrict_time:
         return {
             attr: resample(res[(t0 <= res["data_time"])
                                & (res["data_time"] <= t1)], interval)
             for attr, res in zip(attributes, results)
+            if res is not None
         }
 
     return {
         attr: resample(res, interval)
         for attr, res in zip(attributes, results)
+        if res is not None
     }
