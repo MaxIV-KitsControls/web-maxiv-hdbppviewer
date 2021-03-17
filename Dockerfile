@@ -23,7 +23,7 @@ RUN apt-get update
 
 RUN apt-get -y install build-essential
 RUN apt-get -y install python-numpy-dev
-ADD hdbviewer.yaml /tmp/hdbviewer.yaml
+ADD environment.yaml /tmp/hdbviewer.yaml
 RUN conda config --set restore_free_channel true
 RUN conda env create --name hdbviewer --file=/tmp/hdbviewer.yaml
 RUN git clone https://github.com/MaxIV-KitsControls/web-maxiv-hdbppviewer.git
