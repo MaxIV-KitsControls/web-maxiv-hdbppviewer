@@ -35,24 +35,19 @@ Ideas:
 
 """
 
-import base64
 from concurrent.futures import ThreadPoolExecutor
 from collections import OrderedDict
-from dateutil.parser import parse as parse_time
 from functools import partial
 import fnmatch
 import json
 import logging
 import re
-import time
-from weakref import WeakSet, WeakValueDictionary
 
 import aiohttp
 import asyncio
 from aiohttp import web
 import aiohttp_cors
 from aiohttp_utils import negotiation
-from asyncio import Queue, QueueEmpty
 
 from plot import get_extrema, make_axis_images
 from hdbpp import HDBPlusPlusConnection
