@@ -4,6 +4,19 @@ from contextlib import contextmanager
 
 import logging
 import time
+from dateutil import tz
+from dateutil.parser import parse as parse_time
+
+# Parse a string into a time.
+# The database uses UTC, and Pandas needs a 'naive' time without timezone.
+# If we get a time without timezone, we assume it's UTC
+# If the time is given with timezone, we translate to UTC and then drop the timezone. 
+def parse_time_to_naive(timestring):
+    parsed_time = parse_time(timestring)
+    if not parsed_time.tzinfo:
+        return parsed_time
+    naive_time = parsed_time.astimezone(tz.UTC).replace(tzinfo=None)
+    return naive_time
 
 
 @contextmanager
