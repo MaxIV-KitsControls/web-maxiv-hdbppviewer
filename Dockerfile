@@ -1,39 +1,41 @@
 ############################################################
 # Dockerfile to build a deployment container for hdbppviewer
-# Based on Ubuntu and miniconda
+# Based on Ubuntu and mambaforge
 ############################################################
 
 # To build an image, e.g.:
 # $ docker build -t hdbppviewer .
-# (Note that this will take some time because we're building the
-#  cassandra driver from source, see below.)
 #
 # To run it, e.g.:
 # $ docker run --name hdbppviewer1 -p 80:5005 hdbppviewer
 
-# Set the base image to Ubuntu
-FROM continuumio/miniconda3
+FROM condaforge/mambaforge:4.9.2-5
 
 # set the proper timezone
 # This is important or the viewer won't query correctly!
-RUN echo "Europe/Stockholm" > /etc/timezone
-RUN dpkg-reconfigure -f noninteractive tzdata
+ENV DEBIAN_FRONTEND noninteractive
+RUN ln -sf /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
+RUN apt-get update \
+  && apt-get -y install tzdata \
+  && dpkg-reconfigure -f noninteractive tzdata \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update
+RUN groupadd -r -g 1000 kits \
+  && useradd --no-log-init -r -g kits -u 1000 kits
 
-RUN apt-get -y install build-essential
-RUN apt-get -y install python-numpy-dev
-ADD environment.yaml /tmp/hdbviewer.yaml
-RUN conda config --set restore_free_channel true
-RUN conda env create --name hdbviewer --file=/tmp/hdbviewer.yaml
-RUN git clone https://github.com/MaxIV-KitsControls/web-maxiv-hdbppviewer.git
+COPY environment.yaml /tmp/environment.yaml
+RUN mamba env create --name hdbppviewer --file=/tmp/environment.yaml \
+  && conda clean -afy
 
-# Copy the local config file into the checkout
-# This allows customization of e.g. cluster setup
-COPY hdbppviewer.conf web-maxiv-hdbppviewer/
+COPY --chown=kits:kits . /app
 
 # run the web service
 EXPOSE 5005
-WORKDIR web-maxiv-hdbppviewer
+WORKDIR /app
+ENV NUMBA_CACHE_DIR=/tmp
+ENV PATH=/opt/conda/envs/hdbppviewer/bin:$PATH
 
-CMD  /bin/bash -c "source activate hdbviewer && python server.py -c hdbppviewer.conf"
+CMD ["python", "server.py", "-c", "hdbppviewer.conf"]
+
+USER kits
