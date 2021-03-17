@@ -25,7 +25,7 @@ RUN groupadd -r -g 1000 kits \
   && useradd --no-log-init -r -g kits -u 1000 kits
 
 COPY environment.yaml /tmp/environment.yaml
-RUN mamba env create --name hdbviewer --file=/tmp/environment.yaml \
+RUN mamba env create --name hdbppviewer --file=/tmp/environment.yaml \
   && conda clean -afy
 
 COPY --chown=kits:kits . /app
@@ -34,7 +34,7 @@ COPY --chown=kits:kits . /app
 EXPOSE 5005
 WORKDIR /app
 ENV NUMBA_CACHE_DIR=/tmp
-ENV PATH=/opt/conda/envs/hdbviewer/bin:$PATH
+ENV PATH=/opt/conda/envs/hdbppviewer/bin:$PATH
 
 CMD ["python", "server.py", "-c", "hdbppviewer.conf"]
 
