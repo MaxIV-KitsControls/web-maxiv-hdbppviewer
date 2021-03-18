@@ -35,6 +35,7 @@ Ideas:
 
 """
 
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from collections import OrderedDict
 from functools import partial
@@ -44,10 +45,10 @@ import logging
 import re
 
 import aiohttp
-import asyncio
 from aiohttp import web
 import aiohttp_cors
 from aiohttp_utils import negotiation
+from dateutil.parser import parse as parse_time
 
 from plot import get_extrema, make_axis_images
 from hdbpp import HDBPlusPlusConnection
@@ -101,8 +102,8 @@ async def get_images(hdbpp, request):
     params = await request.json()
 
     attributes = params["attributes"]
-    time_range = [parse_time_to_naive(params["time_range"][0]),
-                  parse_time_to_naive(params["time_range"][1])]
+    time_range = [parse_time(params["time_range"][0]),
+                  parse_time(params["time_range"][1])]
     size = params["size"]
     axes = params.get("axes")
 
@@ -164,6 +165,7 @@ async def post_raw_query(hdbpp, request):
     response.enable_compression()
     return response
 
+
 async def post_raw_query_http(hdbpp, request):
 
     "Handle queries for data in 'raw' (csv or json) form from the browser"
@@ -179,6 +181,7 @@ async def post_raw_query_http(hdbpp, request):
     response = negotiation.Response(data=data)
     response.enable_compression()
     return response
+
 
 async def post_raw_search(hdbpp, request):
 

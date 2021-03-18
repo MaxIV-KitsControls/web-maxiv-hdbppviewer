@@ -294,7 +294,7 @@ class HDBPlusPlusConnection(object):
 
         # fix naive timestamps (assume they are UTC!)
         local_zone = tz.tzlocal()
-        print(start_time.tzinfo)
+
         if not start_time.tzinfo:
             start_time = start_time.replace(tzinfo=local_zone)
         if not end_time.tzinfo:
