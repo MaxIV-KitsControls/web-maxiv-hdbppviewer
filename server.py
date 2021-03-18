@@ -55,6 +55,11 @@ from utils import timer, parse_time_to_naive
 from data import get_data, render_data_csv, render_data_json
 
 
+async def get_health(request):
+    """Check that the application is alive"""
+    return web.Response(text="OK")
+
+
 async def get_controlsystems(hdbpp, request):
     "Handle queries for the list of TANGO hosts we have data for"
     loop = asyncio.get_event_loop()
@@ -252,6 +257,7 @@ if __name__ == "__main__":
                                   cache_size=DATA_CACHE_SIZE,
                                   consistency_level=CASSANDRA_CONSISTENCY_LEVEL)
 
+    app.router.add_route('GET', '/health', get_health)
     app.router.add_route('GET', '/controlsystems',
                          partial(get_controlsystems, hdbpp))
     app.router.add_route('GET', '/attributes',
